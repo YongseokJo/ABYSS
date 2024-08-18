@@ -1,0 +1,1222 @@
+Starting nbody - Binary OUTPUT
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:4.262660e+13, ay:-9.344821e+13, az:-2.518629e+14 
+I. Time Steps - irregular:4.656613e-08, regular:1.192093e-05 
+I_1. Distance from I: 1.606677e-05
+I_1. Total Acceleration - ax:-4.262224e+13, ay:9.343867e+13, az:2.518419e+14 
+I_1. Time Steps - irregular:4.656613e-08, regular:1.192093e-05
+The ID of CM is -1.
+The ID of members are 286,The ID of mother is 287.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1287 of 287, 286
+Position - x:2.005751e-01, y:-9.430212e-02, z:-3.692272e-03, 
+Velocity - vx:-2.257586e+03, vy:-5.351404e+03, vz:-4.965021e+03, 
+Total Acceleration - ax:-6.447539e+08, ay:4.096883e+08, az:5.592920e+07, 
+Total Acceleration - axdot:-5.008712e+13, aydot:-2.015918e+13, azdot:-2.987178e+13, 
+Total Acceleration - ax2dot:-3.462167e+34, ay2dot:5.411664e+34, az2dot:7.300147e+34, 
+Total Acceleration - ax3dot:7.098302e+44, ay3dot:-1.565740e+45, az3dot:-4.252199e+45, 
+Time Steps - irregular:1.164153e-10, regular:1.192093e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 999 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:1.615706e+15, ay:-7.867849e+15, az:1.276601e+16 
+I. Time Steps - irregular:2.328306e-08, regular:7.450581e-07 
+I_1. Distance from I: 1.750196e-06
+I_1. Total Acceleration - ax:-1.540020e+15, ay:8.406289e+15, az:-1.402222e+16 
+I_1. Time Steps - irregular:2.328306e-08, regular:7.450581e-07
+The ID of CM is -1.
+The ID of members are 297,The ID of mother is 296.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1296 of 296, 297
+Position - x:-1.013864e-01, y:6.968042e-02, z:-2.267936e-02, 
+Velocity - vx:-2.803532e+02, vy:-6.273603e+03, vz:-4.908547e+03, 
+Total Acceleration - ax:5.476947e+08, ay:-3.450920e+08, az:2.125138e+08, 
+Total Acceleration - axdot:2.105081e+14, aydot:-1.175689e+14, azdot:7.979038e+13, 
+Total Acceleration - ax2dot:-1.739013e+39, ay2dot:4.627832e+39, az2dot:-5.889041e+39, 
+Total Acceleration - ax3dot:2.529354e+50, ay3dot:3.189297e+51, az3dot:-7.039528e+51, 
+Time Steps - irregular:5.820766e-11, regular:7.450581e-09 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 998 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:1.728248e+14, ay:9.382442e+12, az:-3.833906e+14 
+I. Time Steps - irregular:4.656613e-08, regular:1.192093e-05 
+I_1. Distance from I: 1.291972e-05
+I_1. Total Acceleration - ax:-1.728643e+14, ay:-9.385268e+12, az:3.834850e+14 
+I_1. Time Steps - irregular:4.656613e-08, regular:1.192093e-05
+The ID of CM is -1.
+The ID of members are 290,The ID of mother is 291.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1291 of 291, 290
+Position - x:1.329742e-01, y:-1.910203e-01, z:-1.135061e-01, 
+Velocity - vx:6.403304e+03, vy:-1.081961e+04, vz:-3.608166e+03, 
+Total Acceleration - ax:-7.088597e+08, ay:8.665136e+08, az:3.809024e+08, 
+Total Acceleration - axdot:-2.156588e+12, aydot:-7.248926e+13, azdot:-9.665674e+13, 
+Total Acceleration - ax2dot:-5.608076e+34, ay2dot:-2.569972e+34, az2dot:2.063140e+35, 
+Total Acceleration - ax3dot:-7.555016e+45, ay3dot:-5.390612e+44, az3dot:1.722601e+46, 
+Time Steps - irregular:1.164153e-10, regular:5.960464e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 997 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:2.146021e+16, ay:-1.121632e+16, az:8.826248e+15 
+I. Time Steps - irregular:2.328306e-08, regular:2.980232e-06 
+I_1. Distance from I: 9.969727e-07
+I_1. Total Acceleration - ax:1.648201e+15, ay:-1.741918e+15, az:-5.913214e+16 
+I_1. Time Steps - irregular:2.328306e-08, regular:2.980232e-06
+The ID of CM is -1.
+The ID of members are 179,The ID of mother is 178.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1178 of 178, 179
+Position - x:9.621154e-02, y:1.738951e-01, z:-8.975916e-02, 
+Velocity - vx:-2.952557e+04, vy:9.970529e+03, vz:-2.549212e+04, 
+Total Acceleration - ax:-5.214554e+08, ay:-3.880763e+08, az:5.537906e+08, 
+Total Acceleration - axdot:4.392319e+14, aydot:2.052486e+13, azdot:5.859846e+14, 
+Total Acceleration - ax2dot:-5.967203e+40, ay2dot:2.780602e+40, az2dot:-2.542764e+41, 
+Total Acceleration - ax3dot:-7.263922e+53, ay3dot:3.789624e+53, az3dot:-3.457031e+53, 
+Time Steps - irregular:5.820766e-11, regular:2.980232e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 996 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:2.205593e+15, ay:-7.013451e+15, az:4.474674e+13 
+I. Time Steps - irregular:2.328306e-08, regular:7.450581e-07 
+I_1. Distance from I: 2.043114e-06
+I_1. Total Acceleration - ax:-4.129796e+14, ay:1.062112e+16, az:-9.971856e+15 
+I_1. Time Steps - irregular:2.328306e-08, regular:7.450581e-07
+The ID of CM is -1.
+The ID of members are 193,The ID of mother is 192.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1192 of 192, 193
+Position - x:3.602365e-02, y:1.893176e-01, z:1.181790e-01, 
+Velocity - vx:2.802889e+04, vy:4.416736e+02, vz:-5.120656e+04, 
+Total Acceleration - ax:-2.091264e+08, ay:-6.306912e+08, az:-3.782390e+08, 
+Total Acceleration - axdot:1.337323e+14, aydot:-1.603504e+14, azdot:2.301350e+14, 
+Total Acceleration - ax2dot:-2.210164e+39, ay2dot:4.132258e+39, az2dot:3.054835e+39, 
+Total Acceleration - ax3dot:1.015156e+51, ay3dot:-6.161992e+51, az3dot:3.161188e+51, 
+Time Steps - irregular:5.820766e-11, regular:7.450581e-09 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 995 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-1.076580e+14, ay:9.734776e+12, az:2.248403e+14 
+I. Time Steps - irregular:4.656613e-08, regular:1.192093e-05 
+I_1. Distance from I: 1.677641e-05
+I_1. Total Acceleration - ax:1.076435e+14, ay:-9.732706e+12, az:-2.248176e+14 
+I_1. Time Steps - irregular:4.656613e-08, regular:1.192093e-05
+The ID of CM is -1.
+The ID of members are 207,The ID of mother is 206.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1206 of 206, 207
+Position - x:-7.747251e-03, y:3.128033e-02, z:1.745937e-01, 
+Velocity - vx:-1.733460e+03, vy:-3.465767e+02, vz:-3.087414e+03, 
+Total Acceleration - ax:-2.019781e+07, ay:-2.730352e+08, az:-8.637076e+08, 
+Total Acceleration - axdot:-3.194736e+14, aydot:-1.162212e+14, azdot:2.105501e+13, 
+Total Acceleration - ax2dot:4.059621e+34, ay2dot:-2.670157e+34, az2dot:1.812086e+34, 
+Total Acceleration - ax3dot:-2.461098e+45, ay3dot:5.847996e+44, az3dot:3.521332e+45, 
+Time Steps - irregular:1.164153e-10, regular:5.960464e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 994 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:4.756161e+13, ay:1.057879e+14, az:-3.232111e+13 
+I. Time Steps - irregular:9.313226e-08, regular:1.192093e-05 
+I_1. Distance from I: 2.414842e-05
+I_1. Total Acceleration - ax:-4.755999e+13, ay:-1.057873e+14, az:3.232194e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:1.192093e-05
+The ID of CM is -1.
+The ID of members are 215,The ID of mother is 214.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1214 of 214, 215
+Position - x:-3.531602e-02, y:5.790637e-02, z:-8.807985e-02, 
+Velocity - vx:-3.408535e+03, vy:4.376371e+03, vz:-2.489723e+03, 
+Total Acceleration - ax:2.720882e+08, ay:-1.835408e+08, az:2.812654e+08, 
+Total Acceleration - axdot:6.217397e+13, aydot:-5.618429e+13, azdot:-5.878012e+13, 
+Total Acceleration - ax2dot:-2.126103e+34, ay2dot:-2.651166e+34, az2dot:-2.586734e+32, 
+Total Acceleration - ax3dot:2.425121e+43, ay3dot:4.632491e+44, az3dot:-3.061960e+44, 
+Time Steps - irregular:2.328306e-10, regular:5.960464e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 993 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:1.259109e+14, ay:-8.909523e+13, az:-2.772481e+13 
+I. Time Steps - irregular:9.313226e-08, regular:1.192093e-05 
+I_1. Distance from I: 2.116684e-05
+I_1. Total Acceleration - ax:-1.259128e+14, ay:8.909719e+13, az:2.772590e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:1.192093e-05
+The ID of CM is -1.
+The ID of members are 140,The ID of mother is 141.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1141 of 141, 140
+Position - x:1.400304e-01, y:-1.657658e-01, z:-6.888749e-03, 
+Velocity - vx:-9.640548e+03, vy:-1.167713e+02, vz:-6.721768e+03, 
+Total Acceleration - ax:-4.826161e+08, ay:3.739419e+08, az:-1.289403e+08, 
+Total Acceleration - axdot:4.145707e+13, aydot:5.180509e+13, azdot:2.434831e+13, 
+Total Acceleration - ax2dot:-3.376594e+34, ay2dot:2.805999e+34, az2dot:1.571829e+34, 
+Total Acceleration - ax3dot:-4.878814e+44, ay3dot:2.095359e+44, az3dot:-1.623031e+44, 
+Time Steps - irregular:2.328306e-10, regular:5.960464e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 992 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:2.118677e+15, ay:-1.750101e+15, az:1.293674e+15 
+I. Time Steps - irregular:2.328306e-08, regular:2.980232e-06 
+I_1. Distance from I: 4.803213e-06
+I_1. Total Acceleration - ax:-2.098921e+15, ay:1.731760e+15, az:-1.298222e+15 
+I_1. Time Steps - irregular:2.328306e-08, regular:2.980232e-06
+The ID of CM is -1.
+The ID of members are 225,The ID of mother is 224.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1224 of 224, 225
+Position - x:-1.136280e-01, y:9.498726e-02, z:-1.710463e-01, 
+Velocity - vx:6.300707e+03, vy:-1.024657e+04, vz:5.125131e+03, 
+Total Acceleration - ax:4.989943e+08, ay:-3.661635e+08, az:5.404201e+08, 
+Total Acceleration - axdot:1.202628e+12, aydot:7.697823e+12, azdot:-5.429867e+13, 
+Total Acceleration - ax2dot:-5.372798e+37, ay2dot:4.550462e+37, az2dot:-2.357778e+37, 
+Total Acceleration - ax3dot:2.516953e+48, ay3dot:-1.608033e+48, az3dot:5.406538e+48, 
+Time Steps - irregular:5.820766e-11, regular:2.980232e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 991 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:7.501709e+14, ay:-5.007213e+14, az:5.937844e+12 
+I. Time Steps - irregular:2.328306e-08, regular:2.980232e-06 
+I_1. Distance from I: 8.823235e-06
+I_1. Total Acceleration - ax:-7.509551e+14, ay:5.005791e+14, az:-5.804932e+12 
+I_1. Time Steps - irregular:2.328306e-08, regular:2.980232e-06
+The ID of CM is -1.
+The ID of members are 233,The ID of mother is 232.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1232 of 232, 233
+Position - x:-2.516252e-02, y:2.628234e-02, z:-1.069978e-01, 
+Velocity - vx:-3.246134e+03, vy:1.453104e+04, vz:-2.904507e+03, 
+Total Acceleration - ax:7.023752e+07, ay:-1.976728e+07, az:3.336586e+08, 
+Total Acceleration - axdot:-1.835887e+12, aydot:1.301344e+13, azdot:3.936127e+13, 
+Total Acceleration - ax2dot:-5.146073e+36, ay2dot:1.978070e+36, az2dot:2.622684e+35, 
+Total Acceleration - ax3dot:-7.533675e+46, ay3dot:3.052717e+47, az3dot:-5.363024e+46, 
+Time Steps - irregular:5.820766e-11, regular:2.980232e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 990 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:3.402397e+15, ay:-2.888264e+15, az:1.065124e+15 
+I. Time Steps - irregular:2.328306e-08, regular:2.980232e-06 
+I_1. Distance from I: 3.904472e-06
+I_1. Total Acceleration - ax:-3.370191e+15, ay:2.909713e+15, az:-1.011399e+15 
+I_1. Time Steps - irregular:2.328306e-08, regular:2.980232e-06
+The ID of CM is -1.
+The ID of members are 245,The ID of mother is 244.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1244 of 244, 245
+Position - x:-2.340670e-02, y:8.404050e-02, z:2.363515e-01, 
+Velocity - vx:9.089821e+03, vy:-8.980177e+03, vz:-7.973341e+03, 
+Total Acceleration - ax:3.446021e+06, ay:-1.223695e+08, az:-9.959048e+08, 
+Total Acceleration - axdot:-2.521090e+14, aydot:5.552134e+13, azdot:1.539364e+13, 
+Total Acceleration - ax2dot:-1.658773e+38, ay2dot:1.388943e+38, az2dot:-5.364339e+37, 
+Total Acceleration - ax3dot:-3.175161e+48, ay3dot:-1.090816e+49, az3dot:-1.316328e+49, 
+Time Steps - irregular:5.820766e-11, regular:2.980232e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 989 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:4.254462e+16, ay:-5.586444e+16, az:-4.128160e+16 
+I. Time Steps - irregular:2.328306e-08, regular:7.450581e-07 
+I_1. Distance from I: 2.731538e-06
+I_1. Total Acceleration - ax:4.427348e+14, ay:-4.929434e+14, az:-3.822746e+14 
+I_1. Time Steps - irregular:2.328306e-08, regular:7.450581e-07
+The ID of CM is -1.
+The ID of members are 249,The ID of mother is 248.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1248 of 248, 249
+Position - x:1.795352e-01, y:9.278667e-02, z:-9.656951e-02, 
+Velocity - vx:-1.223649e+04, vy:1.055949e+04, vz:9.251742e+03, 
+Total Acceleration - ax:-5.911543e+08, ay:-3.449197e+08, az:3.585973e+08, 
+Total Acceleration - axdot:-2.033244e+13, aydot:-9.287497e+13, azdot:8.286911e+13, 
+Total Acceleration - ax2dot:-1.267326e+39, ay2dot:-5.887589e+38, az2dot:2.388437e+37, 
+Total Acceleration - ax3dot:8.739398e+50, ay3dot:-4.728078e+50, az3dot:-4.868456e+50, 
+Time Steps - irregular:5.820766e-11, regular:7.450581e-09 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 988 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:9.042624e+14, ay:8.471846e+14, az:-2.112294e+14 
+I. Time Steps - irregular:2.328306e-08, regular:2.980232e-06 
+I_1. Distance from I: 7.473884e-06
+I_1. Total Acceleration - ax:-9.070786e+14, ay:-8.486920e+14, az:2.102174e+14 
+I_1. Time Steps - irregular:2.328306e-08, regular:2.980232e-06
+The ID of CM is -1.
+The ID of members are 265,The ID of mother is 264.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1264 of 264, 265
+Position - x:-5.462105e-02, y:1.084772e-02, z:3.958806e-03, 
+Velocity - vx:2.166281e+03, vy:1.715781e+04, vz:5.516648e+03, 
+Total Acceleration - ax:1.521363e+08, ay:6.257669e+07, az:1.740061e+07, 
+Total Acceleration - axdot:4.798036e+13, aydot:2.083554e+13, azdot:-4.429681e+13, 
+Total Acceleration - ax2dot:-1.091411e+37, ay2dot:-6.710177e+36, az2dot:-2.639820e+36, 
+Total Acceleration - ax3dot:-6.442125e+47, ay3dot:-9.805403e+47, az3dot:7.070401e+47, 
+Time Steps - irregular:5.820766e-11, regular:2.980232e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 987 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-9.115600e+14, ay:6.005279e+14, az:4.284818e+14 
+I. Time Steps - irregular:2.328306e-08, regular:5.960464e-06 
+I_1. Distance from I: 7.737754e-06
+I_1. Total Acceleration - ax:9.118051e+14, ay:-6.010026e+14, az:-4.294356e+14 
+I_1. Time Steps - irregular:2.328306e-08, regular:5.960464e-06
+The ID of CM is -1.
+The ID of members are 276,The ID of mother is 277.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1277 of 277, 276
+Position - x:5.775100e-02, y:-1.648603e-01, z:-1.206175e-01, 
+Velocity - vx:1.015285e+04, vy:-6.252078e+02, vz:1.726034e+03, 
+Total Acceleration - ax:-3.948949e+06, ay:5.748998e+08, az:4.985922e+08, 
+Total Acceleration - axdot:1.070640e+13, aydot:-7.484357e+12, azdot:2.513844e+13, 
+Total Acceleration - ax2dot:5.103263e+36, ay2dot:-3.737275e+36, az2dot:-3.401040e+36, 
+Total Acceleration - ax3dot:2.809908e+47, ay3dot:-1.051610e+47, az3dot:8.143861e+46, 
+Time Steps - irregular:5.820766e-11, regular:5.960464e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 986 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:1.553976e+14, ay:2.730468e+13, az:-2.436524e+13 
+I. Time Steps - irregular:9.313226e-08, regular:1.192093e-05 
+I_1. Distance from I: 2.097158e-05
+I_1. Total Acceleration - ax:-1.553976e+14, ay:-2.730172e+13, az:2.436677e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:1.192093e-05
+The ID of CM is -1.
+The ID of members are 65,The ID of mother is 64.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1064 of 64, 65
+Position - x:-1.947984e-01, y:-1.723364e-01, z:8.707605e-03, 
+Velocity - vx:8.267187e+03, vy:4.869056e+03, vz:-2.170991e+03, 
+Total Acceleration - ax:-8.465439e+08, ay:3.915106e+08, az:8.964984e+08, 
+Total Acceleration - axdot:2.323267e+15, aydot:-2.746129e+15, azdot:-4.356365e+15, 
+Total Acceleration - ax2dot:-5.725605e+34, ay2dot:-2.534553e+34, az2dot:8.905880e+33, 
+Total Acceleration - ax3dot:8.450528e+44, ay3dot:-4.285950e+44, az3dot:-1.352109e+44, 
+Time Steps - irregular:2.328306e-10, regular:5.960464e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 985 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:1.934797e+14, ay:1.550391e+15, az:-1.515320e+14 
+I. Time Steps - irregular:2.328306e-08, regular:2.980232e-06 
+I_1. Distance from I: 6.687018e-06
+I_1. Total Acceleration - ax:-1.943335e+14, ay:-1.548314e+15, az:1.507851e+14 
+I_1. Time Steps - irregular:2.328306e-08, regular:2.980232e-06
+The ID of CM is -1.
+The ID of members are 8,The ID of mother is 9.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1009 of 9, 8
+Position - x:8.018296e-02, y:1.300646e-01, z:-1.357949e-01, 
+Velocity - vx:3.249104e+03, vy:-4.188951e+03, vz:-1.887612e+03, 
+Total Acceleration - ax:-3.334468e+08, ay:-6.249152e+08, az:4.654090e+08, 
+Total Acceleration - axdot:1.130771e+13, aydot:-4.001746e+13, azdot:6.312846e+13, 
+Total Acceleration - ax2dot:-8.128402e+35, ay2dot:-1.266252e+37, az2dot:1.613425e+36, 
+Total Acceleration - ax3dot:2.782441e+47, ay3dot:3.759304e+47, az3dot:7.654904e+46, 
+Time Steps - irregular:5.820766e-11, regular:2.980232e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 984 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-1.321408e+15, ay:1.144831e+15, az:7.534657e+14 
+I. Time Steps - irregular:2.328306e-08, regular:5.960464e-06 
+I_1. Distance from I: 6.071638e-06
+I_1. Total Acceleration - ax:1.329197e+15, ay:-1.158104e+15, az:-7.590538e+14 
+I_1. Time Steps - irregular:2.328306e-08, regular:5.960464e-06
+The ID of CM is -1.
+The ID of members are 21,The ID of mother is 20.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1020 of 20, 21
+Position - x:-1.323657e-01, y:-1.351973e-01, z:1.187835e-01, 
+Velocity - vx:-7.526991e+03, vy:2.143105e+03, vz:3.459924e+02, 
+Total Acceleration - ax:5.045901e+08, ay:7.400112e+08, az:-2.865343e+08, 
+Total Acceleration - axdot:1.369794e+14, aydot:4.820535e+11, azdot:-3.146877e+13, 
+Total Acceleration - ax2dot:1.481474e+36, ay2dot:-2.600749e+37, az2dot:-5.190473e+36, 
+Total Acceleration - ax3dot:3.832945e+48, ay3dot:-3.131696e+48, az3dot:-2.152311e+48, 
+Time Steps - irregular:5.820766e-11, regular:5.960464e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 983 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-9.788107e+13, ay:-1.937815e+14, az:-6.616842e+12 
+I. Time Steps - irregular:4.656613e-08, regular:1.192093e-05 
+I_1. Distance from I: 1.797978e-05
+I_1. Total Acceleration - ax:9.787186e+13, ay:1.937609e+14, az:6.617442e+12 
+I_1. Time Steps - irregular:4.656613e-08, regular:1.192093e-05
+The ID of CM is -1.
+The ID of members are 27,The ID of mother is 26.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1026 of 26, 27
+Position - x:1.867363e-01, y:-1.051619e-01, z:6.146109e-02, 
+Velocity - vx:-4.438649e+03, vy:-7.265554e+03, vz:4.911616e+03, 
+Total Acceleration - ax:-6.186387e+08, ay:3.570383e+08, az:-3.327765e+08, 
+Total Acceleration - axdot:-4.265672e+13, aydot:-3.484816e+13, azdot:-6.796497e+13, 
+Total Acceleration - ax2dot:-6.851672e+34, ay2dot:-2.351468e+33, az2dot:-4.844479e+34, 
+Total Acceleration - ax3dot:-3.326185e+44, ay3dot:-3.445231e+45, az3dot:8.934812e+44, 
+Time Steps - irregular:1.164153e-10, regular:5.960464e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 982 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:8.766766e+13, ay:-1.501510e+14, az:1.781355e+10 
+I. Time Steps - irregular:9.313226e-08, regular:1.192093e-05 
+I_1. Distance from I: 2.009562e-05
+I_1. Total Acceleration - ax:-8.766824e+13, ay:1.501525e+14, az:-1.738089e+10 
+I_1. Time Steps - irregular:9.313226e-08, regular:1.192093e-05
+The ID of CM is -1.
+The ID of members are 37,The ID of mother is 36.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1036 of 36, 37
+Position - x:-1.146989e-01, y:-1.106082e-01, z:1.032099e-01, 
+Velocity - vx:6.089644e+03, vy:-6.816364e+03, vz:1.064567e+04, 
+Total Acceleration - ax:1.575461e+08, ay:3.850305e+08, az:-3.285839e+08, 
+Total Acceleration - axdot:1.015348e+14, aydot:4.601694e+13, azdot:1.987101e+14, 
+Total Acceleration - ax2dot:-2.878516e+34, ay2dot:4.676121e+34, az2dot:3.512744e+33, 
+Total Acceleration - ax3dot:-6.770884e+43, ay3dot:2.953056e+44, az3dot:-2.484323e+44, 
+Time Steps - irregular:2.328306e-10, regular:1.192093e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 981 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:5.480216e+13, ay:8.124084e+13, az:-3.473568e+14 
+I. Time Steps - irregular:4.656613e-08, regular:1.192093e-05 
+I_1. Distance from I: 1.394799e-05
+I_1. Total Acceleration - ax:-5.478167e+13, ay:-8.123932e+13, az:3.473391e+14 
+I_1. Time Steps - irregular:4.656613e-08, regular:1.192093e-05
+The ID of CM is -1.
+The ID of members are 81,The ID of mother is 80.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1080 of 80, 81
+Position - x:-2.328247e-01, y:5.643877e-02, z:7.445201e-02, 
+Velocity - vx:7.681488e+03, vy:-2.383947e+03, vz:-4.858914e+02, 
+Total Acceleration - ax:7.597466e+08, ay:-1.565958e+08, az:-2.565402e+08, 
+Total Acceleration - axdot:1.645058e+13, aydot:6.441891e+12, azdot:1.523968e+13, 
+Total Acceleration - ax2dot:-1.011656e+35, ay2dot:-7.434844e+34, az2dot:3.447593e+35, 
+Total Acceleration - ax3dot:-2.964247e+45, ay3dot:1.812601e+45, az3dot:-5.544425e+45, 
+Time Steps - irregular:1.164153e-10, regular:5.960464e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 980 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:1.060789e+15, ay:-3.216922e+15, az:1.766913e+15 
+I. Time Steps - irregular:2.328306e-08, regular:7.450581e-07 
+I_1. Distance from I: 1.757810e-06
+I_1. Total Acceleration - ax:-4.056936e+15, ay:1.390150e+16, az:-1.315361e+16 
+I_1. Time Steps - irregular:2.328306e-08, regular:7.450581e-07
+The ID of CM is -1.
+The ID of members are 91,The ID of mother is 90.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1090 of 90, 91
+Position - x:8.775758e-02, y:-1.508869e-01, z:1.743116e-01, 
+Velocity - vx:-5.982397e+03, vy:3.993814e+04, vz:-5.369842e+04, 
+Total Acceleration - ax:-3.495379e+08, ay:7.738101e+08, az:-6.163301e+08, 
+Total Acceleration - axdot:8.552451e+14, aydot:1.173509e+15, azdot:6.044570e+14, 
+Total Acceleration - ax2dot:-1.381551e+38, ay2dot:-1.816421e+39, az2dot:8.714170e+39, 
+Total Acceleration - ax3dot:2.802705e+51, ay3dot:-7.912936e+51, az3dot:2.321743e+51, 
+Time Steps - irregular:5.820766e-11, regular:7.450581e-09 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 979 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:5.191765e+12, ay:-9.750299e+13, az:1.505993e+14 
+I. Time Steps - irregular:9.313226e-08, regular:5.960464e-06 
+I_1. Distance from I: 1.977897e-05
+I_1. Total Acceleration - ax:-5.193071e+12, ay:9.750246e+13, az:-1.505946e+14 
+I_1. Time Steps - irregular:9.313226e-08, regular:5.960464e-06
+The ID of CM is -1.
+The ID of members are 123,The ID of mother is 122.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1122 of 122, 123
+Position - x:7.484393e-02, y:-8.928462e-02, z:5.431020e-04, 
+Velocity - vx:7.485059e+03, vy:-2.731589e+03, vz:-3.243092e+02, 
+Total Acceleration - ax:-3.012320e+08, ay:3.282966e+08, az:2.743978e+07, 
+Total Acceleration - axdot:6.367621e+13, aydot:3.195922e+13, azdot:4.255975e+13, 
+Total Acceleration - ax2dot:7.473740e+33, ay2dot:1.586209e+34, az2dot:-5.477003e+34, 
+Total Acceleration - ax3dot:1.592383e+44, ay3dot:-8.273209e+44, az3dot:8.586971e+44, 
+Time Steps - irregular:2.328306e-10, regular:5.960464e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 978 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-9.864480e+14, ay:2.925023e+14, az:-1.620450e+13 
+I. Time Steps - irregular:2.328306e-08, regular:5.960464e-06 
+I_1. Distance from I: 8.260673e-06
+I_1. Total Acceleration - ax:9.862454e+14, ay:-2.922386e+14, az:1.531793e+13 
+I_1. Time Steps - irregular:2.328306e-08, regular:5.960464e-06
+The ID of CM is -1.
+The ID of members are 129,The ID of mother is 128.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1128 of 128, 129
+Position - x:-1.373229e-01, y:-1.194296e-01, z:1.349409e-01, 
+Velocity - vx:-1.994946e+03, vy:8.240190e+03, vz:-2.446025e+03, 
+Total Acceleration - ax:6.316721e+08, ay:1.829642e+08, az:-7.362582e+08, 
+Total Acceleration - axdot:-5.855898e+13, aydot:-9.018610e+13, azdot:3.213623e+13, 
+Total Acceleration - ax2dot:7.298060e+36, ay2dot:-2.322591e+36, az2dot:8.090923e+35, 
+Total Acceleration - ax3dot:-1.681680e+47, ay3dot:-3.022670e+46, az3dot:3.453549e+47, 
+Time Steps - irregular:5.820766e-11, regular:5.960464e-08 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 977 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:5.067186e+13, ay:-4.098826e+13, az:-9.181829e+13 
+I. Time Steps - irregular:9.313226e-08, regular:2.384186e-05 
+I_1. Distance from I: 2.497171e-05
+I_1. Total Acceleration - ax:-5.067288e+13, ay:4.098944e+13, az:9.182107e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:2.384186e-05
+The ID of CM is -1.
+The ID of members are 154,The ID of mother is 155.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1155 of 155, 154
+Position - x:-1.113969e-02, y:-6.881225e-02, z:-2.491690e-01, 
+Velocity - vx:-1.875628e+03, vy:-7.778018e+03, vz:-7.422306e+02, 
+Total Acceleration - ax:1.075548e+08, ay:2.304716e+08, az:8.947442e+08, 
+Total Acceleration - axdot:-4.099923e+13, aydot:2.831304e+13, azdot:-1.025710e+12, 
+Total Acceleration - ax2dot:-2.144519e+34, ay2dot:1.013095e+34, az2dot:5.882270e+33, 
+Total Acceleration - ax3dot:-2.212429e+44, ay3dot:1.981190e+44, az3dot:4.884387e+44, 
+Time Steps - irregular:2.328306e-10, regular:2.384186e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 976 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-9.019469e+13, ay:-6.798799e+13, az:-1.585238e+13 
+I. Time Steps - irregular:9.313226e-08, regular:2.384186e-05 
+I_1. Distance from I: 2.481173e-05
+I_1. Total Acceleration - ax:9.019382e+13, ay:6.798896e+13, az:1.585353e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:2.384186e-05
+The ID of CM is -1.
+The ID of members are 274,The ID of mother is 275.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1275 of 275, 274
+Position - x:2.084719e-01, y:1.000527e-03, z:-1.534330e-01, 
+Velocity - vx:6.734875e+03, vy:4.539567e+03, vz:-1.855363e+03, 
+Total Acceleration - ax:-7.852778e+08, ay:-6.559180e+07, az:4.251347e+08, 
+Total Acceleration - axdot:3.229586e+13, aydot:-4.321877e+13, azdot:1.184191e+13, 
+Total Acceleration - ax2dot:8.401250e+33, ay2dot:1.743423e+34, az2dot:4.880942e+33, 
+Total Acceleration - ax3dot:3.237547e+44, ay3dot:1.714731e+44, az3dot:3.464954e+43, 
+Time Steps - irregular:2.328306e-10, regular:2.384186e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 975 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:8.788738e+13, ay:3.841542e+13, az:-6.375009e+13 
+I. Time Steps - irregular:9.313226e-08, regular:4.768372e-05 
+I_1. Distance from I: 2.469141e-05
+I_1. Total Acceleration - ax:-8.788826e+13, ay:-3.841583e+13, az:6.375291e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:4.768372e-05
+The ID of CM is -1.
+The ID of members are 85,The ID of mother is 84.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1084 of 84, 85
+Position - x:-1.125052e-01, y:-2.996493e-02, z:-1.978754e-01, 
+Velocity - vx:-1.306731e+04, vy:-1.330895e+04, vz:6.459178e+03, 
+Total Acceleration - ax:4.671823e+08, ay:2.619924e+05, az:7.302422e+08, 
+Total Acceleration - axdot:-1.640093e+15, aydot:-1.075828e+15, azdot:-9.470382e+14, 
+Total Acceleration - ax2dot:-4.154307e+33, ay2dot:1.152472e+34, az2dot:4.764556e+33, 
+Total Acceleration - ax3dot:-3.524474e+44, ay3dot:-4.271516e+43, az3dot:2.702708e+44, 
+Time Steps - irregular:2.328306e-10, regular:4.768372e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 974 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:7.015744e+13, ay:6.086543e+13, az:6.372841e+13 
+I. Time Steps - irregular:9.313226e-08, regular:4.768372e-05 
+I_1. Distance from I: 2.496709e-05
+I_1. Total Acceleration - ax:-7.015729e+13, ay:-6.086497e+13, az:-6.372925e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:4.768372e-05
+The ID of CM is -1.
+The ID of members are 211,The ID of mother is 210.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1210 of 210, 211
+Position - x:-8.799584e-02, y:-2.400811e-01, z:-2.544203e-02, 
+Velocity - vx:1.028817e+02, vy:1.062395e+04, vz:-1.529770e+03, 
+Total Acceleration - ax:2.724137e+08, ay:7.708927e+08, az:4.512497e+07, 
+Total Acceleration - axdot:3.603190e+13, aydot:2.874644e+13, azdot:1.701633e+12, 
+Total Acceleration - ax2dot:-2.705170e+33, ay2dot:-1.893981e+34, az2dot:-1.525228e+34, 
+Total Acceleration - ax3dot:-3.705414e+44, ay3dot:-2.070029e+44, az3dot:-2.483264e+44, 
+Time Steps - irregular:2.328306e-10, regular:4.768372e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 973 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-1.738551e+13, ay:8.797976e+13, az:7.390360e+13 
+I. Time Steps - irregular:9.313226e-08, regular:4.768372e-05 
+I_1. Distance from I: 2.458083e-05
+I_1. Total Acceleration - ax:1.738370e+13, ay:-8.798122e+13, az:-7.390409e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:4.768372e-05
+The ID of CM is -1.
+The ID of members are 152,The ID of mother is 153.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1153 of 153, 152
+Position - x:1.996595e-01, y:-3.889864e-02, z:-1.019675e-01, 
+Velocity - vx:4.283227e+03, vy:9.984817e+03, vz:-8.705129e+03, 
+Total Acceleration - ax:-7.509672e+08, ay:1.476214e+08, az:3.842322e+08, 
+Total Acceleration - axdot:-4.438973e+13, aydot:-2.877313e+13, azdot:-8.131549e+13, 
+Total Acceleration - ax2dot:-1.674012e+34, ay2dot:-1.629801e+34, az2dot:-7.177799e+33, 
+Total Acceleration - ax3dot:6.350997e+43, ay3dot:-5.129941e+44, az3dot:-4.185652e+44, 
+Time Steps - irregular:2.328306e-10, regular:4.768372e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 972 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:4.286440e+13, ay:9.437770e+13, az:4.386945e+13 
+I. Time Steps - irregular:4.656613e-08, regular:4.768372e-05 
+I_1. Distance from I: 2.514774e-05
+I_1. Total Acceleration - ax:-4.265983e+13, ay:-9.152014e+13, az:-4.202855e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:4.768372e-05
+The ID of CM is -1.
+The ID of members are 164,The ID of mother is 165.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1165 of 165, 164
+Position - x:-7.065211e-02, y:1.361139e-01, z:1.116417e-02, 
+Velocity - vx:-4.156634e+03, vy:3.333777e+03, vz:1.865684e+03, 
+Total Acceleration - ax:2.130656e+08, ay:-5.788047e+08, az:3.871785e+07, 
+Total Acceleration - axdot:9.716544e+12, aydot:8.770167e+12, azdot:-3.884270e+13, 
+Total Acceleration - ax2dot:-1.474615e+34, ay2dot:4.794193e+33, az2dot:1.017396e+34, 
+Total Acceleration - ax3dot:-3.573035e+44, ay3dot:-3.682764e+44, az3dot:-8.231397e+43, 
+Time Steps - irregular:1.164153e-10, regular:4.768372e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 971 
+Terminating Binary at time : 1.635635e-07 
+PID=165
+Position: ptclI - x:-7.065686e-02, y:1.361035e-01, z:1.115930e-02, 
+Velocity: ptclI - vx:3.581280e+04, vy:3.142752e+04, vz:2.191854e+03, 
+Total Acceleration - ax:4.286461e+13, ay:9.437712e+13, az:4.386949e+13, 
+Total Acceleration - axdot:4.035894e+22, aydot:6.288462e+23, azdot:4.070633e+23, 
+Total Acceleration - ax2dot:-1.378039e+24, ay2dot:-3.686182e+24, az2dot:-1.478718e+24, 
+Total Acceleration - ax3dot:-3.471165e+32, ay3dot:-2.484778e+34, az3dot:-1.407101e+34, 
+Irr  Acceleration - ax:4.286412e+13, ay:9.437807e+13, az:4.386951e+13, 
+Irr Acceleration - axdot:4.035894e+22, aydot:6.288462e+23, azdot:4.070633e+23, 
+Irr Acceleration - ax2dot:-7.801387e+23, ay2dot:-2.298039e+24, az2dot:-7.591440e+23, 
+Irr Acceleration - ax3dot:-1.300047e+32, ay3dot:-1.539330e+34, az3dot:-7.457199e+33, 
+Time Steps - irregular:4.656613e-10, regular:4.768372e-07 
+Time Blocks - irregular:536870912, regular:549755813888 
+Current Blocks - irregular: 188441690112, regular:0 
+PID=164
+
+Position: ptclJ - x:-7.064715e-02, y:1.361245e-01, z:1.116903e-02, 
+Velocity: ptclJ - vx:-4.392690e+04, vy:-2.432728e+04, vz:1.739390e+03, 
+Total Acceleration - ax:-4.286376e+13, ay:-9.437944e+13, az:-4.386934e+13, 
+Total Acceleration - axdot:-4.035894e+22, aydot:-6.288462e+23, azdot:-4.070633e+23, 
+Total Acceleration - ax2dot:1.376395e+24, ay2dot:3.693854e+24, az2dot:1.475999e+24, 
+Total Acceleration - ax3dot:3.483853e+32, ay3dot:2.484842e+34, az3dot:1.407404e+34, 
+Irr Acceleration - ax:-4.286425e+13, ay:-9.437850e+13, az:-4.386932e+13, 
+Irr Acceleration - axdot:-4.035894e+22, aydot:-6.288462e+23, azdot:-4.070633e+23, 
+Irr Acceleration - ax2dot:7.800353e+23, ay2dot:2.299009e+24, az2dot:7.579747e+23, 
+Irr Acceleration - ax3dot:1.309890e+32, ay3dot:1.539436e+34, az3dot:7.460475e+33, 
+Time Steps - irregular:9.313226e-10, regular:4.768372e-07 
+Time Blocks - irregular:1073741824, regular:549755813888 
+Current Blocks - irregular: 187904819200, regular:0 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:6.228169e+13, ay:2.814942e+13, az:-8.949814e+13 
+I. Time Steps - irregular:9.313226e-08, regular:2.384186e-05 
+I_1. Distance from I: 2.497029e-05
+I_1. Total Acceleration - ax:-6.228307e+13, ay:-2.814928e+13, az:8.950028e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:2.384186e-05
+The ID of CM is -1.
+The ID of members are 97,The ID of mother is 96.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1096 of 96, 97
+Position - x:-2.657643e-02, y:-1.089507e-01, z:-1.852103e-02, 
+Velocity - vx:3.502310e+02, vy:1.568894e+03, vz:8.497859e+03, 
+Total Acceleration - ax:9.466696e+07, ay:4.137678e+08, az:3.154960e+08, 
+Total Acceleration - axdot:-7.138186e+13, aydot:-1.315895e+14, azdot:-4.197549e+12, 
+Total Acceleration - ax2dot:-1.377294e+34, ay2dot:-5.493868e+33, az2dot:-8.432175e+33, 
+Total Acceleration - ax3dot:-3.792051e+44, ay3dot:-1.651770e+44, az3dot:3.051564e+44, 
+Time Steps - irregular:2.328306e-10, regular:2.384186e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 971 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:8.714831e+13, ay:-5.818258e+13, az:-4.528685e+13 
+I. Time Steps - irregular:9.313226e-08, regular:2.384186e-05 
+I_1. Distance from I: 2.480109e-05
+I_1. Total Acceleration - ax:-8.714892e+13, ay:5.818357e+13, az:4.528851e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:2.384186e-05
+The ID of CM is -1.
+The ID of members are 216,The ID of mother is 217.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1217 of 217, 216
+Position - x:-2.367836e-02, y:-1.745779e-02, z:-6.664305e-02, 
+Velocity - vx:1.371016e+03, vy:-3.467167e+03, vz:1.434358e+04, 
+Total Acceleration - ax:1.148073e+08, ay:1.695520e+08, az:2.073289e+08, 
+Total Acceleration - axdot:3.960499e+13, aydot:1.980760e+13, azdot:7.123365e+12, 
+Total Acceleration - ax2dot:-1.283705e+34, ay2dot:1.057494e+34, az2dot:2.488711e+34, 
+Total Acceleration - ax3dot:-5.164653e+44, ay3dot:3.268730e+44, az3dot:1.054024e+44, 
+Time Steps - irregular:2.328306e-10, regular:2.384186e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 970 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-3.268099e+13, ay:6.575553e+13, az:-8.660007e+13 
+I. Time Steps - irregular:4.656613e-08, regular:4.768372e-05 
+I_1. Distance from I: 2.501885e-05
+I_1. Total Acceleration - ax:3.164735e+13, ay:-6.485420e+13, az:8.367432e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:4.768372e-05
+The ID of CM is -1.
+The ID of members are 45,The ID of mother is 44.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1044 of 44, 45
+Position - x:2.218769e-01, y:9.094677e-02, z:-7.666152e-02, 
+Velocity - vx:3.984852e+03, vy:4.284022e+03, vz:-3.629509e+03, 
+Total Acceleration - ax:-7.963796e+08, ay:-3.313406e+08, az:2.004567e+08, 
+Total Acceleration - axdot:4.520594e+13, aydot:1.204581e+13, azdot:3.726031e+13, 
+Total Acceleration - ax2dot:-2.569761e+33, ay2dot:-1.226017e+34, az2dot:-9.486623e+33, 
+Total Acceleration - ax3dot:1.050882e+44, ay3dot:-3.879624e+44, az3dot:2.492255e+44, 
+Time Steps - irregular:1.164153e-10, regular:4.768372e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 969 
+Terminating Binary at time : 2.399320e-07 
+PID=44
+Position: ptclI - x:2.218805e-01, y:9.093957e-02, z:-7.665204e-02, 
+Velocity: ptclI - vx:-2.817742e+03, vy:4.673598e+04, vz:-1.697128e+04, 
+Total Acceleration - ax:-3.268178e+13, ay:6.575520e+13, az:-8.659987e+13, 
+Total Acceleration - axdot:-2.274138e+23, aydot:1.949178e+23, azdot:-6.454088e+23, 
+Total Acceleration - ax2dot:8.850949e+23, ay2dot:-1.410993e+24, az2dot:1.734181e+24, 
+Total Acceleration - ax3dot:6.101835e+33, ay3dot:-4.281177e+33, az3dot:1.286762e+34, 
+Irr  Acceleration - ax:-3.268058e+13, ay:6.575574e+13, az:-8.660030e+13, 
+Irr Acceleration - axdot:-2.274138e+23, aydot:1.949178e+23, azdot:-6.454088e+23, 
+Irr Acceleration - ax2dot:6.768152e+23, ay2dot:-8.227434e+23, az2dot:9.462716e+23, 
+Irr Acceleration - ax3dot:4.372675e+33, ay3dot:-2.605638e+33, az3dot:7.047798e+33, 
+Time Steps - irregular:4.656613e-10, regular:4.768372e-07 
+Time Blocks - irregular:536870912, regular:549755813888 
+Current Blocks - irregular: 276488519680, regular:0 
+PID=45
+
+Position: ptclJ - x:2.218733e-01, y:9.095415e-02, z:-7.667105e-02, 
+Velocity: ptclJ - vx:1.063773e+04, vy:-3.786384e+04, vz:9.315982e+03, 
+Total Acceleration - ax:3.267860e+13, ay:-6.575652e+13, az:8.660067e+13, 
+Total Acceleration - axdot:2.274138e+23, aydot:-1.949178e+23, azdot:6.454088e+23, 
+Total Acceleration - ax2dot:-8.833293e+23, ay2dot:1.409249e+24, az2dot:-1.736074e+24, 
+Total Acceleration - ax3dot:-6.105458e+33, ay3dot:4.286736e+33, az3dot:-1.286954e+34, 
+Irr Acceleration - ax:3.267980e+13, ay:-6.575598e+13, az:8.660024e+13, 
+Irr Acceleration - axdot:2.274138e+23, aydot:-1.949178e+23, azdot:6.454088e+23, 
+Irr Acceleration - ax2dot:-6.761692e+23, ay2dot:8.219348e+23, az2dot:-9.468535e+23, 
+Irr Acceleration - ax3dot:-4.376072e+33, ay3dot:2.610650e+33, az3dot:-7.049202e+33, 
+Time Steps - irregular:9.313226e-10, regular:4.768372e-07 
+Time Blocks - irregular:1073741824, regular:549755813888 
+Current Blocks - irregular: 275951648768, regular:0 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-1.043266e+14, ay:-2.656499e+13, az:-3.754198e+13 
+I. Time Steps - irregular:9.313226e-08, regular:2.384186e-05 
+I_1. Distance from I: 2.481628e-05
+I_1. Total Acceleration - ax:1.043263e+14, ay:2.656424e+13, az:3.754242e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:2.384186e-05
+The ID of CM is -1.
+The ID of members are 218,The ID of mother is 219.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1219 of 219, 218
+Position - x:5.306218e-02, y:6.365628e-02, z:-3.163385e-02, 
+Velocity - vx:-4.929836e+03, vy:-7.106874e+03, vz:-5.330331e+03, 
+Total Acceleration - ax:-3.216403e+08, ay:-3.984688e+08, az:1.527549e+08, 
+Total Acceleration - axdot:1.842282e+13, aydot:1.384368e+14, azdot:4.548034e+13, 
+Total Acceleration - ax2dot:-4.578215e+33, ay2dot:-8.207030e+33, az2dot:1.024894e+34, 
+Total Acceleration - ax3dot:3.474466e+44, ay3dot:1.207167e+43, az3dot:2.541071e+44, 
+Time Steps - irregular:2.328306e-10, regular:2.384186e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 969 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:4.402791e+13, ay:1.070765e+14, az:-1.093567e+12 
+I. Time Steps - irregular:9.313226e-08, regular:2.384186e-05 
+I_1. Distance from I: 2.462629e-05
+I_1. Total Acceleration - ax:-4.402763e+13, ay:-1.070776e+14, az:1.094008e+12 
+I_1. Time Steps - irregular:9.313226e-08, regular:2.384186e-05
+The ID of CM is -1.
+The ID of members are 59,The ID of mother is 58.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1058 of 58, 59
+Position - x:-1.277008e-01, y:-1.189740e-01, z:-8.429587e-02, 
+Velocity - vx:-1.140547e+04, vy:1.773253e+03, vz:-4.681957e+03, 
+Total Acceleration - ax:3.633533e+08, ay:5.282597e+08, az:3.940694e+08, 
+Total Acceleration - axdot:7.954293e+13, aydot:-5.302207e+13, azdot:3.192255e+13, 
+Total Acceleration - ax2dot:8.544667e+33, ay2dot:-1.363692e+34, az2dot:-1.175238e+34, 
+Total Acceleration - ax3dot:-1.620859e+44, ay3dot:-5.564219e+44, az3dot:-5.036585e+43, 
+Time Steps - irregular:2.328306e-10, regular:2.384186e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 968 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:7.985933e+13, ay:-6.394037e+13, az:-5.279652e+13 
+I. Time Steps - irregular:4.656613e-08, regular:4.768372e-05 
+I_1. Distance from I: 2.469637e-05
+I_1. Total Acceleration - ax:-7.985956e+13, ay:6.394225e+13, az:5.279540e+13 
+I_1. Time Steps - irregular:4.656613e-08, regular:4.768372e-05
+The ID of CM is -1.
+The ID of members are 125,The ID of mother is 124.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1124 of 124, 125
+Position - x:-5.045268e-02, y:-1.948028e-01, z:1.625221e-01, 
+Velocity - vx:-2.058987e+03, vy:5.130213e+03, vz:-2.711477e+03, 
+Total Acceleration - ax:9.729451e+06, ay:8.256247e+08, az:-6.526222e+08, 
+Total Acceleration - axdot:5.459569e+13, aydot:-3.237059e+13, azdot:-6.894868e+13, 
+Total Acceleration - ax2dot:1.818173e+34, ay2dot:-4.532198e+33, az2dot:-4.672318e+33, 
+Total Acceleration - ax3dot:-4.352417e+43, ay3dot:2.037995e+44, az3dot:1.526016e+44, 
+Time Steps - irregular:1.164153e-10, regular:4.768372e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 967 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:2.073716e+13, ay:-7.742084e+13, az:8.326197e+13 
+I. Time Steps - irregular:9.313226e-08, regular:2.384186e-05 
+I_1. Distance from I: 2.464849e-05
+I_1. Total Acceleration - ax:-2.073919e+13, ay:7.742199e+13, az:-8.326486e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:2.384186e-05
+The ID of CM is -1.
+The ID of members are 89,The ID of mother is 88.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1088 of 88, 89
+Position - x:-8.842616e-02, y:4.692321e-02, z:2.179919e-02, 
+Velocity - vx:8.986623e+03, vy:1.070732e+04, vz:-5.534003e+03, 
+Total Acceleration - ax:-6.943421e+08, ay:-7.172565e+07, az:-4.262424e+08, 
+Total Acceleration - axdot:1.178475e+15, aydot:8.104137e+14, azdot:2.933931e+15, 
+Total Acceleration - ax2dot:-7.622915e+33, ay2dot:-1.132673e+34, az2dot:-1.173002e+34, 
+Total Acceleration - ax3dot:-1.586050e+44, ay3dot:2.438987e+44, az3dot:-4.715863e+44, 
+Time Steps - irregular:2.328306e-10, regular:2.384186e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 966 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:9.888366e+13, ay:-5.901902e+13, az:-9.029548e+11 
+I. Time Steps - irregular:4.656613e-08, regular:4.768372e-05 
+I_1. Distance from I: 2.469234e-05
+I_1. Total Acceleration - ax:-9.888444e+13, ay:5.901852e+13, az:9.015085e+11 
+I_1. Time Steps - irregular:4.656613e-08, regular:4.768372e-05
+The ID of CM is -1.
+The ID of members are 73,The ID of mother is 72.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1072 of 72, 73
+Position - x:1.674460e-02, y:9.550967e-02, z:2.016894e-01, 
+Velocity - vx:-4.379635e+03, vy:-1.417771e+04, vz:-3.604132e+03, 
+Total Acceleration - ax:-2.218496e+08, ay:-3.498820e+08, az:-7.386180e+08, 
+Total Acceleration - axdot:-5.696474e+13, aydot:1.789248e+14, azdot:6.386049e+13, 
+Total Acceleration - ax2dot:1.690744e+34, ay2dot:-6.785082e+33, az2dot:1.056683e+34, 
+Total Acceleration - ax3dot:-1.680520e+44, ay3dot:1.569188e+44, az3dot:1.851332e+44, 
+Time Steps - irregular:1.164153e-10, regular:4.768372e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 965 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:2.674331e+12, ay:1.108535e+14, az:3.434586e+13 
+I. Time Steps - irregular:9.313226e-08, regular:4.768372e-05 
+I_1. Distance from I: 2.459410e-05
+I_1. Total Acceleration - ax:-2.672817e+12, ay:-1.108549e+14, az:-3.434737e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:4.768372e-05
+The ID of CM is -1.
+The ID of members are 166,The ID of mother is 167.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1167 of 167, 166
+Position - x:-5.165058e-02, y:-1.718417e-01, z:1.329259e-01, 
+Velocity - vx:2.995789e+03, vy:7.595216e+03, vz:-3.580795e+03, 
+Total Acceleration - ax:7.023150e+08, ay:5.066179e+08, az:-7.162300e+08, 
+Total Acceleration - axdot:-6.753623e+14, aydot:-1.039335e+15, azdot:-6.517484e+14, 
+Total Acceleration - ax2dot:5.432735e+33, ay2dot:-1.680202e+34, az2dot:1.812591e+34, 
+Total Acceleration - ax3dot:1.167728e+43, ay3dot:-7.268070e+44, az3dot:-1.084660e+44, 
+Time Steps - irregular:2.328306e-10, regular:4.768372e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 964 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:9.523910e+12, ay:-1.179385e+14, az:-5.088306e+12 
+I. Time Steps - irregular:4.656613e-08, regular:9.536743e-05 
+I_1. Distance from I: 2.434895e-05
+I_1. Total Acceleration - ax:-9.524070e+12, ay:1.179419e+14, az:5.086323e+12 
+I_1. Time Steps - irregular:9.313226e-08, regular:1.907349e-04
+The ID of CM is -1.
+The ID of members are 240,The ID of mother is 241.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1241 of 241, 240
+Position - x:-7.194424e-02, y:-3.037261e-02, z:2.235330e-01, 
+Velocity - vx:6.585857e+03, vy:-5.020768e+02, vz:3.505182e+03, 
+Total Acceleration - ax:2.472517e+08, ay:2.760376e+08, az:-8.096518e+08, 
+Total Acceleration - axdot:3.172784e+14, aydot:1.037523e+15, azdot:1.649871e+15, 
+Total Acceleration - ax2dot:-1.685827e+34, ay2dot:1.304873e+33, az2dot:-1.923419e+34, 
+Total Acceleration - ax3dot:-2.228008e+44, ay3dot:7.128669e+44, az3dot:-1.595138e+44, 
+Time Steps - irregular:1.164153e-10, regular:9.536743e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 963 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-5.079357e+10, ay:6.377850e+13, az:9.500412e+13 
+I. Time Steps - irregular:9.313226e-08, regular:9.536743e-05 
+I_1. Distance from I: 2.477135e-05
+I_1. Total Acceleration - ax:5.106503e+10, ay:-6.377862e+13, az:-9.500775e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:4.768372e-05
+The ID of CM is -1.
+The ID of members are 200,The ID of mother is 201.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1201 of 201, 200
+Position - x:-1.681357e-02, y:-9.780800e-02, z:2.333460e-01, 
+Velocity - vx:1.259378e+04, vy:-5.838332e+03, vz:-1.487280e+04, 
+Total Acceleration - ax:1.426594e+08, ay:9.531230e+07, az:-9.333987e+08, 
+Total Acceleration - axdot:-1.240748e+15, aydot:-2.231921e+15, azdot:-6.635840e+13, 
+Total Acceleration - ax2dot:-3.578478e+32, ay2dot:2.321621e+33, az2dot:-2.920738e+34, 
+Total Acceleration - ax3dot:2.363204e+42, ay3dot:-4.506030e+44, az3dot:-4.873993e+44, 
+Time Steps - irregular:2.328306e-10, regular:9.536743e-07 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 962 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-7.733455e+13, ay:1.461470e+13, az:8.138291e+13 
+I. Time Steps - irregular:4.656613e-08, regular:1.907349e-04 
+I_1. Distance from I: 2.490366e-05
+I_1. Total Acceleration - ax:7.733614e+13, ay:-1.461579e+13, az:-8.138400e+13 
+I_1. Time Steps - irregular:4.656613e-08, regular:1.907349e-04
+The ID of CM is -1.
+The ID of members are 0,The ID of mother is 1.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1001 of 1, 0
+Position - x:-1.565227e-01, y:1.258995e-01, z:1.126401e-01, 
+Velocity - vx:9.623119e+03, vy:-2.281516e+03, vz:-7.900363e+03, 
+Total Acceleration - ax:6.592074e+08, ay:-4.973852e+08, az:-4.226073e+08, 
+Total Acceleration - axdot:-2.096958e+12, aydot:7.991654e+13, azdot:-2.622092e+14, 
+Total Acceleration - ax2dot:-3.696899e+33, ay2dot:-1.619402e+34, az2dot:1.780847e+34, 
+Total Acceleration - ax3dot:3.543045e+44, ay3dot:-3.327119e+44, az3dot:-1.538933e+44, 
+Time Steps - irregular:1.164153e-10, regular:1.907349e-06 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 961 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-7.560423e+13, ay:-5.310574e+13, az:-6.741071e+13 
+I. Time Steps - irregular:9.313226e-08, regular:1.907349e-04 
+I_1. Distance from I: 2.477756e-05
+I_1. Total Acceleration - ax:7.560582e+13, ay:5.310602e+13, az:6.741198e+13 
+I_1. Time Steps - irregular:9.313226e-08, regular:1.907349e-04
+The ID of CM is -1.
+The ID of members are 25,The ID of mother is 24.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1024 of 24, 25
+Position - x:-1.255034e-01, y:-8.598817e-02, z:1.775373e-02, 
+Velocity - vx:-5.811531e+03, vy:1.818256e+03, vz:-3.167713e+03, 
+Total Acceleration - ax:4.856184e+08, ay:2.459600e+08, az:8.406045e+07, 
+Total Acceleration - axdot:1.027480e+13, aydot:1.605806e+13, azdot:4.881528e+12, 
+Total Acceleration - ax2dot:2.339057e+34, ay2dot:7.102268e+33, az2dot:2.884134e+34, 
+Total Acceleration - ax3dot:3.297125e+44, ay3dot:5.029566e+44, az3dot:6.165489e+43, 
+Time Steps - irregular:2.328306e-10, regular:1.907349e-06 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 960 
+group member added!
+BinaryAccelerationRoutine.cpp: new binary particle found!
+
+-------------------------NEW-GROUP------------------------
+I. Total Acceleration - ax:-9.874719e+13, ay:-5.522051e+13, az:9.545118e+11 
+I. Time Steps - irregular:9.313226e-08, regular:3.814697e-04 
+I_1. Distance from I: 2.491170e-05
+I_1. Total Acceleration - ax:9.874753e+13, ay:5.522131e+13, az:-9.548757e+11 
+I_1. Time Steps - irregular:9.313226e-08, regular:3.814697e-04
+The ID of CM is -1.
+The ID of members are 199,The ID of mother is 198.
+
+FBInitialization.cpp: result of CM particle value calculation
+from function NewFBInitialization
+The ID of ith particle is -1198 of 198, 199
+Position - x:1.406348e-01, y:-1.004241e-02, z:1.530195e-01, 
+Velocity - vx:9.624352e+03, vy:1.609648e+04, vz:1.976048e+02, 
+Total Acceleration - ax:-8.075264e+08, ay:-1.279363e+08, az:-4.979995e+08, 
+Total Acceleration - axdot:2.066804e+14, aydot:4.916256e+14, azdot:-2.409874e+14, 
+Total Acceleration - ax2dot:1.021907e+34, ay2dot:4.222870e+33, az2dot:2.344555e+34, 
+Total Acceleration - ax3dot:6.411995e+44, ay3dot:3.514176e+44, az3dot:1.066498e+44, 
+Time Steps - irregular:2.328306e-10, regular:7.629395e-06 
+
+---------------------END-OF-NEW-GROUP---------------------
+
+
+ After group addition, the number of particles are... 959 
