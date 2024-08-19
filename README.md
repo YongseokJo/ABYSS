@@ -1,10 +1,11 @@
 # How to run this code
 
 > `nbodyplus.exe -f ic.dat -dtdump 1e6 -tend 1e9 -d output`  
-
+<pre>
 -dt    : time at which a simulations outputs snapshots in yr  
 -tend  : time where a simulation ends in yr  
 -d     : output file name  
+</pre>
 
 
 ## On-going Projects
