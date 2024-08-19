@@ -15,6 +15,6 @@ child branch from nbodyp_binary
 * Minyong Jung    @ Seoul National University
 * Eunwoo Chung    @ Seoul National Univeristy
 
-** Thanks to
-Ji-hoon Kim
-Greg L. Bryan
+#### Thanks to
+* Ji-hoon Kim    @ Seoul National University
+* Greg L. Bryan  @ Columbia University
