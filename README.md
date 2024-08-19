@@ -9,8 +9,8 @@
 
 
 ## On-going Projects
-- GPU optimization (Minyong Jun)
-- Few-body dynamics (Eunwoo Chung)
+- GPU optimization by Minyong Jung & Yongseok Jo
+- Few-body dynamics by Eunwoo Chung
 
 ## Future Projects
 - CPU parallelization and vector optimization
