@@ -1,8 +1,9 @@
-how to run this code
+# How to run this code
 
-./nbodyplus.exe -f binary.dat -t 0.01 -dt 0.001 >stdout 2>stderr &
-
-child branch from nbodyp_binary
+> nbodyplus.exe -f ic.dat -dtdump 1e6 -tend 1e9 -d output
+dt    : time at which a simulations outputs snapshots in yr
+tend  : time where a simulation ends in yr
+d     : output file name
 
 
 # On-going Projects
