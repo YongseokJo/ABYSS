@@ -17,6 +17,7 @@
 - Post-newtonian for black hole
 - Tidal disruption for black hole
 - Gravitational wave
+- Cosmic ray
 
 
 ## Contributions ###
