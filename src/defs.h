@@ -36,7 +36,7 @@
 // Physics related parameters
 #define eta 0.01 // by YS Jo subject to modifty
 #define EPS2 1e-4 // smoothing length
-#define InitialRadiusOfAC 0.04 // 0.04 pc
+#define InitialRadiusOfAC 0.1 // 0.04 pc
 //#define InitialRadiusOfAC 1000. // 0.04 pc
 #define MIN_LEVEL_BUFFER 30
 
@@ -46,7 +46,7 @@
 
 // KS regularlization related variables
 
-#define NumNeighborMax 100
+#define NumNeighborMax 300
 #define stumpffN 12 // the order of approximation for stumpff functions
 #define KSDistance 0.000002  // the distance of binary particles from each other
 //#define KSDistance 1e-10  // the distance of binary particles from each other
@@ -93,9 +93,14 @@ typedef double REAL;
 
 //typedef float CUDA_REAL;
 typedef double CUDA_REAL;
-
-
+//typedef double3 CUDA_REAL3;
+//typedef make_double3 make_CUDA_REAL3;
 
 #define NAN_CHECK(val) assert((val) == (val));
 
+#define nbodymax 100000000 //100000000 for node14
 #define NSIGHT // for nsight debugging
+
+#define BatchSize 64 // each thread calculates BatchSize particles
+#define GridDimY 32 // each block calcuates NNB/GridDimY particles
+#define NNB_per_block 256
