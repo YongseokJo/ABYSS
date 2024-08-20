@@ -17,8 +17,9 @@
 - Post-newtonian for black hole
 - Tidal disruption for black hole
 - Gravitational wave
+- X-ray Binary (XRB)
 - Cosmic ray
-
+  
 
 ## Contributions ###
 * Yongseok Jo     @ Columbia University
