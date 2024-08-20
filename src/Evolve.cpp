@@ -51,7 +51,7 @@ void Evolve(std::vector<Particle*> &particle) {
 		_time.reg.markStart();
 #endif
 #ifdef NSIGHT
-nvtxRangePushA("RegularAccelerationRoutine");
+nvtxRangePushA(("RegularAccelerationRoutine " + std::to_string(RegularList.size())).c_str());
 #endif
 		RegularAccelerationRoutine(particle); // do not update particles unless NNB=0
 		
