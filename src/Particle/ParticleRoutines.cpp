@@ -145,6 +145,7 @@ void Particle::normalizeParticle() {
 	}
 }
 
+/* Eunwoo deleted
 
 void Particle::convertBinaryCoordinatesToCartesian() {
 	if (!this->isCMptcl)  {
@@ -220,5 +221,7 @@ void Particle::convertBinaryCoordinatesToCartesian() {
 
 	fprintf(stdout,"END CONVERTING THE COORDINATES\n \n");
 }
+
+*/
 
 

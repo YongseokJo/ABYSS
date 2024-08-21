@@ -44,6 +44,8 @@ void Evolve(std::vector<Particle*> &particle) {
 	writeParticle(particle, global_time, outNum++);
 	outputTime = outputTimeStep;
 
+	fprintf(stdout, "output time step: %e\n", outputTimeStep); // Eunwoo debug
+
 	while (true) {
 
 		// It's time to compute regular force.
@@ -84,6 +86,8 @@ nvtxRangePop();
 #endif
 
 		global_time = NextRegTimeBlock*time_step;
+
+		// fprintf(stdout, "global time: %e\n", global_time); // Eunwoo debug
 
 		// create output at appropriate time intervals
 		if (outputTime <= global_time ) {

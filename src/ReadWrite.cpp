@@ -190,15 +190,17 @@ int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outpu
 			<< std::setw(width) << "Vz (km/s)" << "\n";
 
 
-    // Write particle data to the file
+    // Write particle data to the file 
 		for (Particle* ptcl:particle) {
 			ptcl->predictParticleSecondOrderIrr(current_time);
-			if (ptcl->isCMptcl)  {
-				ptcl->convertBinaryCoordinatesToCartesian();
-				write_out(outputFile, ptcl->BinaryParticleI);
-				//write_neighbor(output_nn, ptcl->BinaryParticleI);
-				write_out(outputFile, ptcl->BinaryParticleJ);
-				//write_neighbor(output_nn, ptcl->BinaryParticleJ);
+			if (ptcl->isCMptcl)  { // Eunwoo edited
+				write_out(outputFile, ptcl->GroupMother); // Eunwoo edited
+				for (Particle* ptclJ : ptcl->GroupParticles) { // Eunwoo edited
+					write_out(outputFile, ptclJ); // Eunwoo edited
+				} // Eunwoo edited
+				// //write_neighbor(output_nn, ptcl->BinaryParticleI); // Eunwoo edited
+				// write_out(outputFile, ptcl->BinaryParticleJ); // Eunwoo edited
+				// //write_neighbor(output_nn, ptcl->BinaryParticleJ); // Eunwoo edited
 			}
 			else {
 				write_out(outputFile, ptcl);

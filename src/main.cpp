@@ -13,8 +13,8 @@ std::vector<int> LevelList;
 REAL EnzoTimeStep;
 int newNNB = 0;
 std::vector<Particle*> RegularList;
-std::vector<Particle*> BinaryCandidateList;
-std::vector<Binary*> BinaryList;
+std::vector<Particle*> GroupCandidateList; // Eunwoo edited
+std::vector<Group*> GroupList; // Eunwoo edited
 FILE* binout;
 
 //int NumNeighborMax = 100;

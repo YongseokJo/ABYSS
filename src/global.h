@@ -2,7 +2,8 @@
 // #include <mpi.h>
 #include <iostream>
 #include "Particle/Particle.h"
-#include "Binary/Binary.h"
+// #include "Binary/Binary.h" // Eunwoo deleted
+#include "FewBody/Group.h" // Eunwoo added
 #include <stdio.h>
 #include <stdexcept>
 
@@ -37,8 +38,10 @@ extern Particle* FirstComputation;
 extern std::vector<Particle*> ComputationList;
 extern int ComputationTimeMarker;
 extern std::vector<Particle*> RegularList;
-extern std::vector<Particle*> BinaryCandidateList;
-extern std::vector<Binary*> BinaryList; // List of binaries to calculate
+// extern std::vector<Particle*> BinaryCandidateList; // Eunwoo deleted
+extern std::vector<Particle*> GroupCandidateList; // Eunwoo added
+// extern std::vector<Binary*> BinaryList; // List of binaries to calculate // Eunwoo deleted
+extern std::vector<Group*> GroupList; // List of groups to calculate // Eunwoo added
 
 //extern bool debug;
 extern char* fname;

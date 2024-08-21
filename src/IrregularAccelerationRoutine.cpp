@@ -11,7 +11,7 @@ bool UpdateComputationChain(Particle* ptcl);
 bool CreateComputationList(Particle* ptcl);
 bool AddNewBinariesToList(std::vector<Particle*> &particle);
 void BinaryAccelerationRoutine(REAL next_time, std::vector<Particle*> &particle);
-void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL current_time, ULL current_block);
+void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL current_time, ULL current_block);
 
 
 
@@ -59,7 +59,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			
 		//std::cout << "List size=" << ComputationList.size() << std::endl;
 
-#define no_binary
+#define binary // Eunwoo editted
 #ifdef binary
 #ifdef time_trace
 	_time.irr_bin.markStart();
@@ -97,7 +97,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 				fprintf(stderr, "outside before bin, PID=%d, CurrentTimeIrr=%e\n", ptcl->PID, ptcl->CurrentTimeIrr);
 		}
 
-		if ((BinaryList.size()>0)) { //&(binary_time_prev != binary_time)) {
+		if ((GroupList.size()>0)) { //&(binary_time_prev != binary_time)) { // Eunwoo editted
 			//fprintf(binout, "-------------------------------------\n");
 			//fprintf(binout, "irr_time = %e \n", ComputationList[0]->CurrentTimeIrr*1e10/1e6*EnzoTimeStep);
 					
@@ -117,6 +117,8 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			//fprintf(stdout, "Finishing Binaries ...\n");
 			//fflush(stdout);
 			fflush(binout);
+
+			// fprintf(stdout, "Here I am! 1\n"); // Eunwoo debug
 
 		}
 		for (Particle* ptcl:particle) {
@@ -163,6 +165,8 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 #endif
 
 		for (Particle* ptcl:ComputationList) {
+
+			// fprintf(stdout, "Here I am! 2\n"); // Eunwoo debug
 
 			/*
 			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-7) {
@@ -241,7 +245,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			//ParticleForComputation = SortComputationChain(ParticleForComputation);
 		}
 
-
+		// fprintf(stdout, "Here I am! 3\n"); // Eunwoo debug
 
 
 		//std::cout << "Update and Sort\n" << std::flush;
@@ -310,16 +314,24 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			ptcl->CurrentTimeIrr   = ptcl->CurrentBlockIrr*time_step;
 			//std::cout << "before TimeStepCal\n" << std::flush;
 			ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr);
+
+			// fprintf(stdout, "PID: %d, TimeStepIrr: %e\n", ptcl->PID, ptcl->TimeStepIrr); // Eunwoo debug
+
 			//std::cout << "after TimeStepCal\n" << std::flush;
 #ifdef binary
 			if (ptcl->isCMptcl) {
-				if (ptcl->BinaryInfo->r > ptcl->BinaryInfo->r0*2.0
-						|| ptcl->BinaryInfo->TimeStep*EnzoTimeStep*1e4 > 2.0*KSTime) {
-					fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
-					fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
-					KSTermination(ptcl, particle, binary_time, binary_block);
-					bin_termination=true;
-					continue;
+				// if (ptcl->BinaryInfo->r > ptcl->BinaryInfo->r0*2.0
+						// || ptcl->BinaryInfo->TimeStep*EnzoTimeStep*1e4 > 2.0*KSTime) { // Eunwoo editted
+				for (Particle* ptclJ : ptcl->GroupParticles) {
+					
+					if ((dist((ptcl->GroupMother->Position), (ptclJ->Position))) > 1e-4/position_unit) { // Eunwoo will change this.
+
+						fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
+						fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
+						FBTermination(ptcl, particle, binary_time, binary_block); // Eunwoo editted
+						bin_termination=true;
+						continue;
+					}
 				}
 			}
 #endif
@@ -412,6 +424,9 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		 */
 
 	//std::cout << "Finishing irregular force ...\n" << std::endl;
+
+	// fprintf(stdout, "Here I am! 4\n");
+
 	return true;
 }
 

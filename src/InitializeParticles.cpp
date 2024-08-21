@@ -93,27 +93,28 @@ void InitializeParticle(Particle* newParticle, std::vector<Particle*> &particle)
 	std::cout << "Initialization of New Particles finished." << std::endl;
 }
 
+// Eunwoo changed
 
-void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &particle) {
+void ReInitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle) {
 
-	std::cout << "Re-Initialization of KS Pair Particle starts.\n" << std::endl;
+	std::cout << "Re-Initialization of Group Particle starts.\n" << std::endl;
 
 	std::cout << "Finding Neighbors... \n" << std::endl;	
-	KSParticle->ACList.clear();
-	FindNeighbor(KSParticle, particle);
+	FBParticle->ACList.clear();
+	FindNeighbor(FBParticle, particle);
 
 	std::cout << "Calculating Acceleration... \n" << std::endl;	
 
-	CalculateAcceleration01(KSParticle, particle);
-	CalculateAcceleration23(KSParticle, particle);
+	CalculateAcceleration01(FBParticle, particle);
+	CalculateAcceleration23(FBParticle, particle);
 
 	std::cout << "copying the position and velocities to predictions... \n" << std::endl;	
 
 	for (int dim=0; dim<Dim; dim++) {
-		KSParticle->PredPosition[dim] =  KSParticle->Position[dim];
-		KSParticle->PredVelocity[dim] =  KSParticle->Velocity[dim];
-		KSParticle->NewPosition[dim]  =  KSParticle->Position[dim];
-		KSParticle->NewVelocity[dim]  =  KSParticle->Velocity[dim];
+		FBParticle->PredPosition[dim] =  FBParticle->Position[dim];
+		FBParticle->PredVelocity[dim] =  FBParticle->Velocity[dim];
+		FBParticle->NewPosition[dim]  =  FBParticle->Position[dim];
+		FBParticle->NewVelocity[dim]  =  FBParticle->Velocity[dim];
 	}
 
 	std::cout << "Timestep calculation...\n" << std::endl;
@@ -123,7 +124,7 @@ void ReInitializeKSParticle(Particle* KSParticle, std::vector<Particle*> &partic
 	// ComputationList.push_back(KSParticle);
 
 	std::cout << "Timestep finished.\n" << std::endl;
-	std::cout << "Initialization of KS Pair Particle finished.\n" << std::endl;
+	std::cout << "Initialization of Group Particle finished.\n" << std::endl;
 }
 
 

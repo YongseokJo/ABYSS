@@ -157,6 +157,7 @@ void Particle::UpdateRadius() {
 
 	if (LocalDensity == 0) {
 		RadiusOfAC = 0.11;
+		// RadiusOfAC = 0.05; // Eunwoo
 		//RadiusOfAC = InitialRadiusOfAC;
 		//RadiusOfAC = 1.00;
 		LocalDensity = 10;

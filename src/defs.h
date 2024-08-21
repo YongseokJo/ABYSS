@@ -1,6 +1,7 @@
 
 
-#define FixNumNeighbor 30
+// #define FixNumNeighbor 30
+#define FixNumNeighbor 60 // Eunwoo
 #define HERMITE_ORDER 4
 #define Dim 3
 
@@ -35,7 +36,8 @@
 
 // Physics related parameters
 #define eta 0.01 // by YS Jo subject to modifty
-#define EPS2 1e-4 // smoothing length
+// #define EPS2 1e-4 // smoothing length
+#define EPS2 0 // Eunwoo modified
 #define InitialRadiusOfAC 0.04 // 0.04 pc
 //#define InitialRadiusOfAC 1000. // 0.04 pc
 #define MIN_LEVEL_BUFFER 30
@@ -46,7 +48,8 @@
 
 // KS regularlization related variables
 
-#define NumNeighborMax 100
+// #define NumNeighborMax 100
+#define NumNeighborMax 1000 // Eunwoo
 #define stumpffN 12 // the order of approximation for stumpff functions
 #define KSDistance 0.000002  // the distance of binary particles from each other
 //#define KSDistance 1e-10  // the distance of binary particles from each other
@@ -98,4 +101,4 @@ typedef double CUDA_REAL;
 
 #define NAN_CHECK(val) assert((val) == (val));
 
-#define NSIGHT // for nsight debugging
+// #define NSIGHT // for nsight debugging

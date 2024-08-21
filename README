@@ -1,5 +1,5 @@
 how to run this code
 
-./nbodyplus.exe -f binary.dat -t 0.01 -dt 0.001 >stdout 2>stderr &
+./nbodyplus_binary.exe -f nbody.dat -dtdump 1e5 -tend 1e8 -d snap >stdout 2>stderr &
 
-child branch from nbodyp_binary
+SDAR implemented version

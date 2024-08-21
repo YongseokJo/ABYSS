@@ -7,7 +7,7 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 {
-	fprintf(stdout, "Calculating regular force ... particle size=%lu, regular size=%lu\n", particle.size(), RegularList.size());
+	// fprintf(stdout, "Calculating regular force ... particle size=%lu, regular size=%lu\n", particle.size(), RegularList.size()); // Eunwoo debug
 	fflush(stdout);
 	// Calulating regular acceleration of the particles
 	if (RegularList.size() > 0) {

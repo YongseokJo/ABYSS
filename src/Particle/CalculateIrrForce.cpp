@@ -107,7 +107,7 @@ void Particle::calculateIrrForce() {
 		}
 		*/
 		if (ptcl->PID == this->PID)  {
-			fprintf(stderr, "Myself in neighbor (%d)", PID);
+			fprintf(stderr, "Myself in neighbor (%d)\n", PID); // Eunwoo deleted for debug
 			fflush(stderr);
 			continue;
 		}

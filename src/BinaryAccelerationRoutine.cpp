@@ -2,34 +2,39 @@
 #include "global.h"
 #include "defs.h"
 
-void NewKSInitialization(Particle* ptclI, std::vector<Particle*> &particle, std::vector<Particle*> &ComputationList);
-void KSTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL current_time, ULL current_block);
+// Eunwoo edited
+
+void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std::vector<Particle*> &ComputationList);
+void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL current_time, ULL current_block);
 
 bool AddNewBinariesToList(std::vector<Particle*> &particle) {
 
 	//fprintf(binout, "Finding new binaries ... Candidates = %lu\n", BinaryCandidateList.size());
 	// add new binaries
-	for (Particle *ptcl : BinaryCandidateList) {
+	for (Particle *ptcl : GroupCandidateList) {
 		//fprintf(binout, "next candidate\n");
 		//fprintf(binout, "PID = %d, timestep=%e\n", ptcl->PID, ptcl->TimeStepIrr*EnzoTimeStep*1e4);
 		// if the irregular time step is too short, check if it is binary
 		//if ((ptcl->TimeStepIrr*EnzoTimeStep*1e4<KSTime) && ( (ptcl->isBinary == false) && (ptcl->isCMptcl == false) )) {
 		//fprintf(binout, "BinaryAccelerationRoutine.cpp: new binary particle found! timestep=%e\n",
 				//ptcl->TimeStepIrr*EnzoTimeStep*1e4);
-		if (!ptcl->isBinary) {
-			ptcl->isKSCandidate();
-			if (ptcl->isBinary) {
-				//std::cout << "AddNewBinaries ... new binary pair found" << std::endl;
+		if (!ptcl->isGroup) {
+
+			// fprintf(binout, "Let's check ptcl inside GroupCandidateList is really group!\n"); // Eunwoo debug
+
+			ptcl->isFBCandidate();
+			if (ptcl->isGroup) {
+				std::cout << "AddNewGroups ... new group found" << std::endl;
 				fprintf(binout, "BinaryAccelerationRoutine.cpp: new binary particle found!\n");
 				// the initialization of the binary counterpart will be done together in the following function.
-				NewKSInitialization(ptcl,particle,ComputationList);
+				NewFBInitialization(ptcl,particle,ComputationList);
 				//fprintf(stdout, "New binary of (%d, %d) initialization finished ...\n",ptcl->PID, ptcl->BinaryPairParticle->PID);
-				fprintf(binout,"\n After binary addition, the number of particles are... %d \n",int(particle.size()));
+				fprintf(binout,"After group addition, the number of particles are... %d \n",int(particle.size()));
 				fflush(binout);
 			}
 		}
 	}
-	BinaryCandidateList.clear();
+	GroupCandidateList.clear();
 	//fprintf(binout,"\n After binary addition, the number of particles are... %d \n",int(particle.size()));
 	return true;
 }
@@ -45,9 +50,11 @@ void BinaryAccelerationRoutine(REAL next_time, std::vector<Particle*> &particle)
 		return;
 	}
 
-	for (Binary* ptclBin: BinaryList) {
+	for (Group* ptclGroup: GroupList) {
 
-		ptclBin->KSIntegration(next_time, bincount);
+		// fprintf(stderr, "time error max: %e\n", ptclGroup->manager.time_error_max); // Eunwoo debug
+
+		ptclGroup->ARIntegration(next_time);
 
 		count += 1;
 
@@ -68,4 +75,5 @@ void BinaryAccelerationRoutine(REAL next_time, std::vector<Particle*> &particle)
 		//}
 
 	}
+	// fprintf(stdout, "BinaryAccelerationRoutine ended, current time: %e\n", next_time); // Eunwoo added for debug
 }
