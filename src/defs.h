@@ -46,6 +46,7 @@
 #define G_cgs 6.67430e-8
 #define G // pc, yr, Msun
 
+<<<<<<< HEAD
 // KS regularlization related variables
 
 // #define NumNeighborMax 100
@@ -56,6 +57,14 @@
 #define KSTime 2e-7  // short timestep criteria for binary search
 //#define KSTime 1e-10  // short timestep criteria for binary search
 #define PerturberDistance 0.01  // the distance of binary perturbers from the pair
+=======
+// KS regularlization related variables                                                                    
+                                                                                                       
+#define stumpffN 12 // the order of approximation for stumpff functions                                    
+#define KSDistance 3e-3  // the distance of binary particles from each other                             
+#define KSTime 2e-8  // short timestep criteria for binary search                                          
+#define PerturberDistance 0.01  // the distance of binary perturbers from the pair  
+>>>>>>> nbodyp_binary
 
 // Physical units in cgs
 #define pc 3.08567758149137e18

@@ -23,8 +23,14 @@ FILE* binout;
 
 int main(int argc, char *argv[]) {
 	cout << "Staring Nbody+ ..." << endl;
+<<<<<<< HEAD
 	binout = fopen("binary_output.txt", "w");                                                                          
 	fprintf(binout, "Starting nbody - Binary OUTPUT\n"); 
+=======
+        binout = fopen("binary_output.txt", "w");                                                                          
+        fprintf(binout, "Starting nbody - Binary OUTPUT\n"); 
+	fflush(binout);
+>>>>>>> nbodyp_binary
 	std::vector<Particle*> particle{};
 	int irank=0;
 	std::ios::sync_with_stdio(false);

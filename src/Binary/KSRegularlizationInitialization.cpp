@@ -240,7 +240,24 @@ void CalculateKSAcceleration(Particle* ptclI, Particle* ptclJ, Particle* ptclCM,
 // see if they meet the KS regularlization conditions
 // reference - search.f
 
+<<<<<<< HEAD
 void Particle::isKSCandidate() {
+=======
+void Particle::isKSCandidate(double next_time) {
+
+    // temporary calculation variables
+
+    double x[Dim],v[Dim],a_pert[Dim];
+    double r2, vx, v2, m_r3, a_pert_tot;
+
+    double r2min, vxmin;
+    Particle* minPtcl;
+
+    // track close neighbor list
+    int numberOfPairCandidate;
+    std::vector<Particle*> pairCandidateList;
+
+>>>>>>> nbodyp_binary
 
 	// temporary calculation variables
 	REAL x[Dim];
@@ -254,6 +271,7 @@ void Particle::isKSCandidate() {
 	for (int dim=0; dim<Dim; dim++)
 		a_pert[dim] = 0.;
 
+<<<<<<< HEAD
 	// predict the particle position to obtain more information
 	// particle regularlized if the conditions are satisfied at a future time
 
@@ -264,6 +282,17 @@ void Particle::isKSCandidate() {
 		// if particle time step is too large, skip
 		// if the neighbor step is larger then 8 times of the candidate particle, then skip
 		r2 = 0.0;
+=======
+    r2 = 0.0;
+    r2min = 1e8;
+    numberOfPairCandidate = 0;
+
+    for (int dim=0; dim<Dim; dim++) {
+	a_pert[dim] = 0.0;
+    }
+    // predict the particle position to obtain more information
+    // particle regularlized if the conditions are satisfied at a future time
+>>>>>>> nbodyp_binary
 
 		if ((ptcl->TimeLevelIrr) > (this->TimeLevelIrr+3) || ptcl->isBinary || ptcl->isCMptcl)
 			continue;
@@ -275,6 +304,7 @@ void Particle::isKSCandidate() {
 		this->predictParticleSecondOrderIrr(current_time);
 		ptcl->predictParticleSecondOrderIrr(current_time);
 
+<<<<<<< HEAD
 		for (int dim=0; dim<Dim; dim++) {
 			// calculate position and velocity differences
 			x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
@@ -282,9 +312,39 @@ void Particle::isKSCandidate() {
 			// calculate the square of radius and inner product of r and v for each case
 			r2 += x[dim]*x[dim];
 		}
+=======
+    for (Particle* ptcl: ACList) {
+
+        // if particle time step is too large, skip
+        // if the neighbor step is larger then 8 times of the candidate particle, then skip
+
+	r2 = 0.0;
+        vx = 0.0;
+
+        if ((ptcl->TimeStepIrr) > (8*TimeStepIrr)) {
+            continue;
+        }
+
+
+        // find out what the paired particle is
+
+        ptcl->predictParticleSecondOrder(next_time);
+
+        for (int dim=0; dim<Dim; dim++) {
+				
+        	// calculate position and velocity differences
+		x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
+		v[dim] = ptcl->PredVelocity[dim] - this->PredVelocity[dim];
+		
+		// calculate the square of radius and inner product of r and v for each case
+		r2 += x[dim]*x[dim];
+		vx += x[dim]*v[dim];
+        }
+>>>>>>> nbodyp_binary
 
 		m_r3 = ptcl->Mass/r2/sqrt(r2);
 
+<<<<<<< HEAD
 
 		for (int dim=0; dim<Dim; dim++) {
 			a_pert[dim]    += m_r3*x[dim];
@@ -307,6 +367,60 @@ void Particle::isKSCandidate() {
 		}
 	}
 	r_min = sqrt(r_min);
+=======
+        if (r2<2*KSDistance*KSDistance) {
+
+            numberOfPairCandidate += 1;
+	    pairCandidateList.push_back(ptcl);
+
+            if ((r2<r2min) && (ptcl->isCMptcl==false)) {
+                r2min = r2;
+		vxmin = vx;
+                minPtcl = ptcl;
+            }
+        }
+    }
+>>>>>>> nbodyp_binary
+
+    // only consider approaching particles
+
+//    if (vxmin>0.02*sqrt((this->Mass + minPtcl->Mass)*sqrt(r2min))) {
+//	return;
+//    }
+
+    // check if the relative motion is dominant
+
+    for (Particle* ptcl : pairCandidateList) {
+	
+	r2 = 0.0;
+	vx = 0.0;
+	v2 = 0.0;
+
+	for (int dim=0; dim<Dim; dim++) {
+		x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
+		v[dim] = ptcl->PredVelocity[dim] - this->PredVelocity[dim];
+		r2    += x[dim]*x[dim];
+		vx    += v[dim]*x[dim];
+		v2    += v[dim]*v[dim];
+	}
+
+	m_r3 = ptcl->Mass/r2/sqrt(r2); 
+
+	if (ptcl == minPtcl) {
+	    m_r3 = -m_r3;
+	}
+
+	for (int dim = 0; dim<Dim; dim++) {
+	    a_pert[dim] += m_r3*x[dim];
+	}
+
+    }
+
+    a_pert_tot = a_pert[0]*a_pert[0] + a_pert[1]*a_pert[1] + a_pert[2]*a_pert[2];
+
+//    if ( (a_pert_tot*r2min/(this->Mass + minPtcl->Mass))>0.25 ) {
+//	return;
+//    }
 
 
 	/***********************************************************************
