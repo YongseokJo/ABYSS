@@ -2388,6 +2388,7 @@ namespace AR {
 
                 // integrate one step
                 ASSERT(!ISINF(ds[ds_switch]));
+                // fprintf(stderr, "ds_switch: %d, ds[0]: %e, ds[0]: %e\n", ds_switch, ds[0], ds[1]); // Eunwoo debug
                 if(n_particle==2) integrateTwoOneStep(ds[ds_switch], time_table);
                 else integrateOneStep(ds[ds_switch], time_table);
                 //info.generateBinaryTree(particles, G);

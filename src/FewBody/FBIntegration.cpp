@@ -39,159 +39,16 @@
 
 void Group::ARIntegration(REAL next_time){
 
-	// for (Particle* ptcl : this->Members) {
-    //     fprintf(stdout, "Time: %e\n", this->CurrentTime*EnzoTimeStep);
-	// 	fprintf(stdout, "PID: %d, Position - x:%e, y:%e, z:%e\n", ptcl->PID, ptcl->Position[0], ptcl->Position[1], ptcl->Position[2]);
-    //     fprintf(stdout, "PID: %d, Velocity - x:%e, y:%e, z:%e\n", ptcl->PID, ptcl->Velocity[0], ptcl->Velocity[1], ptcl->Velocity[2]);
-    //     fprintf(stdout, "PID: %d, Mass: %e \n", ptcl->PID, ptcl->Mass);
-	// }
+    sym_int.initialIntegration(CurrentTime*EnzoTimeStep);
+    sym_int.integrateToTime(next_time*EnzoTimeStep);
 
-    // fprintf(binout, "AR Integration started!\n"); // Eunwoo debug
-    // fprintf(binout, "GroupCM PID: %d, current time: %e\n", this->groupCM->PID, this->CurrentTime); // Eunwoo debug
-
-    AR::TimeTransformedSymplecticIntegrator<Particle, Particle, Perturber, Interaction, AR::Information<Particle,Particle>> sym_int;
-    AR::TimeTransformedSymplecticManager<Interaction> manager;
-
-    // COMM::IOParamsContainer input_par_store;
-
-    // COMM::IOParams<double> gravitational_constant   (input_par_store, 1.0, "gravitational constant"); // gravitational constant
-
-    manager.interaction.gravitational_constant = 1.0;
-    manager.time_step_min = 1e-13; // minimum physical time step // reference: ar.cxx
-    manager.ds_scale = 1.0; // step size scaling factor // reference: ar.cxx
-    manager.time_error_max = 0.25*1e-13; // time synchronization absolute error limit for AR, default is 0.25*dt-min
-    // reference: ar.cxx
-    manager.energy_error_relative_max = 1e-10; // relative energy error limit for AR, phase error requirement
-    // reference: ar.cxx
-    // 1e-8 in PeTar
-    manager.slowdown_timescale_max = NUMERIC_FLOAT_MAX; // maximum timescale for maximum slowdown factor, time-end
-    // if (slowdown_timescale_max.value>0.0) manager.slowdown_timescale_max = slowdown_timescale_max.value;
-    // else if (time_end.value>0.0) manager.slowdown_timescale_max = time_end.value;
-    // else manager.slowdown_timescale_max = NUMERIC_FLOAT_MAX;
-    // should be positive
-    manager.slowdown_pert_ratio_ref = 1e-6; // slowdown perturbation ratio reference
-    // reference: ar.cxx
-    // 1e-4 in PeTar
-    manager.step_count_max = 1000000; // number of maximum (integrate/output) step for AR integration // set symplectic order
-    // 1000000 in PeTar & ar.cxx
-    manager.step.initialSymplecticCofficients(-6); // Symplectic integrator order, should be even number
-    // -6 in PeTar & ar.cxx
-    manager.interrupt_detection_option = 0; // modify orbit or check interruption using modifyAndInterruptIter function
-                                            // 0: turn off
-                                            // 1: modify the binary orbits based on detetion criterion
-                                            // 2. modify and also interrupt integrations
-
-    // Eunwoo: it is turned off now but I will turn it on later.
-    // Eunwoo: It can be used for merging star (dr < sum of radius) or destroy.
-
-    sym_int.info.r_break_crit = 1e-3/position_unit; // distance criterion for checking stability
-    // more information in symplectic_integrator.h
-    // Eunwoo set this to 1e-3 pc. reference: ar.cxx
-    // check whether the system is stable for 10000 out period and the apo-center is below break criterion
-    // PeTar (hard.hpp): sym_int.info.r_break_crit = std::max(sym_int.info.r_break_crit,ptcl_origin[i].getRGroup());
-    int fix_step_option = 1; // Eunwoo set this it 'later'.
-
-    //! Fix step options for integration with adjusted step (not for time sychronizatio phase)
-    /*! always: use the given step without change
-        later: fix step after a few adjustment of initial steps due to energy error
-        none: don't fix step
-     */
-
-    double s = 0.0; // step size, not physical time step, auto
-    // Eunwoo: automatically set during the calculation.
-    // bool synch_flag=false; // if true, switch on time synchronization
-    // Eunwoo: it seems unnecessary now.
-
-
-    
-    // integrator
-
-    
-    sym_int.manager = &manager;
-
-    sym_int.particles.setMode(COMM::ListMode::copy);
-    sym_int.particles.reserveMem(Members.size());
-
-    for (size_t i = 0; i < Members.size(); ++i) {
-        sym_int.particles.addMemberAndAddress(*this->Members[i]);
-    }
-
-    sym_int.particles.calcCenterOfMass();
-    sym_int.reserveIntegratorMem();
-
-#ifdef AR_SLOWDOWN_MASSRATIO
-    Float m_ave = sym_int.particles.cm.mass/sym_int.particles.getSize();
-    if (slowdown_mass_ref.value<=0.0) manager.slowdown_mass_ref = m_ave;
-    else manager.slowdown_mass_ref = slowdown_mass_ref.value;
-#endif
-    // manager.print(std::cerr); // Eunwoo deleted
-
-    sym_int.info.reserveMem(sym_int.particles.getSize());
-    sym_int.info.generateBinaryTree(sym_int.particles,manager.interaction.gravitational_constant);
-
-
-    // initialization 
-    sym_int.initialIntegration(this->CurrentTime*EnzoTimeStep); // Eunwoo: Is this the real current time?
-    sym_int.info.calcDsAndStepOption(manager.step.getOrder(), manager.interaction.gravitational_constant, manager.ds_scale);
-
-
-    // use input fix step option
-    if (fix_step_option>=0) {
-        switch (fix_step_option) {
-        case 2:
-            sym_int.info.fix_step_option = AR::FixStepOption::none;
-            break;
-        case 0:
-            sym_int.info.fix_step_option = AR::FixStepOption::always;
-            break;
-        case 1:
-            sym_int.info.fix_step_option = AR::FixStepOption::later;
-            break;
-        }
-    }
-
-    // use input ds
-    if (s>0.0) sym_int.info.ds = s;
-
-    // precision
-    // std::cout<<std::setprecision(print_precision.value);
-
-#ifdef AR_SLOWDOWN_ARRAY
-    int n_sd = sym_int.binary_slowdown.getSize();
-#elif defined(AR_SLOWDOWN_TREE)
-    int n_sd = sym_int.info.binarytree.getSize();
-#else
-    int n_sd = 0;
-#endif
-    //print column title
-    // sym_int.printColumnTitle(std::cout, print_width.value, n_sd);
-    // std::cout<<std::endl;
-
-    //print initial data
-    // sym_int.printColumn(std::cout, print_width.value, n_sd);
-    // std::cout<<std::endl;
-
-    sym_int.integrateToTime(next_time*EnzoTimeStep); // Eunwoo: sym_int.updateSlowDownAndCorrectEnergy is already built-in.
-    sym_int.particles.shiftToOriginFrame(); // Eunwoo: is this the reason?
+    sym_int.particles.shiftToOriginFrame();
     sym_int.particles.template writeBackMemberAll<Particle>(); // Eunwoo: I'm not sure
+    sym_int.particles.shiftToCenterOfMassFrame();
 
-    this->CurrentTime = next_time; // Eunwoo added but I'm not sure...
+    CurrentTime = next_time;
 
-    // for (Particle* ptcl : this->Members) {
-    //     fprintf(stdout, "Time: %e\n", this->CurrentTime*EnzoTimeStep);
-	// 	fprintf(stdout, "PID: %d, Position - x:%e, y:%e, z:%e\n", ptcl->PID, ptcl->Position[0], ptcl->Position[1], ptcl->Position[2]);
-	// 	fprintf(stdout, "PID: %d, Velocity - x:%e, y:%e, z:%e\n", ptcl->PID, ptcl->Velocity[0], ptcl->Velocity[1], ptcl->Velocity[2]);
-    //     fprintf(stdout, "PID: %d, Mass: %e \n", ptcl->PID, ptcl->Mass);
-    // }
 
-    sym_int.clear(); // Delocate memory
-    sym_int.particles.clear(); // Delocate memory
-    manager.step.clear(); // Delocate memory
-    // delete sym_int.manager; // Cause of memory leak? No..
-    // sym_int.manager = nullptr; // Cause of memory leak? No..
-
-    // fprintf(binout, "GroupCM PID: %d, current time: %e\n", this->groupCM->PID, this->CurrentTime); // Eunwoo debug
-    // fprintf(binout, "AR Integration is done!\n"); // Eunwoo debug
 
     
 //     // integration loop

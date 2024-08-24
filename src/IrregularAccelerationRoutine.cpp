@@ -114,7 +114,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			BinaryAccelerationRoutine(
 					ComputationList[0]->CurrentTimeIrr+ComputationList[0]->TimeStepIrr,
 				 	particle);
-			//fprintf(stdout, "Finishing Binaries ...\n");
+			// fprintf(stdout, "Finishing Binaries ...\n");
 			//fflush(stdout);
 			fflush(binout);
 
@@ -324,7 +324,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 						// || ptcl->BinaryInfo->TimeStep*EnzoTimeStep*1e4 > 2.0*KSTime) { // Eunwoo editted
 				for (Particle* ptclJ : ptcl->GroupParticles) {
 					
-					if ((dist((ptcl->GroupMother->Position), (ptclJ->Position))) > 1e-4/position_unit) { // Eunwoo will change this.
+					if ((dist((ptcl->GroupMother->Position), (ptclJ->Position))) > 1e-3/position_unit) { // Eunwoo will change this.
 
 						fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
 						fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);

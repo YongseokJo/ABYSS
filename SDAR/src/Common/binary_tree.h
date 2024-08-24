@@ -1,5 +1,7 @@
 #pragma once
 
+#define ASSERT(x) assert(x)
+
 #include<cmath>
 #include<algorithm>
 #include"Common/Float.h"

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "../global.h"
 #include "../defs.h"
+#include "Group.h"
 
 void direct_sum(REAL *x, REAL *v, REAL r2, REAL vx,
 		REAL mass, REAL (&a)[3], REAL (&adot)[3]);
@@ -262,7 +263,7 @@ void Particle::isFBCandidate() {
 	REAL x[Dim];
 	REAL r2;
 	REAL current_time;
-	REAL r_group = 1e-4/position_unit; // group detecting radius: 1e-4 pc (tentative) for FewBody physics
+	REAL r_group = 1e-3/position_unit; // group detecting radius: 1e-3 pc (tentative) for FewBody physics
 	// Eunwoo: idea - search bound/unbound particles within neighbor as BIFROST do
 	std::vector<Particle*> groupParticles; // Vector to store pointers of particles in the group not including mother
 
@@ -304,7 +305,7 @@ void Particle::isFBCandidate() {
 		if ((r2<r_group*r_group) && (this->PID != ptcl->PID)) { // Eunwoo for test
 			groupParticles.push_back(ptcl);
 			fprintf(binout, "group member added!\n"); // Eunwoo debug
-			fprintf(stdout, "group member added!\n"); // Eunwoo check
+			// fprintf(stdout, "group member added!\n"); // Eunwoo check
 		}
 	}
 
@@ -321,22 +322,87 @@ void Particle::isFBCandidate() {
 
 
 
+void Group::initialManager() {
+
+	manager.interaction.gravitational_constant = 1.0;
+	manager.time_step_min = 1e-13; // minimum physical time step // reference: ar.cxx
+	manager.ds_scale = 1.0; // step size scaling factor // reference: ar.cxx
+	manager.time_error_max = 0.25*manager.time_step_min; // time synchronization absolute error limit for AR, default is 0.25*dt-min
+	// reference: ar.cxx
+	manager.energy_error_relative_max = 1e-10; // relative energy error limit for AR, phase error requirement
+	// reference: ar.cxx
+	// 1e-8 in PeTar
+	manager.slowdown_timescale_max = NUMERIC_FLOAT_MAX; // maximum timescale for maximum slowdown factor, time-end
+	// if (slowdown_timescale_max.value>0.0) manager.slowdown_timescale_max = slowdown_timescale_max.value;
+	// else if (time_end.value>0.0) manager.slowdown_timescale_max = time_end.value;
+	// else manager.slowdown_timescale_max = NUMERIC_FLOAT_MAX;
+	// should be positive
+	manager.slowdown_pert_ratio_ref = 1e-6; // slowdown perturbation ratio reference
+	// reference: ar.cxx
+	// 1e-4 in PeTar
+	manager.step_count_max = 1000000; // number of maximum (integrate/output) step for AR integration // set symplectic order
+	// 1000000 in PeTar & ar.cxx
+	manager.step.initialSymplecticCofficients(-6); // Symplectic integrator order, should be even number
+	// -6 in PeTar & ar.cxx
+	manager.interrupt_detection_option = 0; // modify orbit or check interruption using modifyAndInterruptIter function
+											// 0: turn off
+											// 1: modify the binary orbits based on detetion criterion
+											// 2. modify and also interrupt integrations
+
+	// Eunwoo: it is turned off now but I will turn it on later.
+	// Eunwoo: It can be used for merging star (dr < sum of radius) or destroy.
+}
+
+void Group::initialIntegrator() {
+
+	sym_int.manager = &manager;
+
+	sym_int.particles.setMode(COMM::ListMode::copy);
+    sym_int.particles.reserveMem(Members.size());
+	sym_int.info.reserveMem(Members.size());
+
+    for (size_t i = 0; i < Members.size(); ++i) {
+        sym_int.particles.addMemberAndAddress(*Members[i]);
+    }
+
+	sym_int.info.r_break_crit = 1e-3/position_unit; // distance criterion for checking stability
+	// more information in symplectic_integrator.h
+	// ar.cxx: 1e-3 pc
+	// check whether the system is stable for 10000 out period and the apo-center is below break criterion
+	// PeTar (hard.hpp): sym_int.info.r_break_crit = std::max(sym_int.info.r_break_crit,ptcl_origin[i].getRGroup());
+
+	// // manager.print(std::cerr); // Eunwoo deleted
+
+    sym_int.reserveIntegratorMem();
+	sym_int.info.generateBinaryTree(sym_int.particles,manager.interaction.gravitational_constant);
+
+    // sym_int.particles.calcCenterOfMass();
+
+    // initialization 
+	sym_int.initialIntegration(0); // for a while
+	sym_int.info.time_offset = CurrentTime*EnzoTimeStep; // for a while
+	// sym_int.initialIntegration(CurrentTime*EnzoTimeStep);
+    sym_int.info.calcDsAndStepOption(manager.step.getOrder(), manager.interaction.gravitational_constant, manager.ds_scale);
+
+	//! Fix step options for integration with adjusted step (not for time sychronizatio phase)
+	// PeTar doesn't set this value explicitly!
+	// sym_int.info.fix_step_option = AR::FixStepOption::none; // none: don't fix step
+	// sym_int.info.fix_step_option = AR::FixStepOption::always; // always: use the given step without change
+	// sym_int.info.fix_step_option = AR::FixStepOption::later; // later: fix step after a few adjustment of initial steps due to energy error
+
+// #ifdef AR_SLOWDOWN_ARRAY
+//     int n_sd = sym_int.binary_slowdown.getSize();
+// #elif defined(AR_SLOWDOWN_TREE)
+//     int n_sd = sym_int.info.binarytree.getSize();
+// #else
+//     int n_sd = 0;
+// #endif
+
+}
 
 	//        ///////////////////        //
 	//        ///////////////////        //
-	//           STARTNEWKSREG           //
-	//        ///////////////////        //
-	//        ///////////////////        //
-
-
-
-	// start new KS regularlization
-
-
-
-	//        ///////////////////        //
-	//        ///////////////////        //
-	//        NEWKSINITIALIZATION        //
+	//        NEWFBINITIALIZATION        //
 	//        ///////////////////        //
 	//        ///////////////////        //
 
@@ -367,7 +433,7 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 
 	//std::cout << "Predicting Particle Positions" << std::endl;
 	fprintf(binout, "\n-------------------------NEW-GROUP------------------------\n");
-	fprintf(stdout, "\n-------------------------NEW-GROUP------------------------\n"); // Eunwoo check
+	// fprintf(stdout, "\n-------------------------NEW-GROUP------------------------\n"); // Eunwoo check
 
 	// fprintf(binout, "Radius = %e, \n", dist(ptclI->Position, ptclJ->Position));
 	fprintf(binout, "I. Total Acceleration - ax:%e, ay:%e, az:%e \n", ptclI->a_tot[0][0], ptclI->a_tot[1][0], ptclI->a_tot[2][0]);
@@ -399,9 +465,6 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	ptclCM  = new Particle();
 	ptclGroup = new Group();
 
-	// fprintf(stderr, "time error max: %e", ptclGroup->manager.time_error_max); // Eunwoo debug
-
-
 	Particle* ptcl = ptclI;
 	for (Particle* ptclJ : ptclI->GroupParticles) {
     	if (ptclJ->CurrentTimeIrr > ptcl->CurrentTimeIrr) {
@@ -429,15 +492,15 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	ptclCM->isCMptcl        = true;
 
 	fprintf(binout, "The ID of CM is %d.\n",ptclCM->PID);
-	fprintf(stdout, "The ID of CM is %d.\n",ptclCM->PID); // Eunwoo check
+	// fprintf(stdout, "The ID of CM is %d.\n",ptclCM->PID); // Eunwoo check
 	fprintf(binout, "The ID of members are");
-	fprintf(stdout, "The ID of members are"); // Eunwoo check
+	// fprintf(stdout, "The ID of members are"); // Eunwoo check
 	for (Particle* ptclJ : ptclI->GroupParticles) {
 		fprintf(binout, " %d, ", ptclJ->PID);
-		fprintf(stdout, " %d, ", ptclJ->PID); // Eunwoo check
+		// fprintf(stdout, " %d, ", ptclJ->PID); // Eunwoo check
 	}
 	fprintf(binout, "The ID of mother is %d.\n", ptclI->PID);
-	fprintf(stdout, "The ID of mother is %d.\n", ptclI->PID); // Eunwoo check
+	// fprintf(stdout, "The ID of mother is %d.\n", ptclI->PID); // Eunwoo check
 	//fflush(binout);
 
 	ptclCM->Mass = ptclI->Mass; // Start with the mass of the mother particle
@@ -485,13 +548,13 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 		ptclCM->NumberOfAC++;
 	}
 
-	// Eunwoo check
-	std::cout << ptclCM->PID << "("<< ptclCM->NumberOfAC <<")" << "=" <<std::flush;
-	for (Particle * nn:ptclCM->ACList) {
-		std::cout << nn->PID << ", ";
-	}
-	std::cout << std::endl; 
-	// Eunwoo check
+	// // Eunwoo check
+	// std::cout << ptclCM->PID << "("<< ptclCM->NumberOfAC <<")" << "=" <<std::flush;
+	// for (Particle * nn:ptclCM->ACList) {
+	// 	std::cout << nn->PID << ", ";
+	// }
+	// std::cout << std::endl; 
+	// // Eunwoo check
 
 
 	// calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately for the binary pair particle and the cm particle
@@ -523,11 +586,6 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	}
 
 
-
-
-
-
-
 	//update particle vector, nextregtime, computation chain and list
 	ptclI->isErase = true;
 	for (Particle* ptclJ : ptclI->GroupParticles) {
@@ -545,8 +603,6 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 			j++;
 		}
 	}
-
-
 
 	/*
 	fprintf(stderr, "particle:");
@@ -599,13 +655,13 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	//fflush(binout);
 
 	fprintf(binout, "The ID of ith particle is %d of %d",ptclCM->PID, ptclI->PID);
-	fprintf(stdout, "The ID of ith particle is %d of %d",ptclCM->PID, ptclI->PID); // Eunwoo check
+	// fprintf(stdout, "The ID of ith particle is %d of %d",ptclCM->PID, ptclI->PID); // Eunwoo check
 	for (Particle* ptclJ : ptclI->GroupParticles) {
 		fprintf(binout, ", %d", ptclJ->PID);
-		fprintf(stdout, ", %d", ptclJ->PID); // Eunwoo check
+		// fprintf(stdout, ", %d", ptclJ->PID); // Eunwoo check
 	}
 	fprintf(binout, "\n");
-	fprintf(stdout, "\n"); // Eunwoo check
+	// fprintf(stdout, "\n"); // Eunwoo check
 
 	// fprintf(binout, "Position - x:%e, y:%e, z:%e, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
 	// fprintf(binout, "Velocity - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
@@ -628,6 +684,8 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 
 	ptclGroup->Members = ptclI->GroupParticles;
 	ptclGroup->Members.push_back(ptclI);
+	ptclGroup->initialManager();
+	ptclGroup->initialIntegrator();
 
 	// Eunwoo debug
 
@@ -680,9 +738,9 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	}
 
 	fprintf(binout, "\n---------------------END-OF-NEW-GROUP---------------------\n\n");
-	fprintf(stdout, "\n---------------------END-OF-NEW-GROUP---------------------\n\n"); // Eunwoo check
+	// fprintf(stdout, "\n---------------------END-OF-NEW-GROUP---------------------\n\n"); // Eunwoo check
 	fflush(binout);
-	fflush(stdout); // Eunwoo check
+	// fflush(stdout); // Eunwoo check
 }
 
 
