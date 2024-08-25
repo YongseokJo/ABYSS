@@ -95,11 +95,12 @@ void InitializeParticle(Particle* newParticle, std::vector<Particle*> &particle)
 
 // Eunwoo changed
 
-void ReInitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle) {
+// This function is used for initiating CM particle and terminating group particles.
+void InitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle) {
 
-	std::cout << "\n\nRe-Initialization of Group Particle starts.\n" << std::endl;
+	std::cout << "\n\nInitialization of Particle (PID: " << FBParticle->PID << ") starts." << std::endl;
 
-	std::cout << "Finding Neighbors... \n" << std::endl;	
+	std::cout << "Finding Neighbors... \n" << std::endl;
 	FBParticle->ACList.clear();
 	FindNeighbor(FBParticle, particle);
 

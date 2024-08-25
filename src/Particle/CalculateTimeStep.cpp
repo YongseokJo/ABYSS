@@ -198,8 +198,8 @@ void Particle::calculateTimeStepReg() {
 	TimeBlockReg = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
 
 	if (TimeStepReg*EnzoTimeStep*1e4 < 1e-7) {
-		fprintf(stderr, "TimeStep = %.3e, TimeStepTmp0 = %.3e\n",
-			 	TimeStepReg*EnzoTimeStep*1e4, static_cast<REAL>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4);
+		fprintf(stderr, "PID: %d, TimeStep = %.3e, TimeStepTmp0 = %.3e\n",
+			 	PID, TimeStepReg*EnzoTimeStep*1e4, static_cast<REAL>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4); // Eunwoo add PID
 		fflush(stderr);
 	}
 
@@ -209,6 +209,8 @@ void Particle::calculateTimeStepReg() {
 	}
 
 	if (TimeStepReg*EnzoTimeStep*1e4<1e-9) {
+		fprintf(stderr, "PID: %d, TimeStep = %.3e, TimeStepTmp0 = %.3e\n", // Eunwoo add
+			PID, TimeStepReg*EnzoTimeStep*1e4, static_cast<REAL>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4); // Eunwoo add
 		throw std::runtime_error("TimeStepReg is too small.");
 	}
 	if (TimeStepReg > 1) {

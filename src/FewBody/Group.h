@@ -26,10 +26,7 @@ class Group
 		bool isTerminate;
 		bool isErase;
 
-		REAL PredTime;
 		REAL CurrentTime;  // this show how much the binary system has evolved
-		REAL TimeStep;
-		int TimeLevel;
 
 		AR::TimeTransformedSymplecticIntegrator<Particle, Particle, Perturber, Interaction, AR::Information<Particle,Particle>> sym_int;
 		AR::TimeTransformedSymplecticManager<Interaction> manager;
@@ -39,10 +36,7 @@ class Group
 			: groupCM(nullptr),
 			isTerminate(false),
 			isErase(false),
-			PredTime(0),
 			CurrentTime(0),
-			TimeStep(0),
-			TimeLevel(0),
 			sym_int(),
 			manager()
 

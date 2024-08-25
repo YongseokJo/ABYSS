@@ -9,73 +9,42 @@
 bool CreateComputationList(Particle* ptcl);
 bool CreateComputationChain(std::vector<Particle*> &particle);
 void generate_Matrix(REAL a[3], REAL (&A)[3][4]);
-void ReInitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle);
+void InitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle);
 void UpdateNextRegTime(std::vector<Particle*> &particle);
 
 void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL current_time, ULL current_block){
 
-	// REAL R[Dim], Rdot[Dim];
-	// REAL Rinv;
-	// REAL ratioM;
-	// REAL L[3][4];
-
-	// int ptclCMIndex;
-	// int ptclBinIndex;
-
-	// bool findPtclCM;
 
 	Particle* ptclI; // Mother of a group
-
 	Group* ptclGroup;
 
-	fprintf(stdout,"--------------------------------------\n");
-	fprintf(stdout,"In FBTermination.cpp...\n\n");
+	// fprintf(stdout,"--------------------------------------\n");
+	// fprintf(stdout,"In FBTermination.cpp...\n\n");
+	fprintf(binout,"--------------------------------------\n");
+	fprintf(binout,"In FBTermination.cpp... (CM PID: %d)\n\n", ptclCM->PID);
 
-	ptclI = ptclCM->GroupMother;
-	ptclGroup = ptclCM->GroupInfo;
+	ptclI		= ptclCM->GroupMother;
+	ptclGroup	= ptclCM->GroupInfo;
 
-	// convert partI and J's coordinates back to cartesian form KS coordinates
-	// ptclCM->convertBinaryCoordinatesToCartesian(); // Eunwoo: fix after SDAR integration
 
 	// Eunwoo: Set CurrentBlock and CurrentTime for group particles. This was originally from convertBinaryCoordinatesCartesian().
 
-	ptclI->CurrentBlockIrr = ptclCM->CurrentBlockIrr;
-	ptclI->CurrentBlockReg = ptclCM->CurrentBlockReg;
-	ptclI->CurrentTimeIrr = ptclCM->CurrentBlockIrr*time_step;
-	ptclI->CurrentTimeReg = ptclCM->CurrentBlockReg*time_step;
+	for (Particle* members : ptclGroup->Members) {
+		members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr;
+		members->CurrentBlockReg	= ptclCM->CurrentBlockReg;
+		members->CurrentTimeIrr		= ptclCM->CurrentBlockIrr*time_step;
+		members->CurrentTimeReg		= ptclCM->CurrentBlockReg*time_step;
 
-	ptclI->TimeStepIrr     = ptclCM->TimeStepIrr; // Eunwoo: I think this is redundant.
-	ptclI->TimeBlockIrr    = ptclCM->TimeBlockIrr; // Eunwoo: I think this is redundant.
-	ptclI->TimeLevelIrr    = ptclCM->TimeLevelIrr; // Eunwoo: I think this is redundant.
+		members->TimeStepIrr		= ptclCM->TimeStepIrr; // Eunwoo: I think this is redundant.
+		members->TimeBlockIrr		= ptclCM->TimeBlockIrr; // Eunwoo: I think this is redundant.
+		members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // Eunwoo: I think this is redundant.
 
-	ptclI->TimeStepReg     = ptclCM->TimeStepReg; // Eunwoo: I think this is redundant.
-	ptclI->TimeBlockReg    = ptclCM->TimeBlockReg; // Eunwoo: I think this is redundant.
-	ptclI->TimeLevelReg    = ptclCM->TimeLevelReg; // Eunwoo: I think this is redundant.
-
-	for (Particle* ptclJ : ptclI->GroupParticles) {
-		ptclJ->CurrentBlockIrr = ptclCM->CurrentBlockIrr;
-		ptclJ->CurrentBlockReg = ptclCM->CurrentBlockReg;
-		ptclJ->CurrentTimeIrr = ptclCM->CurrentBlockIrr*time_step;
-		ptclJ->CurrentTimeReg = ptclCM->CurrentBlockReg*time_step;
-
-		ptclJ->TimeStepIrr     = ptclCM->TimeStepIrr; // Eunwoo: I think this is redundant.
-		ptclJ->TimeBlockIrr    = ptclCM->TimeBlockIrr; // Eunwoo: I think this is redundant.
-		ptclJ->TimeLevelIrr    = ptclCM->TimeLevelIrr; // Eunwoo: I think this is redundant.
-
-		ptclJ->TimeStepReg     = ptclCM->TimeStepReg; // Eunwoo: I think this is redundant.
-		ptclJ->TimeBlockReg    = ptclCM->TimeBlockReg; // Eunwoo: I think this is redundant.
-		ptclJ->TimeLevelReg    = ptclCM->TimeLevelReg; // Eunwoo: I think this is redundant.
+		members->TimeStepReg		= ptclCM->TimeStepReg; // Eunwoo: I think this is redundant.
+		members->TimeBlockReg		= ptclCM->TimeBlockReg; // Eunwoo: I think this is redundant.
+		members->TimeLevelReg		= ptclCM->TimeLevelReg; // Eunwoo: I think this is redundant.
 	}
 
-
-	// Initialize Neighbor list
-	ptclI->ACList.clear();
-	ptclI->NumberOfAC = 0;
-
-	for (Particle* ptclJ : ptclI->GroupParticles) {
-		ptclJ->ACList.clear();
-		ptclJ->NumberOfAC = 0;
-	}
+	// Update particle vector: erase ptclCM and add group particles
 
 	ptclCM->isErase = true;
 	particle.erase(
@@ -91,189 +60,98 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL curr
 		particle[i]->ParticleOrder = i;
 	}
 
-	fprintf(stdout,"initialize particle I \n");
-	ReInitializeFBParticle(ptclI, particle);
+	// fprintf(stdout,"add the group components to particle list (to be included neighbor search)\n");
 
-	for (Particle* ptclJ : ptclI->GroupParticles) {
-		fprintf(stdout,"initialize particle in a group \n");
-		ReInitializeFBParticle(ptclJ, particle);
+	for (Particle* members : ptclGroup->Members) {
+		members->ParticleOrder = particle.size();
+		particle.push_back(members);
 	}
 
+	// Find neighbors and calculate the 0th, 1st, 2nd, 3rd derivative of accleration for group particles 
+
+	fprintf(binout,"initialize group particles \n");
+	for (Particle* ptcl : ptclGroup->Members) {
+		InitializeFBParticle(ptcl, particle);
+	}
 
 	//	InitializeTimeStep
-	ptclI->calculateTimeStepReg();
-	if (ptclI->TimeLevelReg <= ptclCM->TimeLevelReg-1 
-			&& ptclI->TimeBlockReg/2+ptclI->CurrentBlockReg > ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
-		ptclI->TimeLevelReg = ptclCM->TimeLevelReg-1;
-	}
-	else if  (ptclI->TimeLevelReg >= ptclCM->TimeLevelReg+1) {
-		ptclI->TimeLevelReg = ptclCM->TimeLevelReg+1;
-	}
-	else 
-		ptclI->TimeLevelReg = ptclCM->TimeLevelReg;
 
-	ptclI->TimeStepReg  = static_cast<REAL>(pow(2, ptclI->TimeLevelReg)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
-	ptclI->TimeBlockReg = static_cast<ULL>(pow(2, ptclI->TimeLevelReg-time_block)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
-	ptclI->calculateTimeStepIrr(ptclI->a_tot, ptclI->a_irr);
-
-	for (Particle* ptclJ : ptclI->GroupParticles) {
-		ptclJ->calculateTimeStepReg();
-		if (ptclJ->TimeLevelReg <= ptclCM->TimeLevelReg-1 
-				&& ptclJ->TimeBlockReg/2+ptclJ->CurrentBlockReg > ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
-			ptclJ->TimeLevelReg = ptclCM->TimeLevelReg-1;
+	for (Particle* members : ptclGroup->Members) {
+		members->calculateTimeStepReg();
+		if (members->TimeLevelReg <= ptclCM->TimeLevelReg-1 
+				&& members->TimeBlockReg/2+members->CurrentBlockReg > ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
+			members->TimeLevelReg = ptclCM->TimeLevelReg-1;
 		}
-		else if  (ptclJ->TimeLevelReg >= ptclCM->TimeLevelReg+1) {
-			ptclJ->TimeLevelReg = ptclCM->TimeLevelReg+1;
+		else if  (members->TimeLevelReg >= ptclCM->TimeLevelReg+1) {
+			members->TimeLevelReg = ptclCM->TimeLevelReg+1;
 		}
 		else 
-			ptclJ->TimeLevelReg = ptclCM->TimeLevelReg;
-		ptclJ->TimeStepReg  = static_cast<REAL>(pow(2, ptclJ->TimeLevelReg)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
-		ptclJ->TimeBlockReg = static_cast<ULL>(pow(2, ptclJ->TimeLevelReg-time_block)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
-		ptclJ->calculateTimeStepIrr(ptclJ->a_tot, ptclJ->a_irr);
+			members->TimeLevelReg = ptclCM->TimeLevelReg;
+		members->TimeStepReg  = static_cast<REAL>(pow(2, members->TimeLevelReg)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
+		members->TimeBlockReg = static_cast<ULL>(pow(2, members->TimeLevelReg-time_block)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
+		members->calculateTimeStepIrr(members->a_tot, members->a_irr);
 	}
-
-
-
 
 	// we also need to revert the neighbor list of Particles
 	// assuming that all the neighbors are bidirectional
 	// may need to update later if the radius for neighbor differs depending on the particle
-	fprintf(stdout,"replacing CM particle in neighbor list to component particles \n");
+
+	fprintf(binout,"replacing CM particle in neighbor list to component particles \n");
 
 	int index = 0;
 	//fprintf(stderr, "neighbor of %d, ", ptclCM->PID);
 	for (Particle* ptcl: particle) {
-		if (ptcl->PID == ptclI->PID) {
-			fprintf(stderr, "what? %d", ptcl->PID);
-			throw std::runtime_error("FBTermination.cpp");
-		}
-		for (Particle* ptclJ : ptclI->GroupParticles) {
-			if (ptcl->PID == ptclJ->PID) {
-				fprintf(stderr, "what? %d", ptcl->PID);
-				throw std::runtime_error("FBTermination.cpp");
-			}
-		}
 
 		index = 0;
-		/*
-		for (Particle* neighbor: ptcl->ACList) {
-			fprintf(stderr, "%d, ", neighbor->PID);
-		}
-		fprintf(stderr, "\n");
-		*/
-
 		for (Particle* neighbor: ptcl->ACList) {
 			if (neighbor->PID == ptclCM->PID) {
 				ptcl->ACList.erase(ptcl->ACList.begin() + index);
-				ptcl->ACList.push_back(ptclI);
-				for (Particle* ptclJ : ptclI->GroupParticles) {
-					ptcl->ACList.push_back(ptclJ);
-				}	
+				ptcl->ACList.insert(ptcl->ACList.end(), ptclGroup->Members.begin(), ptclGroup->Members.end());
 				ptcl->NumberOfAC = ptcl->ACList.size();
 				break; // Eunwoo check
 			}
 			index++;
 		}
-
-
-		/* // ChatGPT version
-		for (auto it = ptcl->ACList.begin(); it != ptcl->ACList.end(); ++it) {
-			if ((*it)->PID == ptclCM->PID) {
-				ptcl->ACList.erase(it); // Erase the element by iterator
-				ptcl->ACList.push_back(ptclI); // Add ptclI to the end
-				for (Particle* ptclJ : ptclI->GroupParticles) {
-					ptcl->ACList.push_back(ptclJ); // Add all group particles
-				}   
-				ptcl->NumberOfAC = ptcl->ACList.size(); // Update the count
-				break; // Exit the loop after modifying the list
-			}
-		}
-
-		// Optional: Check if ptclCM->PID still exists in ACList (shouldn't if code is correct)
-		auto it = std::find_if(ptcl->ACList.begin(), ptcl->ACList.end(), 
-							[ptclCM](Particle* neighbor) {
-								return neighbor->PID == ptclCM->PID;
-							});
-		//ChatGPT version
-		*/
-
-		/*
-		for (Particle* neighbor: ptcl->ACList) {
-			fprintf(stderr, "%d, ", neighbor->PID);
-		}
-		fprintf(stderr, "\n");
-		*/
-		/*
-		auto it = ptcl->ACList.erase(
-				std::remove_if(ptcl->ACList.begin(), ptcl->ACList.end(),
-					[](Particle* p) {
-					bool to_remove = p->isErase;
-					return to_remove;
-					}),
-				ptcl->ACList.end());
-
-		if (it != ptcl->ACList.end())  {
-			ptcl->ACList.push_back(ptclI);
-			ptcl->ACList.push_back(ptclJ);
-		}
-		*/
 	}
 
-	// for (Particle* p : particle) {
-	// 	for (Particle* pp: p->ACList) {
-	// 		if (p->PID == pp->PID)
-	// 		fprintf(stdout, "8, PID: %d, Error!!!\n", p->PID); // Eunwoo error
-	// 	}
-	// }
+	//re-do UpdateNextRegTime
+	UpdateNextRegTime(particle);
 
+	fprintf(binout,"total number of particles = %lu, total number of groups = %lu \n", particle.size(), GroupList.size());
+	fprintf(binout,"total number of ComputationList = %lu\n", ComputationList.size());
 
-	/*
-	if (ptclI == ptclJ) {
-		fprintf(stderr, "\nthere are the same!\n");
+	for (Particle* members : ptclGroup->Members) {
+		fprintf(binout,"PID: %d\n", members->PID);
+		// fprintf(binout, "Position - x:%e, y:%e, z:%e, \n", members->Position[0], members->Position[1], members->Position[2]);
+		// fprintf(binout, "Velocity - vx:%e, vy:%e, vz:%e, \n", members->Velocity[0], members->Velocity[1], members->Velocity[2]);
+
+		// fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
+		// fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->a_tot[0][1], members->a_tot[1][1], members->a_tot[2][1]);
+		// fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->a_tot[0][2], members->a_tot[1][2], members->a_tot[2][2]);
+		// fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->a_tot[0][3], members->a_tot[1][3], members->a_tot[2][3]);
+		// fprintf(binout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
+		// fprintf(binout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->a_irr[0][1], members->a_irr[1][1], members->a_irr[2][1]);
+		// fprintf(binout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->a_irr[0][2], members->a_irr[1][2], members->a_irr[2][2]);
+		// fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->a_irr[0][3], members->a_irr[1][3], members->a_irr[2][3]);
+		fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", members->TimeStepIrr, members->TimeStepReg);
+		// fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", members->TimeBlockIrr, members->TimeBlockReg);
+		// fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", members->CurrentBlockIrr, members->CurrentBlockReg);
 	}
-	fprintf(stderr, "neighbor%d:",ptclI->PID);
-	for (Particle* ptcl:ptclI->ACList) {
-		fprintf(stderr, "%d, ", ptcl->PID);
+
+
+	// Change the booleans, pointers, and vectors about group information for the group members
+
+	for (Particle* members : ptclGroup->Members) {
+		members->isErase		= false;
+		members->isGroup		= false;
+		members->GroupMother	= nullptr;
+		members->GroupInfo		= nullptr;
+		members->GroupParticles.clear();
+		members->GroupParticles.shrink_to_fit();
 	}
-	fprintf(stderr, "\n");
 
-	fprintf(stderr, "neighbor%d:",ptclJ->PID);
-	for (Particle* ptcl:ptclJ->ACList) {
-		fprintf(stderr, "%d, ", ptcl->PID);
-	}
-	fprintf(stderr, "\n");
-	*/
-
-	// delete the original components from the list
-	fprintf(stdout,"deleting CM particle from the particle list\n");
-
-
-	//fprintf(stderr,"PID of (CM, I, J) = (%d,%d,%d)\n",ptclCM->PID, ptclI->PID, ptclJ->PID);
-	/*
-	ComputationList.erase(
-			std::remove_if(ComputationList.begin(), ComputationList.end(),
-				[](Particle* p) {
-				bool to_remove = p->isErase;
-				//if (to_remove) delete p;
-				return to_remove;
-				}),
-			ComputationList.end());
-			*/
-
-	// delete ptclCM from ComputationChain, we no longer need it since the whole chain will be re-generated.
-	// by Jo July 10 2024
-	/*
-	Particle* NextParticle=FirstComputation;
-	while (NextParticle != nullptr) {
-		if (NextParticle->NextParticleForComputation == ptclCM) {
-			NextParticle->NextParticleForComputation = ptclCM->NextParticleForComputation;
-		}
-		NextParticle = NextParticle->NextParticleForComputation;
-	}
-	*/
-
-	// we also need to delete it from the binary list
-	fprintf(stdout,"deleting binary information from the GroupList \n");
+	// we also need to delete ptclGroup from the group list
+	fprintf(binout,"deleting binary information from the GroupList \n");
 	ptclGroup->isErase = true;
 	GroupList.erase(
 			std::remove_if(GroupList.begin(), GroupList.end(),
@@ -285,117 +163,16 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL curr
 			GroupList.end());
 
 	delete ptclGroup;
-	delete ptclCM;
+	// delete ptclCM; // It is deleted automatically when delete ptclGroup!!!
 	ptclGroup = nullptr;
 	ptclCM  = nullptr;
 
-	//re-do UpdateNextRegTime
-	UpdateNextRegTime(particle); //
+	// fprintf(stdout,"end of Few Body Termination\n");
+	fprintf(binout,"end of Few Body Termination\n");
 
-	fprintf(stdout,"add the group components to particle list (to be included neighbor search)\n");
-	ptclI->ParticleOrder = particle.size();
-	particle.push_back(ptclI);
-	for (Particle* ptclJ : ptclI->GroupParticles) {
-		ptclJ->ParticleOrder = particle.size();
-		particle.push_back(ptclJ);
-	}
-
-
-	/*
-	fprintf(stderr, "particle:");
-	for (Particle* ptcl:particle) {
-		fprintf(stderr, "%d, ", ptcl->PID);
-	}
-	fprintf(stderr, "\n");
-	*/
-	/*
-	fprintf(stderr, "ComputationList:");
-	for (Particle* ptcl:ComputationList) {
-		fprintf(stderr, "%d, ", ptcl->PID);
-	}
-	fprintf(stderr, "\n");
-	*/
-
-	fprintf(stdout,"total number of particles = %lu, total number of groups = %lu \n", particle.size(), GroupList.size());
-	fprintf(stdout,"total number of ComputationList = %lu\n", ComputationList.size());
-
-	fprintf(stdout,"end of Few Body Termination\n");
-
-	fprintf(stdout,"PID=%d\n", ptclI->PID);
-	// fprintf(binout, "Position: ptclI - x:%e, y:%e, z:%e, \n", ptclI->Position[0], ptclI->Position[1], ptclI->Position[2]);
-	// fprintf(binout, "Velocity: ptclI - vx:%e, vy:%e, vz:%e, \n", ptclI->Velocity[0], ptclI->Velocity[1], ptclI->Velocity[2]);
-	// //fflush(binout);
-
-	// fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclI->a_tot[0][0], ptclI->a_tot[1][0], ptclI->a_tot[2][0]);
-	// fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclI->a_tot[0][1], ptclI->a_tot[1][1], ptclI->a_tot[2][1]);
-	// fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclI->a_tot[0][2], ptclI->a_tot[1][2], ptclI->a_tot[2][2]);
-	// fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclI->a_tot[0][3], ptclI->a_tot[1][3], ptclI->a_tot[2][3]);
-	// fprintf(binout, "Irr  Acceleration - ax:%e, ay:%e, az:%e, \n", ptclI->a_irr[0][0], ptclI->a_irr[1][0], ptclI->a_irr[2][0]);
-	// fprintf(binout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclI->a_irr[0][1], ptclI->a_irr[1][1], ptclI->a_irr[2][1]);
-	// fprintf(binout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclI->a_irr[0][2], ptclI->a_irr[1][2], ptclI->a_irr[2][2]);
-	// fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclI->a_irr[0][3], ptclI->a_irr[1][3], ptclI->a_irr[2][3]);
-	// fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclI->TimeStepIrr, ptclI->TimeStepReg);
-	// fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", ptclI->TimeBlockIrr, ptclI->TimeBlockReg);
-	// fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", ptclI->CurrentBlockIrr, ptclI->CurrentBlockReg);
-	// //fflush(binout);
-
-	for (Particle* ptclJ : ptclI->GroupParticles) {
-		fprintf(stdout,"PID=%d\n", ptclJ->PID);
-	// 	fprintf(binout, "\nPosition: ptclJ - x:%e, y:%e, z:%e, \n", ptclJ->Position[0], ptclJ->Position[1], ptclJ->Position[2]);
-	// 	fprintf(binout, "Velocity: ptclJ - vx:%e, vy:%e, vz:%e, \n", ptclJ->Velocity[0], ptclJ->Velocity[1], ptclJ->Velocity[2]);
-	// 	//fflush(binout);
-
-	// 	fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclJ->a_tot[0][0], ptclJ->a_tot[1][0], ptclJ->a_tot[2][0]);
-	// 	fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclJ->a_tot[0][1], ptclJ->a_tot[1][1], ptclJ->a_tot[2][1]);
-	// 	fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclJ->a_tot[0][2], ptclJ->a_tot[1][2], ptclJ->a_tot[2][2]);
-	// 	fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclJ->a_tot[0][3], ptclJ->a_tot[1][3], ptclJ->a_tot[2][3]);
-	// 	fprintf(binout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", ptclJ->a_irr[0][0], ptclJ->a_irr[1][0], ptclJ->a_irr[2][0]);
-	// 	fprintf(binout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclJ->a_irr[0][1], ptclJ->a_irr[1][1], ptclJ->a_irr[2][1]);
-	// 	fprintf(binout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclJ->a_irr[0][2], ptclJ->a_irr[1][2], ptclJ->a_irr[2][2]);
-	// 	fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclJ->a_irr[0][3], ptclJ->a_irr[1][3], ptclJ->a_irr[2][3]);
-	// 	fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclJ->TimeStepIrr, ptclJ->TimeStepReg);
-	// 	fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", ptclJ->TimeBlockIrr, ptclJ->TimeBlockReg);
-	// 	fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", ptclJ->CurrentBlockIrr, ptclJ->CurrentBlockReg);
-	}
-
-	// change the booleans, pointers, and vectors for binary
-	ptclI->isGroup = false;
-	ptclI->GroupMother = nullptr;
-	ptclI->GroupInfo = nullptr;
-
-	for (Particle* ptclJ : ptclI->GroupParticles) {
-		ptclJ->isGroup = false;
-		ptclJ->GroupMother = nullptr;
-		ptclJ->GroupInfo = nullptr;
-		ptclJ->GroupParticles.clear();
-		ptclJ->GroupParticles.shrink_to_fit();
-	}
-	ptclI->GroupParticles.clear();
-	ptclI->GroupParticles.shrink_to_fit();
-
-
-	/*
-	fprintf(binout, "\nPosition: ptclCM - x:%e, y:%e, z:%e, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
-	fprintf(binout, "Velocity: ptclCM - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
+	// fprintf(stdout,"--------------------------------------\n");
+	// fflush(stdout);
+	fprintf(binout,"--------------------------------------\n");
 	fflush(binout);
-
-	fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
-	fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
-	fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
-	fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
-	fprintf(binout, "Time Steps - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr, ptclCM->TimeStepReg);
-	fprintf(binout, "Current time - irregular: %e, regular:%e \n", ptclCM->CurrentTimeIrr, ptclCM->CurrentTimeReg);
-	*/
-	fflush(binout);
-
-	// fprintf(stdout, "Particle list: \n"); // Eunwoo check
-	// for (Particle* p : particle){
-	// 	fprintf(stdout, "%d, ", p->PID);
-	// }
-	// fprintf(stdout, "\n"); // Eunwoo check
-
-	fprintf(stdout,"--------------------------------------\n");
-
-	fflush(stdout); // Eunwoo check
 
 }
