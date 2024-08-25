@@ -34,12 +34,17 @@ void InitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle
 
 void Particle::isFBCandidate() {
 
-	// temporary calculation variables
 	REAL x[Dim];
-	REAL r2;
+	REAL v[Dim];
 	REAL current_time;
+
+	REAL r2;
+	REAL v2;
+	REAL energy; // specific orbital energy
+	REAL semi; // semi-major axis
+	
 	REAL r_group = 1e-3/position_unit; // group detecting radius: 1e-3 pc (tentative) for FewBody physics
-	// Eunwoo: idea - search bound/unbound particles within neighbor as BIFROST do
+
 	std::vector<Particle*> groupParticles; // Vector to store pointers of particles in the group not including mother
 
 	// predict the particle position to obtain more information
@@ -52,13 +57,12 @@ void Particle::isFBCandidate() {
 
 	for (Particle* ptcl: ACList) {
 
-		// if particle time step is too large, skip
-		// if the neighbor step is larger then 8 times of the candidate particle, then skip
-		r2 = 0.0;
-
-		if ((ptcl->TimeLevelIrr) > (this->TimeLevelIrr+3) || ptcl->isGroup || ptcl->isCMptcl) // Eunwoo didn't fully understand this
+		if (ptcl->isGroup || ptcl->isCMptcl) // Eunwoo: This will be changed soon.
 			continue;
 
+		r2 = 0.0;
+		v2 = 0.0;
+		energy = 0.0;
 
 		// find out what the paired particle is
 		current_time = this->CurrentTimeIrr > ptcl->CurrentTimeIrr ? \
@@ -69,19 +73,30 @@ void Particle::isFBCandidate() {
 		for (int dim=0; dim<Dim; dim++) {
 			// calculate position and velocity differences
 			x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
+			v[dim] = ptcl->PredVelocity[dim] - this->PredVelocity[dim];
 
-			// calculate the square of radius and inner product of r and v for each case
+			// calculate the square of relative position and velocity
 			r2 += x[dim]*x[dim];
+			v2 += v[dim]*v[dim];
 		}
 
-		// find out particles which can be detected as a group
+		// determine they are bound or not
+		energy = v2/2 - (this->Mass + ptcl->Mass)/std::sqrt(r2);
+		if (energy < 0) { // bound object
 
-		// if (r2<r_group*r_group) {
-		if ((r2<r_group*r_group) && (this->PID != ptcl->PID)) { // Eunwoo for test
+			semi = - (this->Mass + ptcl->Mass)/2/energy; // semi-major axis
+			assert(semi > 0);
+
+			if ((r2 < r_group*r_group) || (semi < r_group)) { // distant binary near periapsis OR close binary
+				groupParticles.push_back(ptcl);
+				fprintf(binout, "Bound group member added!\n"); // Eunwoo debug
+			}
+
+		}
+		else if (r2 < r_group*r_group) { //close fly-by
 			groupParticles.push_back(ptcl);
-			fprintf(binout, "group member added!\n"); // Eunwoo debug
-			// fprintf(stdout, "group member added!\n"); // Eunwoo check
-		}
+			fprintf(binout, "Unbound group member added!\n"); // Eunwoo debug
+		} // Eunwoo didn't consider distant fly-by because it can be captured later irregular time step!
 	}
 
 	if (!groupParticles.empty()) {
@@ -90,7 +105,6 @@ void Particle::isFBCandidate() {
 			ptcl->isGroup = true;
 		}
 	}
-
 	this->GroupParticles = groupParticles; // 'this' is the mother of 'groupParticles'
 
 }
@@ -115,7 +129,7 @@ void Group::initialManager() {
 	manager.slowdown_pert_ratio_ref = 1e-6; // slowdown perturbation ratio reference
 	// 1e-6 in ar.cxx
 	// 1e-4 in PeTar
-	manager.step_count_max = 1e10; // number of maximum (integrate/output) step for AR integration // set symplectic order
+	manager.step_count_max = 1e8; // number of maximum (integrate/output) step for AR integration // set symplectic order
 	// 1000000 in PeTar & ar.cxx
 	manager.step.initialSymplecticCofficients(-6); // Symplectic integrator order, should be even number
 	// -6 in PeTar & ar.cxx
@@ -151,15 +165,8 @@ void Group::initialIntegrator() {
     sym_int.reserveIntegratorMem();
 	sym_int.info.generateBinaryTree(sym_int.particles,manager.interaction.gravitational_constant);
 
-    // sym_int.particles.calcCenterOfMass();
-
-    // initialization 
-	sym_int.initialIntegration(0); // for a while
-	sym_int.info.time_offset = CurrentTime*EnzoTimeStep; // for a while
-	// sym_int.initialIntegration(CurrentTime*EnzoTimeStep);
+	sym_int.initialIntegration(CurrentTime*EnzoTimeStep);
     sym_int.info.calcDsAndStepOption(manager.step.getOrder(), manager.interaction.gravitational_constant, manager.ds_scale);
-
-	// sym_int.particles.cm.getPos();
 
 	//! Fix step options for integration with adjusted step (not for time sychronizatio phase)
 	// PeTar doesn't set this value explicitly!

@@ -112,17 +112,9 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 	}
 
 
-	if (TimeStepIrr*EnzoTimeStep*1e4 < KSTime && (this->isCMptcl == false)) // Eunwoo: this should be fixed.
-	// Eunwoo: I don't want to use KSTime but let's think about it.
-	// if (this->isCMptcl == false) // Eunwoo: just for debug
+	if (this->isCMptcl == false) // Eunwoo: just for debug
 		GroupCandidateList.push_back(this); // Eunwoo edited
 		// fprintf(binout, "GroupCandidateList added!\n");
-	/*
-	if (PID == 430) {
-		std::cerr << "After TimeLevelIrr=" << TimeLevelIrr << std::endl;
-		std::cerr << std::endl;
-	}
-	*/
 }
 
 

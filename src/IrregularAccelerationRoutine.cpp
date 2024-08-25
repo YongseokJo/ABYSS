@@ -10,8 +10,8 @@ bool CreateComputationChain(std::vector<Particle*> &particle);
 bool UpdateComputationChain(Particle* ptcl);
 bool CreateComputationList(Particle* ptcl);
 bool AddNewBinariesToList(std::vector<Particle*> &particle);
-void BinaryAccelerationRoutine(REAL next_time, std::vector<Particle*> &particle);
-void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL current_time, ULL current_block);
+void BinaryAccelerationRoutine(REAL next_time);
+void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle);
 
 
 
@@ -111,9 +111,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			//fflush(stdout);
 			//fflush(stderr);
 			//fflush(binout);
-			BinaryAccelerationRoutine(
-					ComputationList[0]->CurrentTimeIrr+ComputationList[0]->TimeStepIrr,
-				 	particle);
+			BinaryAccelerationRoutine(ComputationList[0]->CurrentTimeIrr+ComputationList[0]->TimeStepIrr);
 			// fprintf(stdout, "Finishing Binaries ...\n");
 			//fflush(stdout);
 			fflush(binout);
@@ -320,15 +318,13 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			//std::cout << "after TimeStepCal\n" << std::flush;
 #ifdef binary
 			if (ptcl->isCMptcl) {
-				// if (ptcl->BinaryInfo->r > ptcl->BinaryInfo->r0*2.0
-						// || ptcl->BinaryInfo->TimeStep*EnzoTimeStep*1e4 > 2.0*KSTime) { // Eunwoo editted
 				for (Particle* ptclJ : ptcl->GroupParticles) {
 					
-					if ((dist((ptcl->GroupMother->Position), (ptclJ->Position))) > 1e-3/position_unit) { // Eunwoo will change this.
+					if ((dist((ptcl->GroupMother->Position), (ptclJ->Position))) > 1e-2/position_unit) { // Group termination condition
 
 						fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
 						fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
-						FBTermination(ptcl, particle, binary_time, binary_block); // Eunwoo editted
+						FBTermination(ptcl, particle); // Eunwoo editted
 						bin_termination=true;
 						break;
 					}

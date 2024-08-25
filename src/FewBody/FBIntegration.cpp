@@ -39,7 +39,6 @@
 
 void Group::ARIntegration(REAL next_time){
 
-    sym_int.initialIntegration(CurrentTime*EnzoTimeStep);
     sym_int.integrateToTime(next_time*EnzoTimeStep);
 
     sym_int.particles.shiftToOriginFrame();
@@ -47,8 +46,6 @@ void Group::ARIntegration(REAL next_time){
     sym_int.particles.shiftToCenterOfMassFrame();
 
     CurrentTime = next_time;
-
-
 
     
 //     // integration loop

@@ -12,7 +12,7 @@ void generate_Matrix(REAL a[3], REAL (&A)[3][4]);
 void InitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle);
 void UpdateNextRegTime(std::vector<Particle*> &particle);
 
-void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle, REAL current_time, ULL current_block){
+void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 
 
 	Particle* ptclI; // Mother of a group
