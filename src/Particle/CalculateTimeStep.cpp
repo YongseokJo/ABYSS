@@ -114,7 +114,6 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 
 	if (this->isCMptcl == false) // Eunwoo: just for debug
 		GroupCandidateList.push_back(this); // Eunwoo edited
-		// fprintf(binout, "GroupCandidateList added!\n");
 }
 
 

@@ -36,22 +36,17 @@ void Particle::isFBCandidate() {
 
 	REAL x[Dim];
 	REAL v[Dim];
+	REAL xv[Dim];
 	REAL current_time;
 
 	REAL r2;
 	REAL v2;
 	REAL energy; // specific orbital energy
 	REAL semi; // semi-major axis
-	
+
 	REAL r_group = 1e-3/position_unit; // group detecting radius: 1e-3 pc (tentative) for FewBody physics
 
 	std::vector<Particle*> groupParticles; // Vector to store pointers of particles in the group not including mother
-
-	// predict the particle position to obtain more information
-	// particle regularlized if the conditions are satisfied at a future time
-
-	// need to consider case when c.m particles are the cause of the small steps
-	// need to be added later - CHECK
 
 	// fprintf(binout, "Function isFBCandidate started\n"); // Eunwoo debug
 
@@ -74,6 +69,7 @@ void Particle::isFBCandidate() {
 			// calculate position and velocity differences
 			x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
 			v[dim] = ptcl->PredVelocity[dim] - this->PredVelocity[dim];
+			xv[dim] = x[dim]*v[dim];
 
 			// calculate the square of relative position and velocity
 			r2 += x[dim]*x[dim];
@@ -82,20 +78,25 @@ void Particle::isFBCandidate() {
 
 		// determine they are bound or not
 		energy = v2/2 - (this->Mass + ptcl->Mass)/std::sqrt(r2);
+		semi = - (this->Mass + ptcl->Mass)/2/energy; // semi-major axis
+		REAL p = 1.0 - sqrt(r2)/semi;
+		REAL ecc = sqrt(p*p + (xv[0]*xv[0]+xv[1]*xv[1]+xv[2]*xv[2])/semi/(this->Mass + ptcl->Mass));
+
 		if (energy < 0) { // bound object
 
-			semi = - (this->Mass + ptcl->Mass)/2/energy; // semi-major axis
 			assert(semi > 0);
 
 			if ((r2 < r_group*r_group) || (semi < r_group)) { // distant binary near periapsis OR close binary
 				groupParticles.push_back(ptcl);
 				fprintf(binout, "Bound group member added!\n"); // Eunwoo debug
+				fprintf(binout, "PID: %d, periapsis dist: %e pc\n", ptcl->PID, semi*(1-ecc)*position_unit);
 			}
 
 		}
 		else if (r2 < r_group*r_group) { //close fly-by
 			groupParticles.push_back(ptcl);
 			fprintf(binout, "Unbound group member added!\n"); // Eunwoo debug
+			fprintf(binout, "PID: %d, periapsis dist: %e pc\n", ptcl->PID, semi*(1-ecc)*position_unit);
 		} // Eunwoo didn't consider distant fly-by because it can be captured later irregular time step!
 	}
 
@@ -129,7 +130,7 @@ void Group::initialManager() {
 	manager.slowdown_pert_ratio_ref = 1e-6; // slowdown perturbation ratio reference
 	// 1e-6 in ar.cxx
 	// 1e-4 in PeTar
-	manager.step_count_max = 1e8; // number of maximum (integrate/output) step for AR integration // set symplectic order
+	manager.step_count_max = 1e6; // number of maximum (integrate/output) step for AR integration // set symplectic order
 	// 1000000 in PeTar & ar.cxx
 	manager.step.initialSymplecticCofficients(-6); // Symplectic integrator order, should be even number
 	// -6 in PeTar & ar.cxx
@@ -206,9 +207,18 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 		fprintf(binout, "PID: %d. Position - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0], members->Position[1], members->Position[2]);
 		fprintf(binout, "PID: %d. Velocity - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0], members->Velocity[1], members->Velocity[2]);
 		fprintf(binout, "PID: %d. Mass - %e, \n", members->PID, members->Mass);
-        fprintf(binout, "PID: %d. Distance from mother particle: %e\n", members->PID, dist(ptclI->Position, members->Position));
+        // fprintf(binout, "PID: %d. Distance from mother particle (pc): %e\n", members->PID, dist(ptclI->Position, members->Position)*position_unit);
         fprintf(binout, "PID: %d. Total Acceleration - ax:%e, ay:%e, az:%e \n", members->PID, members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
-        fprintf(binout, "PID: %d. Time Steps - irregular:%e, regular:%e\n", members->PID, members->TimeStepIrr*EnzoTimeStep*1e4, members->TimeStepReg*EnzoTimeStep*1e4);
+        fprintf(binout, "PID: %d. Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->PID, members->a_tot[0][1], members->a_tot[1][1], members->a_tot[2][1]);
+		fprintf(binout, "PID: %d. Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->PID, members->a_tot[0][2], members->a_tot[1][2], members->a_tot[2][2]);
+		fprintf(binout, "PID: %d. Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->PID, members->a_tot[0][3], members->a_tot[1][3], members->a_tot[2][3]);
+		fprintf(binout, "PID: %d. Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
+		fprintf(binout, "PID: %d. Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->PID, members->a_irr[0][1], members->a_irr[1][1], members->a_irr[2][1]);
+		fprintf(binout, "PID: %d. Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->PID, members->a_irr[0][2], members->a_irr[1][2], members->a_irr[2][2]);
+		fprintf(binout, "PID: %d. Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->PID, members->a_irr[0][3], members->a_irr[1][3], members->a_irr[2][3]);
+		fprintf(binout, "PID: %d. Time Steps (Myr) - irregular:%e, regular:%e \n", members->PID, members->TimeStepIrr*EnzoTimeStep*1e4, members->TimeStepReg*EnzoTimeStep*1e4);
+		fprintf(binout, "PID: %d. Time Blocks - irregular:%llu, regular:%llu \n", members->PID, members->TimeBlockIrr, members->TimeBlockReg);
+		fprintf(binout, "PID: %d. Current Blocks - irregular: %llu, regular:%llu \n", members->PID, members->CurrentBlockIrr, members->CurrentBlockReg);
     }
 
 	for (Particle* members : ptclGroup->Members){
@@ -325,11 +335,17 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	fprintf(binout, "Velocity - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
 	fprintf(binout, "Mass - %e, \n", ptclCM->Mass);
 
-	// fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
-	// fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
-	// fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
-	// fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
-	fprintf(binout, "CM Time Steps - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr*EnzoTimeStep*1e4, ptclCM->TimeStepReg*EnzoTimeStep*1e4);
+	fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
+	fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
+	fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
+	fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
+	fprintf(binout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_irr[0][0], ptclCM->a_irr[1][0], ptclCM->a_irr[2][0]);
+	fprintf(binout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_irr[0][1], ptclCM->a_irr[1][1], ptclCM->a_irr[2][1]);
+	fprintf(binout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_irr[0][2], ptclCM->a_irr[1][2], ptclCM->a_irr[2][2]);
+	fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_irr[0][3], ptclCM->a_irr[1][3], ptclCM->a_irr[2][3]);
+	fprintf(binout, "Time Steps (Myr) - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr*EnzoTimeStep*1e4, ptclCM->TimeStepReg*EnzoTimeStep*1e4);
+	fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", ptclCM->TimeBlockIrr, ptclCM->TimeBlockReg);
+	fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", ptclCM->CurrentBlockIrr, ptclCM->CurrentBlockReg);
 
 	// we also need to change the neighbor list of Particles if they are containing group particles
 	// assuming that all the neighbors are bidirectional
@@ -366,7 +382,7 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 		ptclJ->isErase = false;
 	}
 
-	fprintf(binout, "\n---------------------END-OF-NEW-GROUP---------------------\n\n");
+	fprintf(binout, "---------------------END-OF-NEW-GROUP---------------------\n\n");
 	// fprintf(stdout, "\n---------------------END-OF-NEW-GROUP---------------------\n\n"); // Eunwoo check
 	fflush(binout);
 	// fflush(stdout); // Eunwoo check

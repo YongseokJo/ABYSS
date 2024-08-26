@@ -62,15 +62,10 @@ class Particle
 		REAL LocalDensity;
 		Particle* NextParticleInEnzo;
 		Particle* NextParticleForComputation;
-		// Particle* BinaryPairParticle; // Eunwoo deleted
-		// Particle* BinaryParticleI; // Eunwoo deleted
-		// Particle* BinaryParticleJ; // Eunwoo deleted
-		// Binary* BinaryInfo; // Eunwoo deleted
 		std::vector<Particle*> ACList;     // list of AC neighbor 
 		int NumberOfAC; // number of neighbors
 		REAL RadiusOfAC;
 		bool isStarEvolution;
-		// bool isBinary; // check whether this is a member of the binary // Eunwoo deleted
 		bool isCMptcl; // check if this particle is center-of-mass particle
 		bool isErase;
 

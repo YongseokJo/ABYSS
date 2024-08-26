@@ -298,7 +298,8 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		binary_time_prev = binary_time;
 		binary_block = ComputationList[0]->CurrentBlockIrr+ComputationList[0]->TimeBlockIrr;
 		binary_time  = binary_block*time_step;
-		global_time_irr = ComputationList[0]->CurrentBlockIrr+ComputationList[0]->TimeBlockIrr;
+		// global_time_irr = ComputationList[0]->CurrentBlockIrr+ComputationList[0]->TimeBlockIrr; // Eunwoo: should be checked
+		global_time_irr = ComputationList[0]->CurrentTimeIrr+ComputationList[0]->TimeStepIrr; // Eunwoo: should be checked
 		//std::cout << "ComputationList of " << ComputationList.size() << " : " ;
 		bool bin_termination=false;	
 #endif
@@ -320,7 +321,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			if (ptcl->isCMptcl) {
 				for (Particle* ptclJ : ptcl->GroupParticles) {
 					
-					if ((dist((ptcl->GroupMother->Position), (ptclJ->Position))) > 1e-2/position_unit) { // Group termination condition
+					if ((dist((ptcl->GroupMother->Position), (ptclJ->Position))) > 1e-3/position_unit) { // Group termination condition
 
 						fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
 						fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);

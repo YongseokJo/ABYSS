@@ -26,8 +26,8 @@ const int WRITE_PRECISION=30;
 typedef double Float;
 #define to_int(x)     int(x)
 #define to_double(x)  double(x)
-const Float ROUND_OFF_ERROR_LIMIT=1e-14; // original
-// const Float ROUND_OFF_ERROR_LIMIT=1e-300; // Eunwoo
+// const Float ROUND_OFF_ERROR_LIMIT=1e-14; // original
+const Float ROUND_OFF_ERROR_LIMIT=1e-300; // Eunwoo
 const Float NUMERIC_FLOAT_MAX = std::numeric_limits<Float>::max();
 const int WRITE_WIDTH=23;
 const int WRITE_PRECISION=14;

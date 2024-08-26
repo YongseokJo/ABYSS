@@ -14,10 +14,7 @@ bool AddNewBinariesToList(std::vector<Particle*> &particle) {
 	for (Particle *ptcl : GroupCandidateList) {
 		//fprintf(binout, "next candidate\n");
 		//fprintf(binout, "PID = %d, timestep=%e\n", ptcl->PID, ptcl->TimeStepIrr*EnzoTimeStep*1e4);
-		// if the irregular time step is too short, check if it is binary
-		//if ((ptcl->TimeStepIrr*EnzoTimeStep*1e4<KSTime) && ( (ptcl->isBinary == false) && (ptcl->isCMptcl == false) )) {
-		//fprintf(binout, "BinaryAccelerationRoutine.cpp: new binary particle found! timestep=%e\n",
-				//ptcl->TimeStepIrr*EnzoTimeStep*1e4);
+
 		if (!ptcl->isGroup) {
 
 			// fprintf(binout, "Let's check ptcl inside GroupCandidateList is really group!\n"); // Eunwoo debug
@@ -47,6 +44,7 @@ void BinaryAccelerationRoutine(REAL next_time) {
 	}
 
 	for (Group* ptclGroup: GroupList) {
+
 		ptclGroup->ARIntegration(next_time);
 
 	}
