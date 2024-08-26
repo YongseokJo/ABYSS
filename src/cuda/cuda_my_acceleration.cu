@@ -41,8 +41,10 @@ CUDA_REAL *d_r2=nullptr, *d_diff=nullptr; // ,*d_magnitudes=nullptr,
 int *d_target=nullptr;
 // double3 *d_adot=nullptr, *d_acc=nullptr;
 
+#ifdef debuggig_verification
 extern CUDA_REAL *h_r2;
 CUDA_REAL *h_r2=nullptr; //only for verification
+#endif
 
 extern int *h_neighbor, *d_neighbor;
 extern int *h_num_neighbor, *d_num_neighbor, *d_neighbor_block;
@@ -237,7 +239,6 @@ void GetAcceleration(
 
 
 	}
-	toHost(h_r2, d_r2, NNB); // only for verification
 
 	#ifdef NSIGHT
 	nvtxRangePushA("Out data");
@@ -250,8 +251,11 @@ void GetAcceleration(
 		adot[i][0] = h_result[_six*i+3];
 		adot[i][1] = h_result[_six*i+4];
 		adot[i][2] = h_result[_six*i+5];
-
+		
+		// #define debuggig_verification
 		#ifdef debuggig_verification
+		toHost(h_r2, d_r2, NNB); // only for verification
+
 		fprintf(stderr, "%d (%d) neighbors of %d = ", i, h_target_list[i], NumNeighbor[i]);
 		for (int j=0;j<NumNeighbor[i];j++) {
 			fprintf(stderr, "%d, ", NeighborList[i * NumNeighborMax + j]);
@@ -273,10 +277,11 @@ void GetAcceleration(
 			double dz = iz - h_ptcl[j + NNB * 2];
 			double r2_temp = dx*dx + dy*dy + dz*dz;
 			if (r2_temp < i_r2) {
-				fprintf(stderr, "%d, ", j);
+				fprintf(stderr, "%d, (%e)", j, r2_temp);
 			}
 		}
 		fprintf(stderr, "\n");
+		exit(1);
 		#endif
 	}
 
@@ -372,7 +377,10 @@ void _ReceiveFromHost(
 		#endif
 		my_allocate(&h_num_neighbor , &d_num_neighbor,                GridDimY * variable_size);
 
+		#ifdef debuggig_verification
 		cudaMallocHost((void**)&h_r2        ,        variable_size * sizeof(CUDA_REAL)); // only for verification
+		#endif debuggig_verification
+
 		// cudaMallocHost((void**)&h_num_neighbor, GridDimY * variable_size * sizeof(int));
 		// cudaMalloc((void**)&d_num_neighbor, GridDimY * variable_size * sizeof(int));
 		
