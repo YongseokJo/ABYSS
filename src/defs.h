@@ -75,7 +75,7 @@
 
 typedef unsigned long long ULL;
 
-//#define FLOAT
+// #define FLOAT
 #define DOUBLE
 #ifdef FLOAT
 typedef float REAL;
@@ -91,10 +91,17 @@ typedef double REAL;
 #define MIN(a,b) std::min(RCAST(a),RCAST(b))
 #endif
 
-//typedef float CUDA_REAL;
+#define CUDA_FLOAT
+#ifdef CUDA_FLOAT
+typedef float CUDA_REAL;
+#else
 typedef double CUDA_REAL;
+#endif
+
+
 //typedef double3 CUDA_REAL3;
 //typedef make_double3 make_CUDA_REAL3;
+
 
 #define NAN_CHECK(val) assert((val) == (val));
 
