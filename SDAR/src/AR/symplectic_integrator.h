@@ -1725,6 +1725,7 @@ namespace AR {
             ASSERT(checkParams());
 
             ASSERT(!particles.isModified());
+            // fprintf(stderr, "ds: %e\n", _ds); // Eunwoo added
             ASSERT(_ds>0);
 
             // symplectic step coefficent group number
@@ -1739,10 +1740,12 @@ namespace AR {
 
             Tparticle* particle_data = particles.getDataAddress();
             Float mass1 = particle_data[0].Mass;
+            // fprintf(stderr:);
             Float* pos1 = particle_data[0].getPos();
             Float* vel1 = particle_data[0].getVel();
 
             Float mass2 = particle_data[1].Mass;
+            // fprintf(stderr, "mass1: %e, mass2: %e\n", mass1, mass2); // Eunwoo debug
             Float* pos2 = particle_data[1].getPos();
             Float* vel2 = particle_data[1].getVel();
 
@@ -1767,6 +1770,7 @@ namespace AR {
             for (int i=0; i<nloop; i++) {
                 // step for drift
                 Float ds = manager->step.getCK(i)*_ds;
+                // fprintf(stderr, "ds: %e\n", ds); // Eunwoo debug
                 // inverse time transformation factor for drift
 #ifdef AR_TTL
                 Float gt_inv = gt_drift_inv_;
@@ -2352,6 +2356,7 @@ namespace AR {
 #endif
                             // info.ds = info.calcDsKeplerBinaryTree(bin_root, manager->step.getOrder(), G, manager->ds_scale); // Original
                             info.ds = info.calcDsKeplerBinaryTree(bin_root, manager->step.getOrder(), (double)1.0, manager->ds_scale); // Eunwoo added
+                            // fprintf(stderr, "info.ds: %e", info.ds); // Eunwoo debug
                             if (abs(ds_init-info.ds)/ds_init>0.1) {
 #ifdef AR_DEBUG_PRINT
                                 std::cerr<<"Change ds after update binary orbit: ds(init): "<<ds_init<<" ds(new): "<<info.ds<<" ds(now): "<<ds[0]<<std::endl;

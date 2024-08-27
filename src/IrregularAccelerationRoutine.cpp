@@ -330,6 +330,8 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 						break;
 					}
 				}
+				// FBTermination(ptcl, particle);
+				// bin_termination=true;
 			}
 #endif
 

@@ -39,6 +39,8 @@
 
 void Group::ARIntegration(REAL next_time){
 
+    // sym_int.info.fix_step_option = AR::FixStepOption::none; // Eunwoo debug
+
     sym_int.integrateToTime(next_time*EnzoTimeStep);
 
     sym_int.particles.shiftToOriginFrame();

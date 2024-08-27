@@ -115,11 +115,11 @@ void Particle::isFBCandidate() {
 void Group::initialManager() {
 
 	manager.interaction.gravitational_constant = 1.0;
-	manager.time_step_min = 1e-13; // minimum physical time step // 1e-13 in ar.cxx
+	manager.time_step_min = 1e-9; // minimum physical time step // 1e-13 in ar.cxx
 	manager.ds_scale = 1.0; // step size scaling factor // reference: ar.cxx
 	manager.time_error_max = 0.25*manager.time_step_min; // time synchronization absolute error limit for AR, default is 0.25*dt-min
 	// reference: ar.cxx
-	manager.energy_error_relative_max = 1e-10; // relative energy error limit for AR, phase error requirement
+	manager.energy_error_relative_max = 1e-7; // relative energy error limit for AR, phase error requirement
 	// 1e-10 in ar.cxx
 	// 1e-8 in PeTar
 	manager.slowdown_timescale_max = NUMERIC_FLOAT_MAX; // maximum timescale for maximum slowdown factor, time-end
@@ -130,7 +130,7 @@ void Group::initialManager() {
 	manager.slowdown_pert_ratio_ref = 1e-6; // slowdown perturbation ratio reference
 	// 1e-6 in ar.cxx
 	// 1e-4 in PeTar
-	manager.step_count_max = 1e6; // number of maximum (integrate/output) step for AR integration // set symplectic order
+	manager.step_count_max = 1000000; // number of maximum (integrate/output) step for AR integration // set symplectic order
 	// 1000000 in PeTar & ar.cxx
 	manager.step.initialSymplecticCofficients(-6); // Symplectic integrator order, should be even number
 	// -6 in PeTar & ar.cxx
@@ -153,6 +153,7 @@ void Group::initialIntegrator() {
 
     for (size_t i = 0; i < Members.size(); ++i) {
         sym_int.particles.addMemberAndAddress(*Members[i]);
+		fprintf(binout, "Mem PID: %d\n", Members[i]->PID);
     }
 
 	sym_int.info.r_break_crit = 1e-3/position_unit; // distance criterion for checking stability
@@ -166,8 +167,10 @@ void Group::initialIntegrator() {
     sym_int.reserveIntegratorMem();
 	sym_int.info.generateBinaryTree(sym_int.particles,manager.interaction.gravitational_constant);
 
-	sym_int.initialIntegration(CurrentTime*EnzoTimeStep);
-    sym_int.info.calcDsAndStepOption(manager.step.getOrder(), manager.interaction.gravitational_constant, manager.ds_scale);
+	sym_int.particles.calcCenterOfMass();
+
+	// sym_int.initialIntegration(CurrentTime*EnzoTimeStep);
+    // sym_int.info.calcDsAndStepOption(manager.step.getOrder(), manager.interaction.gravitational_constant, manager.ds_scale);
 
 	//! Fix step options for integration with adjusted step (not for time sychronizatio phase)
 	// PeTar doesn't set this value explicitly!
@@ -204,21 +207,21 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 
 	fprintf(binout, "------------------NEW-GROUP-MEMBER-INFORMATION------------------\n");
 	for (Particle* members: ptclGroup->Members) {
-		fprintf(binout, "PID: %d. Position - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0], members->Position[1], members->Position[2]);
-		fprintf(binout, "PID: %d. Velocity - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0], members->Velocity[1], members->Velocity[2]);
-		fprintf(binout, "PID: %d. Mass - %e, \n", members->PID, members->Mass);
+		// fprintf(binout, "PID: %d. Position - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0], members->Position[1], members->Position[2]);
+		// fprintf(binout, "PID: %d. Velocity - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0], members->Velocity[1], members->Velocity[2]);
+		// fprintf(binout, "PID: %d. Mass - %e, \n", members->PID, members->Mass);
         // fprintf(binout, "PID: %d. Distance from mother particle (pc): %e\n", members->PID, dist(ptclI->Position, members->Position)*position_unit);
-        fprintf(binout, "PID: %d. Total Acceleration - ax:%e, ay:%e, az:%e \n", members->PID, members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
-        fprintf(binout, "PID: %d. Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->PID, members->a_tot[0][1], members->a_tot[1][1], members->a_tot[2][1]);
-		fprintf(binout, "PID: %d. Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->PID, members->a_tot[0][2], members->a_tot[1][2], members->a_tot[2][2]);
-		fprintf(binout, "PID: %d. Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->PID, members->a_tot[0][3], members->a_tot[1][3], members->a_tot[2][3]);
-		fprintf(binout, "PID: %d. Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
-		fprintf(binout, "PID: %d. Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->PID, members->a_irr[0][1], members->a_irr[1][1], members->a_irr[2][1]);
-		fprintf(binout, "PID: %d. Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->PID, members->a_irr[0][2], members->a_irr[1][2], members->a_irr[2][2]);
-		fprintf(binout, "PID: %d. Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->PID, members->a_irr[0][3], members->a_irr[1][3], members->a_irr[2][3]);
+        // fprintf(binout, "PID: %d. Total Acceleration - ax:%e, ay:%e, az:%e \n", members->PID, members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
+        // fprintf(binout, "PID: %d. Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->PID, members->a_tot[0][1], members->a_tot[1][1], members->a_tot[2][1]);
+		// fprintf(binout, "PID: %d. Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->PID, members->a_tot[0][2], members->a_tot[1][2], members->a_tot[2][2]);
+		// fprintf(binout, "PID: %d. Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->PID, members->a_tot[0][3], members->a_tot[1][3], members->a_tot[2][3]);
+		// fprintf(binout, "PID: %d. Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
+		// fprintf(binout, "PID: %d. Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->PID, members->a_irr[0][1], members->a_irr[1][1], members->a_irr[2][1]);
+		// fprintf(binout, "PID: %d. Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->PID, members->a_irr[0][2], members->a_irr[1][2], members->a_irr[2][2]);
+		// fprintf(binout, "PID: %d. Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->PID, members->a_irr[0][3], members->a_irr[1][3], members->a_irr[2][3]);
 		fprintf(binout, "PID: %d. Time Steps (Myr) - irregular:%e, regular:%e \n", members->PID, members->TimeStepIrr*EnzoTimeStep*1e4, members->TimeStepReg*EnzoTimeStep*1e4);
-		fprintf(binout, "PID: %d. Time Blocks - irregular:%llu, regular:%llu \n", members->PID, members->TimeBlockIrr, members->TimeBlockReg);
-		fprintf(binout, "PID: %d. Current Blocks - irregular: %llu, regular:%llu \n", members->PID, members->CurrentBlockIrr, members->CurrentBlockReg);
+		// fprintf(binout, "PID: %d. Time Blocks - irregular:%llu, regular:%llu \n", members->PID, members->TimeBlockIrr, members->TimeBlockReg);
+		// fprintf(binout, "PID: %d. Current Blocks - irregular: %llu, regular:%llu \n", members->PID, members->CurrentBlockIrr, members->CurrentBlockReg);
     }
 
 	for (Particle* members : ptclGroup->Members){
@@ -272,6 +275,9 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	ptclGroup->groupCM		= ptclCM;
 	ptclGroup->CurrentTime	= ptcl->CurrentTimeIrr;
 
+	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
+    ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
+
 	// Erase group particles from particle vector because now they should be replaced with CM particle
 
 	for (Particle* members : ptclGroup->Members) {
@@ -319,37 +325,7 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 		ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
 	}
 
-
-
-	UpdateNextRegTime(particle);
-
-  CreateComputationChain(particle);
-	CreateComputationList(FirstComputation);
-
-	// Add the binary to binary integration list
-	GroupList.push_back(ptclGroup);
-
-	fprintf(binout, "\nFBInitialization.cpp: result of CM particle value calculation from function NewFBInitialization\n");
-
-	fprintf(binout, "Position - x:%e, y:%e, z:%e, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
-	fprintf(binout, "Velocity - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
-	fprintf(binout, "Mass - %e, \n", ptclCM->Mass);
-
-	fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
-	fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
-	fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
-	fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
-	fprintf(binout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_irr[0][0], ptclCM->a_irr[1][0], ptclCM->a_irr[2][0]);
-	fprintf(binout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_irr[0][1], ptclCM->a_irr[1][1], ptclCM->a_irr[2][1]);
-	fprintf(binout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_irr[0][2], ptclCM->a_irr[1][2], ptclCM->a_irr[2][2]);
-	fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_irr[0][3], ptclCM->a_irr[1][3], ptclCM->a_irr[2][3]);
-	fprintf(binout, "Time Steps (Myr) - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr*EnzoTimeStep*1e4, ptclCM->TimeStepReg*EnzoTimeStep*1e4);
-	fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", ptclCM->TimeBlockIrr, ptclCM->TimeBlockReg);
-	fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", ptclCM->CurrentBlockIrr, ptclCM->CurrentBlockReg);
-
-	// we also need to change the neighbor list of Particles if they are containing group particles
-	// assuming that all the neighbors are bidirectional
-	// may need to update later if the radius for neighbor differs depending on the particle
+// /* Eunwoo: How about chainging neighbor list of particles here?
 
 	std::cout << "Changing the Neighbor List of Particles" << std::endl;
 
@@ -373,13 +349,72 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 		if (size != ptcl->NumberOfAC) {
 			ptcl->ACList.push_back(ptclCM);
 			ptcl->NumberOfAC++;
+			// InitializeFBParticle(ptcl, particle); // Eunwoo added
+			// ptcl->calculateTimeStepReg(); // Eunwoo added
+			// ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr); // Eunwoo added
 		}
 	}
+// */
+
+
+	UpdateNextRegTime(particle);
+
+  CreateComputationChain(particle);
+	CreateComputationList(FirstComputation);
+
+	// Add the binary to binary integration list
+	GroupList.push_back(ptclGroup);
+
+	fprintf(binout, "\nFBInitialization.cpp: result of CM particle value calculation from function NewFBInitialization\n");
+
+	// fprintf(binout, "Position - x:%e, y:%e, z:%e, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
+	// fprintf(binout, "Velocity - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
+	// fprintf(binout, "Mass - %e, \n", ptclCM->Mass);
+
+	// fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
+	// fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
+	// fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
+	// fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
+	// fprintf(binout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_irr[0][0], ptclCM->a_irr[1][0], ptclCM->a_irr[2][0]);
+	// fprintf(binout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_irr[0][1], ptclCM->a_irr[1][1], ptclCM->a_irr[2][1]);
+	// fprintf(binout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_irr[0][2], ptclCM->a_irr[1][2], ptclCM->a_irr[2][2]);
+	// fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_irr[0][3], ptclCM->a_irr[1][3], ptclCM->a_irr[2][3]);
+	fprintf(binout, "Time Steps (Myr) - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr*EnzoTimeStep*1e4, ptclCM->TimeStepReg*EnzoTimeStep*1e4);
+	// fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", ptclCM->TimeBlockIrr, ptclCM->TimeBlockReg);
+	// fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", ptclCM->CurrentBlockIrr, ptclCM->CurrentBlockReg);
+
+	// we also need to change the neighbor list of Particles if they are containing group particles
+	// assuming that all the neighbors are bidirectional
+	// may need to update later if the radius for neighbor differs depending on the particle
+
+	// std::cout << "Changing the Neighbor List of Particles" << std::endl;
+
+	// // ptclI->isErase = true;
+	// // for (Particle* ptclJ : ptclI->GroupParticles) {
+	// // 	ptclJ->isErase = true;
+	// // }
+
+	// int size = 0;
+	// for (Particle* ptcl: particle) {
+	// 	size = ptcl->ACList.size();
+
+	// 	ptcl->ACList.erase(
+	// 			std::remove_if(ptcl->ACList.begin(), ptcl->ACList.end(),
+	// 				[](Particle* p) {
+	// 				bool to_remove = p->isErase;
+	// 				return to_remove; }),
+	// 			ptcl->ACList.end());
+	// 	ptcl->NumberOfAC = ptcl->ACList.size();
+
+	// 	if (size != ptcl->NumberOfAC) {
+	// 		ptcl->ACList.push_back(ptclCM);
+	// 		ptcl->NumberOfAC++;
+	// 	}
+	// }
 
 	// this makes binary particles have their CM particle as a neighbor
-	ptclI->isErase = false;
-	for (Particle* ptclJ : ptclI->GroupParticles) {
-		ptclJ->isErase = false;
+	for (Particle* members : ptclGroup->Members) {
+		members->isErase = false;
 	}
 
 	fprintf(binout, "---------------------END-OF-NEW-GROUP---------------------\n\n");
