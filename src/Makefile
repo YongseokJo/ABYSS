@@ -4,18 +4,19 @@ CXX = icc
 NVCC = nvcc
 
 # Compiler flags
-CXXFLAGS  = -O3 -std=c++11  -Wall -Wextra -Wuninitialized -I./Particle -I./ -g 
-NVCCFLAGS = -O2 --std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcudart -lcompute-sanitizer
+#CXXFLAGS  = -O3 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -qopenmp  #-fopenmp  -fsanitize=thread
+CXXFLAGS  = -O3 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -qopenmp  #-fopenmp  -fsanitize=thread
+NVCCFLAGS = -O2 --std=c++11 -G -Xcompiler -rdynamic -g -lineinfo -Xptxas=-v -lcudart -lcompute-sanitizer 
 NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
 #NVCC_FLAGS_PROFILE = -g -lineinfo
 
 # Libraries
-LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas -lnvToolsExt
+LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas -lnvToolsExt #-ltbb
 #add -lnvToolsExt for <nvToolsExt.h>
 #LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
 
 # Source files
-CXX_SRCS = main.cpp ReadWrite.cpp Particle/ParticleRoutines.cpp ComputationChainRoutine.cpp SortComputationChain.cpp InitializeParticles.cpp TimeStepRoutines.cpp Particle/CalculateIrrForce.cpp IrregularAccelerationRoutine.cpp Particle/CalculateRegForce.cpp RegularAccelerationRoutine.cpp Particle/UpdateParticle.cpp Particle/CalculateTimeStep.cpp InitializeTimeStep.cpp Evolve.cpp Particle/CheckNeighborForEvolution.cpp Particle/UpdateEvolveParticle.cpp parser.cpp cuda/CalculateRegularAcceleration.cpp cuda/CalculateAccelerationForAll.cpp Particle/EvolveStar.cpp Binary/BinaryRoutines.cpp Binary/KSRegularlizationInitialization.cpp Binary/KSRegularlizationIntegration.cpp Binary/KSRegularlizationTermination.cpp BinaryAccelerationRoutine.cpp 
+CXX_SRCS = main.cpp ReadWrite.cpp Particle/ParticleRoutines.cpp ComputationChainRoutine.cpp SortComputationChain.cpp InitializeParticles.cpp TimeStepRoutines.cpp Particle/CalculateIrrForce.cpp IrregularAccelerationRoutine.cpp Particle/CalculateRegForce.cpp RegularAccelerationRoutine.cpp Particle/UpdateParticle.cpp Particle/CalculateTimeStep.cpp InitializeTimeStep.cpp Evolve.cpp Particle/CheckNeighborForEvolution.cpp Particle/UpdateEvolveParticle.cpp parser.cpp cuda/CalculateRegularAcceleration.cpp cuda/CalculateAccelerationForAll.cpp Particle/EvolveStar.cpp Binary/BinaryRoutines.cpp Binary/KSRegularlizationInitialization.cpp Binary/KSRegularlizationIntegration.cpp Binary/KSRegularlizationTermination.cpp BinaryAccelerationRoutine.cpp  IrregularAccelerationRoutineParallel.cpp ParticleScheduler/ParticleSchedulerRoutines.cpp
 #cuda/cuda_routines.cpp
 
 

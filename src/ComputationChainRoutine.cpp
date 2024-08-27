@@ -157,11 +157,12 @@ bool CreateComputationChain(std::vector<Particle*> &particle) {
 	for (Particle *ptcl : particle)
 	{
 		// advance irregular time without irregular routine
-		NextIrrBlock = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr;
+		//NextIrrBlock = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr;
+		ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 		//std::cerr << NextIrrBlock << "(" << ptcl->PID << ","<< ptcl->NumberOfAC << ")" <<  " ";
-		if ((ptcl->NumberOfAC != 0) && (NextIrrBlock <= NextRegTimeBlock)) {
+		if ((ptcl->NumberOfAC != 0) && (ptcl->NextBlockIrr <= NextRegTimeBlock)) {
 			index.push_back(i);
-			time.push_back(NextIrrBlock);
+			time.push_back(ptcl->NextBlockIrr);
 		}
 		i++;
 	}
@@ -393,3 +394,11 @@ void MergeSort(std::vector<int> index, std::vector<REAL> timesteps, int left, in
 		Merge(index, timesteps, left, mid, right);
 	}
 }
+
+
+
+
+
+
+
+

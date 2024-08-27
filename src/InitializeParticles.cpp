@@ -35,6 +35,23 @@ void InitializeParticle(std::vector<Particle*> &particle) {
 
 	// loop over particles to initialize their values
 	int j = 0;
+#ifdef OMP
+#pragma omp parallel
+	{
+#pragma omp for
+		for (size_t i = 0; i < particle.size(); ++i) {
+		FindNeighbor(particle[i], particle);
+		CalculateAcceleration01(particle[i], particle);
+		}
+
+#pragma omp barrier
+
+#pragma omp for
+		for (size_t i = 0; i < particle.size(); ++i) {
+		CalculateAcceleration23(particle[i], particle);
+		}
+	}
+#else
 	for (Particle* ptcl:particle) {
 		//std::cout <<  j << ": ";
 		//std::cout << std::flush;
@@ -45,6 +62,9 @@ void InitializeParticle(std::vector<Particle*> &particle) {
 		CalculateAcceleration23(ptcl, particle);
 		std::cout << std::flush;
 	}
+#endif
+
+
 
 	std::cout << "Timestep initializing..." << std::endl;
 	InitializeTimeStep(particle);

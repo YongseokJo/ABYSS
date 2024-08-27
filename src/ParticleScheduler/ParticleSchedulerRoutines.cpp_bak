@@ -1,0 +1,191 @@
+#include "ParticleScheduler.h"
+#include <tbb/parallel_sort.h>
+
+bool ParticleScheduler::create_level() {
+#ifdef time_trace
+	_time.irr_chain.markStart();
+#endif
+
+	int size;
+	bool success = false;
+
+	for (int i=0; i<__particle->size(); i++) {
+		(*__particle)[i]->NextBlockIrr = 
+			(*__particle)[i]->CurrentBlockIrr + (*__particle)[i]->TimeBlockIrr; // of this particle
+		
+		if (((*__particle)[i]->NumberOfAC != 0) 
+				&& ((*__particle)[i]->NextBlockIrr <= NextRegTimeBlock)) {
+			size++;
+#pragma omp parallel 
+			{
+#pragma omp for 
+				for (int i=0; i<LevelList.size(); i++) {
+					if (LevelList[i]->LevelTime == (*__particle)[i]->NextBlockIrr) {
+						LevelList[i]->ParticleThisLevel.push_back((*__particle)[i]);
+						success = true;
+					}
+				}
+			}
+			if (success)
+				success = false;
+			else {
+				Level *level;
+				level->LevelTime = (*__particle)[i]->NextBlockIrr;
+				level->ParticleThisLevel.push_back((*__particle)[i]);
+				LevelList.push_back(level);
+				times.push_back((*__particle)[i]->NextBlockIrr);
+			}
+		}
+	}
+
+	if (size == 0) {
+#ifdef time_trace
+		_time.irr_chain.markEnd();
+		_time.irr_chain.getDuration();
+#endif
+		return true;
+	}
+
+
+	ttb::parallel_sort(LevelList.begin(), LevelList.end(), [](Level *l1, Level *l2){
+			return l1->LevelTime < l2-> LevelTime;});
+
+#ifdef time_trace
+	_time.irr_chain.markEnd();
+	_time.irr_chain.getDuration();
+#endif
+	return false;
+}
+
+
+
+
+
+#ifdef unuse
+	std::vector<int> sorted_index(size);
+#pragma omp parallel 
+	{
+#pragma omp
+		for (int i=0; i<size; i++) {
+			sorted_index[i] = i;
+		}
+	}
+
+
+	ttb::parallel_sort(sorted_index.begin(), sorted_index.end(), [__particle](int *i1, int *i2) {return (*__particle)[i1]->NextBlockIrr < (*__particle)[i2]-> NextBlockIrr;});
+
+
+#pragma omp parallel 
+	{
+#pragma omp
+		for (int i=0; i<size; i++) {
+			for (int j=0; j<size; j++)
+				if  (!((*__particle)[i]->NextBlockIrr==times[j]))
+					jjj
+			
+
+		}
+	}
+#endif
+
+
+
+
+void ParticleScheduler::run(void) {
+
+#ifdef time_trace
+	_time.irr_force.markStart();
+#endif
+
+#pragma omp parallel
+	{
+		Particle* ptcl;  
+#pragma omp for 
+		for (int i=0; i<LevelList[0]->ParticleThisLevel.size(); i++) {
+			ptcl = LevelList[0]->ParticleThisLevel[i];
+			ptcl->calculateIrrForce(); // this includes particle position
+		}
+	}
+
+#pragma omp parallel
+	{
+		Particle* ptcl;  
+#pragma omp for
+		for (int i=0; i<LevelList[0]->ParticleThisLevel.size(); i++) {
+			ptcl = LevelList[0]->ParticleThisLevel[i];
+			ptcl = ComputationList[i];
+			ptcl->updateParticle();
+			ptcl->CurrentBlockIrr += ptcl->TimeBlockIrr;
+			ptcl->CurrentTimeIrr   = ptcl->CurrentBlockIrr*time_step;
+			ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr);
+			ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+		}
+	}
+
+#ifdef time_trace
+	_time.irr_force.markEnd();
+	_time.irr_force.getDuration();
+#endif
+}
+
+
+bool ParticleScheduler::update_level(void) {
+
+#ifdef time_trace
+		_time.irr_sort.markStart();
+#endif
+
+#pragma omp parallel
+	{
+		Particle* ptcl;  
+		bool success = false;
+#pragma omp for
+		for (int i=0; i<LevelList[0]->ParticleThisLevel.size(); i++) {
+			ptcl = LevelList[0]->ParticleThisLevel[i];
+
+			if (ptcl->NextBlockIrr > NextRegTimeBlock)
+				continue;
+
+			for (int j=1; j<LevelList.size(); j++) {
+				if (LevelList[j]->LevelTime == ptcl->NextBlockIrr) {
+#pragma omp critical
+					{
+						LevelList[j]->ParticleThisLevel.push_back(ptcl);
+						success = true;
+					}
+				}
+			}
+			if (success)
+				success = false;
+			else {
+				Level *level;
+				level->LevelTime = ptcl->NextBlockIrr;
+				level->ParticleThisLevel.push_back(ptcl);
+				LevelList.push_back(level);
+				times.push_back(ptcl->NextBlockIrr);
+			}
+		}
+	}
+
+	// Delete the memory pointed to by the first element
+	delete LevelList.front(); 
+	LevelList.erase(LevelList.begin());
+
+	if (LevelList.size() == 0) {
+#ifdef time_trace
+		_time.irr_sort.markEnd();
+		_time.irr_sort.getDuration();
+#endif
+		return false;
+	}
+
+	ttb::parallel_sort(LevelList.begin(), LevelList.end(), [](Level *l1, Level *l2){
+			return l1->LevelTime < l2-> LevelTime;});
+#ifdef time_trace
+	_time.irr_sort.markEnd();
+	_time.irr_sort.getDuration();
+#endif
+	return true;
+
+
+}

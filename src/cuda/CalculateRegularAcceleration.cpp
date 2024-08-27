@@ -367,6 +367,7 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 			ptcl->ACList.push_back(particle[NeighborIndex]);
 		}
 		ptcl->UpdateRadius();
+		ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 	}
 #ifdef time_trace
 	_time.reg_cpu2.markEnd();

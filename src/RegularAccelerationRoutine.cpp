@@ -12,7 +12,6 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 	// Calulating regular acceleration of the particles
 	if (RegularList.size() > 0) {
 
-			/*
 		for (Particle* ptcl: RegularList) {
 			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-6) {
 			if (ptcl->CurrentBlockReg >= ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg != ptcl->CurrentBlockIrr) {
@@ -71,7 +70,6 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 					ptcl->a_irr[2][3]
 						);
 		}
-		*/
 		//fflush(stdout);
 		CalculateRegAccelerationOnGPU(RegularList, particle);
 		//fflush(stdout);
@@ -90,7 +88,7 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 	// update the next regular time step
 	//fprintf(stdout, "NextRegTimeBlock=%llu\n", NextRegTimeBlock);
 	//fprintf(binout, "Finishing regular force\n");
-	//std::cerr << "Finishing regular force ...\n" << std::flush;
+	std::cerr << "Finishing regular force ...\n" << std::flush;
 	//fprintf(stderr, "Finishing regular force.. NextRegTime=%.3e\n", NextRegTimeBlock*time_step);
 	//fprintf(stdout, "Finishing regular force.. NextRegTime=%.3e\n", NextRegTimeBlock*time_step);
 	return true;
