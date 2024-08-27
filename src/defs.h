@@ -91,7 +91,7 @@ typedef double REAL;
 #define MIN(a,b) std::min(RCAST(a),RCAST(b))
 #endif
 
-#define CUDA_FLOAT
+// #define CUDA_FLOAT
 #ifdef CUDA_FLOAT
 typedef float CUDA_REAL;
 #else

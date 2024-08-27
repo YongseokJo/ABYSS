@@ -222,6 +222,7 @@ __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighb
 
 
 #else
+// in this stage this is the same function as the one above
 __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ diff, int m, int n, const int* __restrict__ subset, int* __restrict__ neighbor, int* num_neighbor, int start){
 	// define i and j. in this code, grid is 2D and block is 1D
     int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
@@ -234,9 +235,10 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 	int j_end = (blockIdx.y + 1) * n / gridDim.y;
 	if (blockIdx.y == gridDim.y - 1) j_end = n;  // Ensure the last block covers all remaining elements
 	
-	while (i < m + BatchSize - 1){ // even with i > m, the last block needs tid for the shared memory
-		int i_ptcl = subset[i + start];
-		if (i >= m) i_ptcl = subset[m - 1 + start]; //assign dummy values for the last block	
+	while (i < m + BatchSize){ // even with i > m, the last block needs tid for the shared memory
+		int i_ptcl;
+		(i < m) ? i_ptcl = subset[i + start] : i_ptcl = subset[m - 1 + start]; //assign dummy values for the last block	
+
 		CUDA_REAL pi_x = ptcl[i_ptcl];
 		CUDA_REAL pi_y = ptcl[i_ptcl + n];
 		CUDA_REAL pi_z = ptcl[i_ptcl + 2 * n];
@@ -251,7 +253,8 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 		int* BlockNeighbor = &neighbor[NNB_per_block*idx_save]; // Pointer to the neighbor list of the current block
 
 		for (int j=j_begin; j < j_end; j+=BatchSize){ // total particles
-			int current_batch_size = min(BatchSize, n - j);
+			int current_batch_size = min(BatchSize, j_end - j);
+			// printf("i, j, j_begin, j_end: %d, %d, %d, %d\n", i, j, j_begin, j_end);
 
 			// assing shared particles for BatchSize particles to each block
 			// __shared__ CUDA_REAL sh_ptcl[BatchSize*7];
@@ -262,6 +265,7 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 			__shared__ CUDA_REAL sh_vel_y[BatchSize];
 			__shared__ CUDA_REAL sh_vel_z[BatchSize];
 			__shared__ CUDA_REAL sh_mass[BatchSize];
+
 			__syncthreads();
 			if (tid < current_batch_size) {
 				sh_pos_x[tid] = ptcl[j + tid];
@@ -286,6 +290,7 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 					// int idx = i * n + (j + jj);
 					// neighbor[idx] = isNeighbor;
 
+
 					if (magnitude0 > i_r2) {
 						// Calculate velocity differences
 						CUDA_REAL dvx = sh_vel_x[jj] - pi_vx;
@@ -303,7 +308,7 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 						save_acc[3] += scale * (dvx - common_factor * dx);
 						save_acc[4] += scale * (dvy - common_factor * dy);
 						save_acc[5] += scale * (dvz - common_factor * dz);
-
+						
 					}
 					else if (i_ptcl != j+jj) {
 						BlockNeighbor[NumNeighbor++] = j + jj;
@@ -313,6 +318,7 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 			} //end of jj loop
 		}//end of j loop
 		if (i < m){
+			// printf("i, blockIdx.y: (ax, adotx): %d, %d, %e, %e, %d\n", i, blockIdx.y, save_acc[2], save_acc[5], NumNeighbor);
 			diff[idx_save] = save_acc[0];
 			diff[idx_save + idx_save_size] = save_acc[1];
 			diff[idx_save + 2 * idx_save_size] = save_acc[2];
@@ -324,7 +330,6 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 		i += gridDim.x * blockDim.x;
 	} //end of i loop
 }
-
 
 
 void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REAL *result, int n, int m) {
