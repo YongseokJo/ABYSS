@@ -11,7 +11,6 @@
 #include <vector>
 #include <iostream>
 #include "../defs.h"
-//#include "../global.h"
 #include <iomanip> // Eunwoo
 #include "Common/Float.h" // Eunwoo
 
@@ -72,8 +71,6 @@ class Particle
 		// Eunwoo added for SDAR
 
 		bool isGroup; // Eunwoo, check whether this is a member of the group
-		std::vector<Particle*> GroupParticles; // Eunwoo, To tell the mother of group
-		Particle* GroupMother;
 		REAL radius;
 		REAL dm;
 		REAL time_check; // time to check next interrupt
@@ -131,12 +128,10 @@ class Particle
 
 			// Eunwoo added for SDAR
 
-			GroupParticles.clear();
 			radius			= 0.0;
 			dm				= 0.0;
 			binary_state	= 0;
 			time_check		= NUMERIC_FLOAT_MAX;
-			GroupMother 	= nullptr;
 			isGroup			= false;
 			GroupInfo		= nullptr;
 
@@ -253,17 +248,10 @@ class Particle
 
 		~Particle() {
 			ACList.clear();
-			GroupParticles.clear(); // Eunwoo
 			// Deallocate memory
 			ACList.shrink_to_fit();
-			GroupParticles.shrink_to_fit(); // Eunwoo
 			NextParticleInEnzo         = nullptr;
 			NextParticleForComputation = nullptr;
-			// BinaryPairParticle         = nullptr; // Eunwoo deleted
-			// BinaryParticleI            = nullptr; // Eunwoo deleted
-			// BinaryParticleJ            = nullptr; // Eunwoo deleted
-			GroupMother 			   = nullptr; // Eunwoo
-			// BinaryInfo                 = nullptr; // Eunwoo deleted
 			GroupInfo					= nullptr;
 			// fprintf(stderr, "deleting particle, pid=%d\n", PID); // Eunwoo deleted for debug
 		};

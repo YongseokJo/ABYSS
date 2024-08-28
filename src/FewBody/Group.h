@@ -23,7 +23,7 @@ class Group
 		std::vector<Particle*> Members;     // list of Group members
 
 		Particle* groupCM;
-		bool isTerminate;
+		bool isTerminate; // For later use: I will use this when Binary Interrupt State is being used
 		bool isErase;
 
 		REAL CurrentTime;  // this show how much the binary system has evolved
@@ -44,10 +44,7 @@ class Group
 			Members.clear();
 		}
 
-		// void InitializeGroup(REAL current_time);
-		// void getStumpffCoefficients(REAL z);
 		void ARIntegration(REAL next_time);
-		void predictGroup(REAL next_time);
 		void initialManager();
 		void initialIntegrator();
 

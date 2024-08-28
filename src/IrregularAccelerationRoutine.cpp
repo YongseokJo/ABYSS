@@ -64,10 +64,9 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 #ifdef time_trace
 	_time.irr_bin.markStart();
 #endif
-		//if (AddNewBinariesToList(ComputationList, particle) && ComputationList.size() == 0) {
+
 		if (AddNewBinariesToList(particle) && ComputationList.size() == 0) {
-			//std::cout << "No irregular particle to update afte binary formation." << std::endl;
-			fprintf(stdout, "No irregular particle to update afte binary formation.\n");
+			fprintf(stdout, "No irregular particle to update after binary formation.\n");
 			break;
 		}
 
@@ -164,28 +163,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 		for (Particle* ptcl:ComputationList) {
 
-			// fprintf(stdout, "Here I am! 2\n"); // Eunwoo debug
 
-			/*
-			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-7) {
-			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
-				fprintf(stdout,"--------------------error--------------------------------------------------------------------\n");
-
-			fprintf(stdout, "PID=%d, NextRegTimeBlock= %llu, NextIrrBlock = %llu (%.2e Myr)\n",
-					ptcl->getPID(), NextRegTimeBlock,
-					ptcl->CurrentBlockIrr+ptcl->TimeBlockIrr,
-					(ptcl->CurrentTimeIrr + ptcl->TimeStepIrr)*EnzoTimeStep*1e10/1e6);
-			fprintf(stdout, "CurrentTimeIrr = %.2e Myr (%llu), CurrentTimeReg = %.2e Myr (%llu), TimeStepIrr = %.2e Myr (%llu), TimeStepReg= %.2e Myr (%llu)\n",
-					ptcl->CurrentTimeIrr*EnzoTimeStep*1e10/1e6, ptcl->CurrentBlockIrr,
-					ptcl->CurrentTimeReg*EnzoTimeStep*1e10/1e6, ptcl->CurrentBlockReg,
-					ptcl->TimeStepIrr*EnzoTimeStep*1e10/1e6, ptcl->TimeBlockIrr, 
-					ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6, ptcl->TimeBlockReg
-					); 
-
-			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
-				fprintf(stdout,"----------------------------------------------------------------------------------------\n");
-			//}
-			*/
 			/*
 			for (Particle* ptcl:particle) {
 				if (ptcl->CurrentTimeIrr > 1) {
@@ -193,30 +171,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 					fflush(stderr);
 				}
 			}
-			*/
-			/*
-				 fprintf(stdout, "a_tot = (%.2e,%.2e,%.2e), a_irr = (%.2e,%.2e,%.2e), a1_irr = (%.2e,%.2e,%.2e), a2_irr = (%.2e,%.2e,%.2e), a3_irr = (%.2e,%.2e,%.2e), n_n=%d\n",
-				 ptcl->a_tot[0][0],
-					ptcl->a_tot[1][0],
-					ptcl->a_tot[2][0],
-					ptcl->a_irr[0][0],
-					ptcl->a_irr[1][0],
-					ptcl->a_irr[2][0],
-					ptcl->a_irr[0][1],
-					ptcl->a_irr[1][1],
-					ptcl->a_irr[2][1],
-					ptcl->a_irr[0][2],
-					ptcl->a_irr[1][2],
-					ptcl->a_irr[2][2],
-					ptcl->a_irr[0][3],
-					ptcl->a_irr[1][3],
-					ptcl->a_irr[2][3],
-					ptcl->NumberOfAC);
-			fprintf(stdout, "x = (%.2e,%.2e,%.2e), v = (%.2e,%.2e,%.2e)\n",
-					ptcl->Position[0],ptcl->Position[1],ptcl->Position[2],
-					ptcl->Velocity[0],ptcl->Velocity[1],ptcl->Velocity[2]
-					);
-			fflush(stdout);
 			*/
 
 
@@ -300,7 +254,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		binary_time  = binary_block*time_step;
 		// global_time_irr = ComputationList[0]->CurrentBlockIrr+ComputationList[0]->TimeBlockIrr; // Eunwoo: should be checked
 		global_time_irr = ComputationList[0]->CurrentTimeIrr+ComputationList[0]->TimeStepIrr; // Eunwoo: should be checked
-		//std::cout << "ComputationList of " << ComputationList.size() << " : " ;
+		// std::cout << "ComputationList of " << ComputationList.size() << " : " ;
 		bool bin_termination=false;	
 #endif
 		for (Particle* ptcl:ComputationList) {
@@ -319,19 +273,24 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			//std::cout << "after TimeStepCal\n" << std::flush;
 #ifdef binary
 			if (ptcl->isCMptcl) {
-				for (Particle* ptclJ : ptcl->GroupParticles) {
-					
-					if ((dist((ptcl->GroupMother->Position), (ptclJ->Position))) > 1e-3/position_unit) { // Group termination condition
 
-						fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
-						fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
-						FBTermination(ptcl, particle); // Eunwoo editted
-						bin_termination=true;
-						break;
+				for (size_t i = 0; i < ptcl->GroupInfo->Members.size(); ++i) {
+					Particle* ptclI = ptcl->GroupInfo->Members[i];
+					for (size_t j = i + 1; j < ptcl->GroupInfo->Members.size(); ++j) {
+						Particle* ptclJ = ptcl->GroupInfo->Members[j];
+						if (dist(ptclI->Position, ptclJ->Position) > 1e-3/position_unit) {
+
+							fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
+							fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
+							FBTermination(ptcl, particle);
+							bin_termination=true;
+							break;
+							
+						}
 					}
+					if (bin_termination=true) 
+						break;
 				}
-				// FBTermination(ptcl, particle);
-				// bin_termination=true;
 			}
 #endif
 
@@ -355,7 +314,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 				fprintf(stdout, "after term, myself = %d\n", ptcl->PID);
 				fprintf(stdout, "x[0] = %e\n", ptcl->Position[0]);
 				fflush(stdout);
-				//assert(ptcl->Position[0] ==  ptcl->Position[0]);
 			}
 		}
 #ifdef binary
@@ -371,8 +329,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 				 */
 		}
 #endif
-
-
 
 		//std::cout << "\ndone!" << std::endl ;
 
@@ -404,46 +360,8 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 		//fflush(stdout);
 	}
-	//std::cout << "Finishing irregular force ..." << std::endl;
-	//kstd::cerr << "Finishing irregular force ..." << std::endl;
-	//fflush(stderr);
-
-
-	/*
-		 for (Particle *ptcl : ComputationChain)
-		 {
-		 fprintf(stdout, "PID=%d, NextRegTime= %e, NextIrrTime = %e\n",
-		 ptcl->getPID(), NextRegTime, ptcl->CurrentTimeIrr + ptcl->TimeStepIrr);
-		 fprintf(stdout, "CurrentTimeIrr = %e, TimeStepIrr = %e, CurrentTimeReg=%e, TimeStepReg=%e\n",
-		 ptcl->CurrentTimeIrr, ptcl->TimeStepIrr, ptcl->CurrentTimeReg, ptcl->TimeStepReg);
-
-		 ptcl->calculateIrrForce(); // this includes particle position and time evolution.
-		 SortComputationChain(ComputationChain);
-		 }
-		 */
 
 	//std::cout << "Finishing irregular force ...\n" << std::endl;
 
-	// fprintf(stdout, "Here I am! 4\n");
-
-	// for (Particle* p : particle) {
-	// 	for (Particle* pp: p->ACList) {
-	// 		// if (p->PID == pp->PID)
-	// 		if (p->PID == 64)
-	// 		fprintf(stdout, "0, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-	// 	}
-	// }
-
-	// int aaa = 0;
-	// for (Particle* p : particle) {
-	// 	if (p->PID == 65) 
-	// 	aaa += 1;
-	// }
-	// fprintf(stdout, "0, num: %d, How many 64?!\n", aaa); // Eunwoo count
-
-
 	return true;
 }
-
-
-

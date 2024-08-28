@@ -136,7 +136,6 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 				// InitializeFBParticle(ptcl, particle); // Eunwoo added
 				// ptcl->calculateTimeStepReg(); // Eunwoo added
 				// ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr); // Eunwoo added
-				// UpdateComputationChain(ptcl); // Eunwoo added
 				break; // Eunwoo check
 			}
 			index++;
@@ -189,10 +188,7 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 	for (Particle* members : ptclGroup->Members) {
 		members->isErase		= false;
 		members->isGroup		= false;
-		members->GroupMother	= nullptr;
 		members->GroupInfo		= nullptr;
-		members->GroupParticles.clear();
-		members->GroupParticles.shrink_to_fit();
 	}
 
 	// we also need to delete ptclGroup from the group list

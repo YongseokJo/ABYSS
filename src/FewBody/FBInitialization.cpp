@@ -6,9 +6,6 @@
 #include "../defs.h"
 #include "Group.h"
 
-void direct_sum(REAL *x, REAL *v, REAL r2, REAL vx,
-		REAL mass, REAL (&a)[3], REAL (&adot)[3]);
-
 REAL getNewTimeStepIrr(REAL f[3][4], REAL df[3][4]);
 void getBlockTimeStep(REAL dt, int& TimeLevel, ULL &TimeBlock, REAL &TimeStep);
 bool UpdateComputationChain(Particle* ptcl);
@@ -46,14 +43,11 @@ void Particle::isFBCandidate() {
 
 	REAL r_group = 1e-3/position_unit; // group detecting radius: 1e-3 pc (tentative) for FewBody physics
 
-	std::vector<Particle*> groupParticles; // Vector to store pointers of particles in the group not including mother
+	std::vector<Particle*> groupParticles; // Vector to store pointers of particles in the detected group candidate
 
 	// fprintf(binout, "Function isFBCandidate started\n"); // Eunwoo debug
 
 	for (Particle* ptcl: ACList) {
-
-		if (ptcl->isGroup || ptcl->isCMptcl) // Eunwoo: This will be changed soon.
-			continue;
 
 		r2 = 0.0;
 		v2 = 0.0;
@@ -101,15 +95,19 @@ void Particle::isFBCandidate() {
 	}
 
 	if (!groupParticles.empty()) {
+
+		Group *groupCandidate;
+		groupCandidate = new Group();
+
+		groupParticles.push_back(this);
 		this->isGroup = true; // Assuming isGroup is a member of Particle to mark group status
 		for (Particle* ptcl : groupParticles) {
 			ptcl->isGroup = true;
 		}
+		groupCandidate->Members = groupParticles;
+		GroupCandidateList.push_back(groupCandidate);
 	}
-	this->GroupParticles = groupParticles; // 'this' is the mother of 'groupParticles'
-
 }
-
 
 
 void Group::initialManager() {
@@ -190,20 +188,62 @@ void Group::initialIntegrator() {
 
 	// initialize conditions for new Few body group
 
-void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std::vector<Particle*> &ComputationList) {
+void NewFBInitialization(Group* group, std::vector<Particle*> &particle) {
 
-	// basic variables for calculation
 	Particle *ptclCM;
 	Group *ptclGroup;
-
 
 	std::cout <<"\n\n\nStarting Routine NewFBInitialization" << std::endl;
 
 	// Set ptclGroup members first; this will be very useful
 
 	ptclGroup = new Group();
-	ptclGroup->Members = ptclI->GroupParticles;
-	ptclGroup->Members.push_back(ptclI);
+	ptclGroup->Members = group->Members;
+
+	// Find member particle with the biggest CurrentTimeIrr
+	Particle* ptcl = ptclGroup->Members[0];
+	for (Particle* members : ptclGroup->Members) {
+    	if (members->CurrentTimeIrr > ptcl->CurrentTimeIrr) {
+        	ptcl = members;
+    	}
+	}
+
+	for (Particle* members : ptclGroup->Members){
+		members->predictParticleSecondOrderIrr(ptcl->CurrentTimeIrr);
+	}
+
+	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
+
+	ptclGroup->initialManager();
+	ptclGroup->initialIntegrator(); // Binary tree is made and CM particle is made automatically.
+
+	ptclCM = &ptclGroup->sym_int.particles.cm;
+
+	// Set ptcl information like time, PID, etc.
+
+	ptclCM->CurrentTimeIrr  = ptcl->CurrentTimeIrr;
+	ptclCM->CurrentTimeReg  = ptcl->CurrentTimeReg;
+	ptclCM->CurrentBlockIrr = ptcl->CurrentBlockIrr; 
+	ptclCM->CurrentBlockReg = ptcl->CurrentBlockReg;
+
+	ptclCM->TimeStepIrr     = ptcl->TimeStepIrr;
+	ptclCM->TimeBlockIrr    = ptcl->TimeBlockIrr;
+	ptclCM->TimeLevelIrr    = ptcl->TimeLevelIrr;
+
+	ptclCM->TimeStepReg     = ptcl->TimeStepReg;
+	ptclCM->TimeBlockReg    = ptcl->TimeBlockReg;
+	ptclCM->TimeLevelReg    = ptcl->TimeLevelReg;
+
+	ptclCM->PID             = -(ptcl->PID + NNB);
+	ptclCM->GroupInfo		= ptclGroup;
+	ptclCM->isCMptcl        = true;
+
+	fprintf(binout, "The ID of CM is %d.\n",ptclCM->PID);
+
+	for (int dim=0; dim<Dim; dim++) {
+		ptclCM->PredPosition[dim] = ptclCM->Position[dim];
+		ptclCM->PredVelocity[dim] = ptclCM->Velocity[dim];
+	}
 
 	fprintf(binout, "------------------NEW-GROUP-MEMBER-INFORMATION------------------\n");
 	for (Particle* members: ptclGroup->Members) {
@@ -224,56 +264,8 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 		// fprintf(binout, "PID: %d. Current Blocks - irregular: %llu, regular:%llu \n", members->PID, members->CurrentBlockIrr, members->CurrentBlockReg);
     }
 
-	for (Particle* members : ptclGroup->Members){
-		members->predictParticleSecondOrderIrr(ptclCM->CurrentTimeIrr);
-	}
-
-	// Set ptclCM mass, position, and velocity. 
-	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
-
-	ptclGroup->initialManager();
-	ptclGroup->initialIntegrator(); // Binary tree is made and CM particle is made automatically.
-
-	ptclCM = &ptclGroup->sym_int.particles.cm;
-
-	// Find member particle with the biggest CurrentTimeIrr
-	Particle* ptcl = ptclI;
-	for (Particle* members : ptclGroup->Members) {
-    	if (members->CurrentTimeIrr > ptcl->CurrentTimeIrr) {
-        	ptcl = members;
-    	}
-	}
-
-	// Set ptcl information like time, PID, etc.
-
-	ptclCM->CurrentTimeIrr  = ptcl->CurrentTimeIrr;
-	ptclCM->CurrentTimeReg  = ptcl->CurrentTimeReg;
-	ptclCM->CurrentBlockIrr = ptcl->CurrentBlockIrr; 
-	ptclCM->CurrentBlockReg = ptcl->CurrentBlockReg;
-
-	ptclCM->TimeStepIrr     = ptcl->TimeStepIrr;
-	ptclCM->TimeBlockIrr    = ptcl->TimeBlockIrr;
-	ptclCM->TimeLevelIrr    = ptcl->TimeLevelIrr;
-
-	ptclCM->TimeStepReg     = ptcl->TimeStepReg;
-	ptclCM->TimeBlockReg    = ptcl->TimeBlockReg;
-	ptclCM->TimeLevelReg    = ptcl->TimeLevelReg;
-
-	ptclCM->PID             = -(ptcl->PID + NNB);
-	ptclCM->GroupMother		= ptclI;
-	ptclCM->GroupParticles	= ptclI->GroupParticles;
-	ptclCM->GroupInfo		= ptclGroup;
-	ptclCM->isCMptcl        = true;
-
-	fprintf(binout, "The ID of CM is %d.\n",ptclCM->PID);
-
-	for (int dim=0; dim<Dim; dim++) {
-		ptclCM->PredPosition[dim] = ptclCM->Position[dim];
-		ptclCM->PredVelocity[dim] = ptclCM->Velocity[dim];
-	}
-
 	ptclGroup->groupCM		= ptclCM;
-	ptclGroup->CurrentTime	= ptcl->CurrentTimeIrr;
+	ptclGroup->CurrentTime	= ptclCM->CurrentTimeIrr;
 
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
@@ -283,6 +275,7 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	for (Particle* members : ptclGroup->Members) {
 		members->isErase = true;
 	}
+
 	particle.erase(
 			std::remove_if(particle.begin(), particle.end(),
 				[](Particle* p) {
@@ -295,12 +288,11 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	for (int i=0; i<particle.size(); i++) {
 		particle[i]->ParticleOrder = i;
 	}
-	ptclCM->ParticleOrder=particle.size();
+	ptclCM->ParticleOrder = particle.size();
 	particle.push_back(ptclCM);
 
-
 	// Find neighbors for CM particle and calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately 
-	InitializeFBParticle(ptclCM,particle);
+	InitializeFBParticle(ptclCM, particle);
 
 	std::cout << "Calculating Time steps for the CM particle" << std::endl;
 	ptclCM->calculateTimeStepReg();
@@ -328,11 +320,6 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 // /* Eunwoo: How about chainging neighbor list of particles here?
 
 	std::cout << "Changing the Neighbor List of Particles" << std::endl;
-
-	// ptclI->isErase = true;
-	// for (Particle* ptclJ : ptclI->GroupParticles) {
-	// 	ptclJ->isErase = true;
-	// }
 
 	int size = 0;
 	for (Particle* ptcl: particle) {
@@ -412,7 +399,6 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 	// 	}
 	// }
 
-	// this makes binary particles have their CM particle as a neighbor
 	for (Particle* members : ptclGroup->Members) {
 		members->isErase = false;
 	}
@@ -424,3 +410,197 @@ void NewFBInitialization(Particle* ptclI, std::vector<Particle*> &particle, std:
 }
 
 
+
+// We will use already existing group and CM particle.
+void FBModification(std::vector<Particle*> addMembers, std::vector<Particle*> &particle) {
+
+	Particle *ptclCM;
+	Group *ptclGroup;
+
+	std::cout <<"\n\n\nStarting Routine FBModification" << std::endl;
+
+	// Set ptclGroup members first; this will be very useful
+
+	ptclGroup = new Group();
+	ptclGroup->Members = addMembers;
+
+	// Find member particle with the biggest CurrentTimeIrr
+	Particle* ptcl = ptclGroup->Members[0]; // CurrentTimeIrr are not set for existing group particles
+	for (Particle* members : ptclGroup->Members) {
+    	if (members->CurrentTimeIrr > ptcl->CurrentTimeIrr) {
+        	ptcl = members;
+    	}
+	}
+
+	for (Particle* members : ptclGroup->Members){
+		members->predictParticleSecondOrderIrr(ptcl->CurrentTimeIrr);
+	}
+
+	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
+
+	ptclGroup->initialManager();
+	ptclGroup->initialIntegrator(); // Binary tree is made and CM particle is made automatically.
+
+	ptclCM = &ptclGroup->sym_int.particles.cm;
+
+	// Set ptcl information like time, PID, etc.
+
+	ptclCM->CurrentTimeIrr  = ptcl->CurrentTimeIrr;
+	ptclCM->CurrentTimeReg  = ptcl->CurrentTimeReg;
+	ptclCM->CurrentBlockIrr = ptcl->CurrentBlockIrr; 
+	ptclCM->CurrentBlockReg = ptcl->CurrentBlockReg;
+
+	ptclCM->TimeStepIrr     = ptcl->TimeStepIrr;
+	ptclCM->TimeBlockIrr    = ptcl->TimeBlockIrr;
+	ptclCM->TimeLevelIrr    = ptcl->TimeLevelIrr;
+
+	ptclCM->TimeStepReg     = ptcl->TimeStepReg;
+	ptclCM->TimeBlockReg    = ptcl->TimeBlockReg;
+	ptclCM->TimeLevelReg    = ptcl->TimeLevelReg;
+
+	ptclCM->PID             = -(ptcl->PID + NNB);
+	ptclCM->GroupInfo		= ptclGroup;
+	ptclCM->isCMptcl        = true;
+
+	fprintf(binout, "The ID of CM is %d.\n",ptclCM->PID);
+
+	for (int dim=0; dim<Dim; dim++) {
+		ptclCM->PredPosition[dim] = ptclCM->Position[dim];
+		ptclCM->PredVelocity[dim] = ptclCM->Velocity[dim];
+	}
+
+	fprintf(binout, "------------------NEW-GROUP-MEMBER-INFORMATION------------------\n");
+	for (Particle* members: ptclGroup->Members) {
+		// fprintf(binout, "PID: %d. Position - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0], members->Position[1], members->Position[2]);
+		// fprintf(binout, "PID: %d. Velocity - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0], members->Velocity[1], members->Velocity[2]);
+		// fprintf(binout, "PID: %d. Mass - %e, \n", members->PID, members->Mass);
+        // fprintf(binout, "PID: %d. Distance from mother particle (pc): %e\n", members->PID, dist(ptclI->Position, members->Position)*position_unit);
+        // fprintf(binout, "PID: %d. Total Acceleration - ax:%e, ay:%e, az:%e \n", members->PID, members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
+        // fprintf(binout, "PID: %d. Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->PID, members->a_tot[0][1], members->a_tot[1][1], members->a_tot[2][1]);
+		// fprintf(binout, "PID: %d. Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->PID, members->a_tot[0][2], members->a_tot[1][2], members->a_tot[2][2]);
+		// fprintf(binout, "PID: %d. Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->PID, members->a_tot[0][3], members->a_tot[1][3], members->a_tot[2][3]);
+		// fprintf(binout, "PID: %d. Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
+		// fprintf(binout, "PID: %d. Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->PID, members->a_irr[0][1], members->a_irr[1][1], members->a_irr[2][1]);
+		// fprintf(binout, "PID: %d. Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->PID, members->a_irr[0][2], members->a_irr[1][2], members->a_irr[2][2]);
+		// fprintf(binout, "PID: %d. Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->PID, members->a_irr[0][3], members->a_irr[1][3], members->a_irr[2][3]);
+		fprintf(binout, "PID: %d. Time Steps (Myr) - irregular:%e, regular:%e \n", members->PID, members->TimeStepIrr*EnzoTimeStep*1e4, members->TimeStepReg*EnzoTimeStep*1e4);
+		// fprintf(binout, "PID: %d. Time Blocks - irregular:%llu, regular:%llu \n", members->PID, members->TimeBlockIrr, members->TimeBlockReg);
+		// fprintf(binout, "PID: %d. Current Blocks - irregular: %llu, regular:%llu \n", members->PID, members->CurrentBlockIrr, members->CurrentBlockReg);
+    }
+
+	ptclGroup->groupCM		= ptclCM;
+	ptclGroup->CurrentTime	= ptclCM->CurrentTimeIrr;
+
+	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
+    ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
+
+	// Erase group particles from particle vector because now they should be replaced with CM particle
+
+	for (Particle* members : ptclGroup->Members) {
+		members->isErase = true;
+	}
+
+	particle.erase(
+			std::remove_if(particle.begin(), particle.end(),
+				[](Particle* p) {
+				bool to_remove = p->isErase;
+				return to_remove;
+				}),
+			particle.end());
+
+	// Update particle order and put CM particle into the last of particle vector
+	for (int i=0; i<particle.size(); i++) {
+		particle[i]->ParticleOrder = i;
+	}
+	ptclCM->ParticleOrder = particle.size();
+	particle.push_back(ptclCM);
+
+	// Find neighbors for CM particle and calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately 
+	InitializeFBParticle(ptclCM, particle);
+
+	std::cout << "Calculating Time steps for the CM particle" << std::endl;
+	ptclCM->calculateTimeStepReg();
+	if (ptclCM->TimeLevelReg <= ptcl->TimeLevelReg-1 
+			&& ptcl->TimeBlockReg/2+ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr+ptcl->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
+		ptclCM->TimeLevelReg = ptcl->TimeLevelReg-1;
+	}
+	else if  (ptclCM->TimeLevelReg >= ptcl->TimeLevelReg+1) {
+		ptclCM->TimeLevelReg = ptcl->TimeLevelReg+1;
+	}
+	else 
+		ptclCM->TimeLevelReg = ptcl->TimeLevelReg;
+
+	ptclCM->TimeStepReg  = static_cast<REAL>(pow(2, ptclCM->TimeLevelReg));
+	ptclCM->TimeBlockReg = static_cast<ULL>(pow(2, ptclCM->TimeLevelReg-time_block));
+
+	ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr);
+	while (ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr <= global_time_irr 
+			&& ptclCM->TimeLevelIrr <= ptcl->TimeLevelIrr) { //first condition guarantees that ptclcm is small than ptcl
+		ptclCM->TimeLevelIrr++;
+		ptclCM->TimeStepIrr  = static_cast<REAL>(pow(2, ptclCM->TimeLevelIrr));
+		ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
+	}
+
+// /* Eunwoo: How about chainging neighbor list of particles here?
+
+	std::cout << "Changing the Neighbor List of Particles" << std::endl;
+
+	int size = 0;
+	for (Particle* ptcl: particle) {
+		size = ptcl->ACList.size();
+
+		ptcl->ACList.erase(
+				std::remove_if(ptcl->ACList.begin(), ptcl->ACList.end(),
+					[](Particle* p) {
+					bool to_remove = p->isErase;
+					return to_remove; }),
+				ptcl->ACList.end());
+		ptcl->NumberOfAC = ptcl->ACList.size();
+
+		if (size != ptcl->NumberOfAC) {
+			ptcl->ACList.push_back(ptclCM);
+			ptcl->NumberOfAC++;
+			// InitializeFBParticle(ptcl, particle); // Eunwoo added
+			// ptcl->calculateTimeStepReg(); // Eunwoo added
+			// ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr); // Eunwoo added
+		}
+	}
+// */
+
+
+	UpdateNextRegTime(particle);
+
+  CreateComputationChain(particle);
+	CreateComputationList(FirstComputation);
+
+	// Add the binary to binary integration list
+	GroupList.push_back(ptclGroup);
+
+	fprintf(binout, "\nFBInitialization.cpp: result of CM particle value calculation from function NewFBInitialization\n");
+
+	// fprintf(binout, "Position - x:%e, y:%e, z:%e, \n", ptclCM->Position[0], ptclCM->Position[1], ptclCM->Position[2]);
+	// fprintf(binout, "Velocity - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0], ptclCM->Velocity[1], ptclCM->Velocity[2]);
+	// fprintf(binout, "Mass - %e, \n", ptclCM->Mass);
+
+	// fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
+	// fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
+	// fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
+	// fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
+	// fprintf(binout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_irr[0][0], ptclCM->a_irr[1][0], ptclCM->a_irr[2][0]);
+	// fprintf(binout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_irr[0][1], ptclCM->a_irr[1][1], ptclCM->a_irr[2][1]);
+	// fprintf(binout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_irr[0][2], ptclCM->a_irr[1][2], ptclCM->a_irr[2][2]);
+	// fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_irr[0][3], ptclCM->a_irr[1][3], ptclCM->a_irr[2][3]);
+	fprintf(binout, "Time Steps (Myr) - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr*EnzoTimeStep*1e4, ptclCM->TimeStepReg*EnzoTimeStep*1e4);
+	// fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", ptclCM->TimeBlockIrr, ptclCM->TimeBlockReg);
+	// fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", ptclCM->CurrentBlockIrr, ptclCM->CurrentBlockReg);
+
+	for (Particle* members : ptclGroup->Members) {
+		members->isErase = false;
+	}
+
+	fprintf(binout, "---------------------END-OF-NEW-GROUP---------------------\n\n");
+	// fprintf(stdout, "\n---------------------END-OF-NEW-GROUP---------------------\n\n"); // Eunwoo check
+	fflush(binout);
+	// fflush(stdout); // Eunwoo check
+
+}

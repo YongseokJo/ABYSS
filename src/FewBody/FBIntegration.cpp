@@ -36,7 +36,8 @@
 // Reference: SDAR/sample/AR/ar.cxx & PeTar/src/hard.hpp
 // No debugging yet
 
-
+// I think it is better to change void function to bool function when we consider the group termination!
+// If Intererrupt_mode != none, then bin_terminatino = true;
 void Group::ARIntegration(REAL next_time){
 
     // sym_int.info.fix_step_option = AR::FixStepOption::none; // Eunwoo debug
@@ -48,7 +49,6 @@ void Group::ARIntegration(REAL next_time){
     sym_int.particles.shiftToCenterOfMassFrame();
 
     CurrentTime = next_time;
-
     
 //     // integration loop
 //     const int n_particle = sym_int.particles.getSize();

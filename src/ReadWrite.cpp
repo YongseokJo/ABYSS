@@ -194,9 +194,8 @@ int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outpu
 		for (Particle* ptcl:particle) {
 			ptcl->predictParticleSecondOrderIrr(current_time);
 			if (ptcl->isCMptcl)  { // Eunwoo edited
-				write_out(outputFile, ptcl->GroupMother); // Eunwoo edited
-				for (Particle* ptclJ : ptcl->GroupParticles) { // Eunwoo edited
-					write_out(outputFile, ptclJ); // Eunwoo edited
+				for (Particle* members : ptcl->GroupInfo->Members) { // Eunwoo edited
+					write_out(outputFile, members); // Eunwoo edited
 				} // Eunwoo edited
 				// //write_neighbor(output_nn, ptcl->BinaryParticleI); // Eunwoo edited
 				// write_out(outputFile, ptcl->BinaryParticleJ); // Eunwoo edited
