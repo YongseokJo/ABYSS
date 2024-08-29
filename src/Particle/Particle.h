@@ -4,6 +4,8 @@
 *  Date    : 2024.01.02  by Yongseok Jo
 *
 */
+#ifndef PARTICLE_H
+#define PARTICLE_H
 
 
 #include <vector>
@@ -38,6 +40,7 @@ class Particle
 		REAL CurrentTimeIrr;
 		REAL CurrentTimeReg;
 		ULL CurrentBlockIrr;
+		ULL NextBlockIrr;
 		ULL CurrentBlockReg;
 		REAL TimeStepIrr;
 		REAL TimeStepReg;
@@ -82,6 +85,7 @@ class Particle
 			CurrentTimeReg  = 0.;
 			CurrentBlockIrr = 0; // consistent with actual current time
 			CurrentBlockReg = 0;	
+			NextBlockIrr    = 0;
 			PredTimeIrr     = 0;
 			PredTimeReg     = 0;
 			TimeStepIrr     = 0;
@@ -176,3 +180,5 @@ class Particle
 };
 
 
+typedef std::vector<Particle*> Pvector;
+#endif
