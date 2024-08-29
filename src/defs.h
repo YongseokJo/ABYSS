@@ -1,6 +1,6 @@
 #define noOMP
 #ifdef OMP
-#define NUM_THREAD 12
+//#define NUM_THREAD 16
 #endif
 
 #define FixNumNeighbor 20

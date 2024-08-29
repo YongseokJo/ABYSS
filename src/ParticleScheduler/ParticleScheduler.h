@@ -5,7 +5,9 @@
 //#include "../Particle/Particle.h"
 #include "../defs.h"
 #include "../global.h"
+#include "SkipList.h"
 
+/*
 class Level {
 	private:
 
@@ -20,6 +22,13 @@ class Level {
 			LevelTime = 0;
 			NextLevel = nullptr;
 			ParticleThisLevel.clear();
+		};
+
+		Level(Particle* ptcl) {
+			ParticleThisLevel.clear();
+			NextLevel = nullptr;
+			LevelTime = ptcl->NextBlockIrr;
+			ParticleThisLevel.push_back(ptcl);
 		};
 
 		void print_level() {
@@ -56,7 +65,39 @@ class ParticleScheduler {
 		bool create_level(void);
 
 
-		~ParticleScheduler() {};
+		~ParticleScheduler() {
+			LevelList.clear();
+			LevelList.shrink_to_fit();
+		};
+};
+*/
+
+
+
+class ParticleScheduler {
+	private:
+		Pvector *__particle;
+		bool debug = false;
+
+	public:
+		int max_level = 5;
+		double prob = 0.5;
+		SkipList *skiplist;
+
+		ParticleScheduler(Pvector *particle) {
+			__particle = particle;
+			skiplist = new SkipList(max_level, prob);
+		};
+
+		void run(void);
+		bool update_level(void);
+		bool create_level(void);
+
+
+		~ParticleScheduler() {
+			//delete skiplist;
+		};
 };
 
 #endif
+

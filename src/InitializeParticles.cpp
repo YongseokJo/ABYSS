@@ -40,15 +40,15 @@ void InitializeParticle(std::vector<Particle*> &particle) {
 	{
 #pragma omp for
 		for (size_t i = 0; i < particle.size(); ++i) {
-		FindNeighbor(particle[i], particle);
-		CalculateAcceleration01(particle[i], particle);
+			FindNeighbor(particle[i], particle);
+			CalculateAcceleration01(particle[i], particle);
 		}
 
 #pragma omp barrier
 
 #pragma omp for
 		for (size_t i = 0; i < particle.size(); ++i) {
-		CalculateAcceleration23(particle[i], particle);
+			CalculateAcceleration23(particle[i], particle);
 		}
 	}
 #else

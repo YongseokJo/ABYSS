@@ -11,14 +11,18 @@
 bool IrregularAccelerationRoutineParallel(std::vector<Particle*> &particle)
 {
 	fprintf(stdout, "Irr starts!\n");
-	ParticleScheduler ptclSchdlr(particle);
+	fflush(stdout);
+	ParticleScheduler ptclSchdlr(&particle);
 
-	if (ptclSchdlr.isEnd)
+	if (ptclSchdlr.create_level())
 		return true;
 
 	do {
-	ptclSchdlr.run();
+
+		ptclSchdlr.run();
+
 	} while (ptclSchdlr.update_level());
+
 	fprintf(stdout, "Irr ends!\n");
 
 	return true;
