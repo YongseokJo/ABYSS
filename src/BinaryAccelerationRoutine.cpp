@@ -17,13 +17,11 @@ bool AddNewBinariesToList(std::vector<Particle*> &particle) {
 		ptcl->isFBCandidate();
 	}
 
-	// Every member that should be assigned to group satisfies isGroup == true.
+	if (GroupCandidateList.empty())
+		return true;
 
 	MergeGroups(GroupCandidateList);	// Merge GroupCandidateList
 										// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
-
-	if (GroupCandidateList.empty())
-		return true;
 
 	for (Group *groupCandidate : GroupCandidateList) {
 

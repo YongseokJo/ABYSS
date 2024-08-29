@@ -278,14 +278,13 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 					Particle* ptclI = ptcl->GroupInfo->Members[i];
 					for (size_t j = i + 1; j < ptcl->GroupInfo->Members.size(); ++j) {
 						Particle* ptclJ = ptcl->GroupInfo->Members[j];
-						if (dist(ptclI->Position, ptclJ->Position) > 1e-3/position_unit) {
+						if (dist(ptclI->Position, ptclJ->Position) > 5e-3/position_unit) {
 
 							fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
 							fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
 							FBTermination(ptcl, particle);
 							bin_termination=true;
-							break;
-							
+							break;							
 						}
 					}
 					if (bin_termination=true) 

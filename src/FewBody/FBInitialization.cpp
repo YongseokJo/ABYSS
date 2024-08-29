@@ -113,11 +113,11 @@ void Particle::isFBCandidate() {
 void Group::initialManager() {
 
 	manager.interaction.gravitational_constant = 1.0;
-	manager.time_step_min = 1e-9; // minimum physical time step // 1e-13 in ar.cxx
+	manager.time_step_min = 1e-13; // minimum physical time step // 1e-13 in ar.cxx
 	manager.ds_scale = 1.0; // step size scaling factor // reference: ar.cxx
 	manager.time_error_max = 0.25*manager.time_step_min; // time synchronization absolute error limit for AR, default is 0.25*dt-min
 	// reference: ar.cxx
-	manager.energy_error_relative_max = 1e-7; // relative energy error limit for AR, phase error requirement
+	manager.energy_error_relative_max = 1e-10; // relative energy error limit for AR, phase error requirement
 	// 1e-10 in ar.cxx
 	// 1e-8 in PeTar
 	manager.slowdown_timescale_max = NUMERIC_FLOAT_MAX; // maximum timescale for maximum slowdown factor, time-end
