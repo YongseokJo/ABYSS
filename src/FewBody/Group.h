@@ -44,7 +44,7 @@ class Group
 			Members.clear();
 		}
 
-		void ARIntegration(REAL next_time);
+		void ARIntegration(REAL next_time, std::vector<Particle*> &particle);
 		void initialManager();
 		void initialIntegrator();
 

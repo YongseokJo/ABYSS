@@ -31,6 +31,7 @@ extern ULL block_max;
 extern REAL binary_time;
 extern REAL binary_time_prev;
 extern ULL binary_block;
+extern bool bin_termination; // Eunwoo added
 
 // ComputationChain
 extern std::vector<Particle*> ComputationChain;

@@ -9,6 +9,7 @@ using namespace std;
 
 //Global Variables
 int NNB; REAL global_time; //bool debug;
+bool bin_termination = false; // Eunwoo added
 std::vector<int> LevelList;
 REAL EnzoTimeStep;
 int newNNB = 0;

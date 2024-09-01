@@ -14,6 +14,7 @@
 #include "AR/information.h"
 #include "../Particle/Particle.h"
 #include "perturber.h"
+#include "global.h"
 
     
 //! a sample interaction class with newtonian acceleration
@@ -319,7 +320,11 @@ public:
             auto* p1 = _bin.getLeftMember();
             auto* p2 = _bin.getRightMember();
 
-            auto merge = [&]() {
+            if (p1->Mass < p2->Mass) {
+                std::swap(p1, p2); // p1 has the larger mass (p1->Mass > p2->Mass)
+            }
+
+            auto merge = [&]() { // Stellar merger
                 _bin_interrupt.adr = &_bin;
                 _bin_interrupt.status = AR::InterruptStatus::merge;
                 Float mcm = p1->Mass + p2->Mass;
@@ -332,6 +337,22 @@ public:
                 p1->dm = mcm - p1->Mass;
                 p2->dm = -p2->Mass;
                 p1->Mass = mcm; // Eunwoo corrected 0.8 to 1
+                p2->Mass = 0.0;
+            };
+
+            auto TDE = [&]() { // Tidal Disruption Event
+                _bin_interrupt.adr = &_bin;
+                _bin_interrupt.status = AR::InterruptStatus::TDE;
+                Float mcm = p1->Mass + p2->Mass * 0.5; // If TDE happens, the half of the mass of star is accreted to a BH.
+                for (int k=0; k<3; k++) {
+                    p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
+                    p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
+                }
+                p1->setBinaryInterruptState(BinaryInterruptState::none);
+                p2->setBinaryInterruptState(BinaryInterruptState::none);
+                p1->dm = mcm - p1->Mass;
+                p2->dm = -p2->Mass;
+                p1->Mass = mcm;
                 p2->Mass = 0.0;
             };
 
@@ -352,7 +373,18 @@ public:
                             Float mean_anomaly = _bin.calcMeanAnomaly(ecc_anomaly, ecc);
                             Float mean_motion  = sqrt(gravitational_constant*_bin.Mass/(fabs(_bin.semi*_bin.semi*_bin.semi))); 
                             Float t_peri = mean_anomaly/mean_motion;
-                            if (drdv<0 && t_peri<_bin_interrupt.time_end-_bin_interrupt.time_now) merge();
+                            if (drdv<0 && t_peri<_bin_interrupt.time_end-_bin_interrupt.time_now) {
+                                if ((p1->Mass*mass_unit > 8) && (p2->Mass*mass_unit < 8)) { // BH + star
+                                    fprintf(binout, "TDE happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
+                                    fprintf(binout, "Periapsis dist: %e pc\n", peri*position_unit);
+                                    TDE();
+                                }
+                                else { // Star + star
+                                    fprintf(binout, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
+                                    fprintf(binout, "Periapsis dist: %e pc\n", peri*position_unit);
+                                    merge();
+                                }
+                            }
                             else if (semi>0||(semi<0&&drdv<0)) {
                                 p1->setBinaryPairID(p2->PID);
                                 p2->setBinaryPairID(p1->PID);
@@ -368,7 +400,18 @@ public:
                                        p1->Position[1] - p2->Position[1], 
                                        p1->Position[2] - p2->Position[2]};
                         Float dr2  = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
-                        if (dr2<radius*radius) merge();
+                        if (dr2<radius*radius) {
+                            if ((p1->Mass*mass_unit > 8) && (p2->Mass*mass_unit < 8)) { // BH + star
+                                fprintf(binout, "TDE happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
+                                fprintf(binout, "Periapsis dist: %e pc\n", std::sqrt(dr2)*position_unit);
+                                TDE();
+                            }
+                            else { // Star + star
+                                fprintf(binout, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
+                                fprintf(binout, "Periapsis dist: %e pc\n", std::sqrt(dr2)*position_unit);
+                                merge();
+                            }
+                        }
                     }
                 }
             }

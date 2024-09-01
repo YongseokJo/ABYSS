@@ -9,8 +9,8 @@ int writeParticle(std::vector<Particle*> &particle, REAL MinRegTime, int outputN
 bool CreateComputationChain(std::vector<Particle*> &particle);
 bool UpdateComputationChain(Particle* ptcl);
 bool CreateComputationList(Particle* ptcl);
-bool AddNewBinariesToList(std::vector<Particle*> &particle);
-void BinaryAccelerationRoutine(REAL next_time);
+bool AddNewGroupsToList(std::vector<Particle*> &particle);
+void GroupAccelerationRoutine(REAL next_time, std::vector<Particle*> &particle);
 void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle);
 
 
@@ -29,7 +29,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 	bool first = true;
 	Particle *ParticleForComputation;
-	//AddNewBinariesToList(particle, particle);
+	//AddNewGroupsToList(particle, particle);
 	//std::cout << "Create Chain\n" << std::flush;
 	if (CreateComputationChain(particle) == false) {
 		std::cout << "No irregular particle to update ...\n";
@@ -59,13 +59,13 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			
 		//std::cout << "List size=" << ComputationList.size() << std::endl;
 
-#define binary // Eunwoo editted
+#define no binary // Eunwoo editted
 #ifdef binary
 #ifdef time_trace
 	_time.irr_bin.markStart();
 #endif
 
-		if (AddNewBinariesToList(particle) && ComputationList.size() == 0) {
+		if (AddNewGroupsToList(particle) && ComputationList.size() == 0) {
 			fprintf(stdout, "No irregular particle to update after binary formation.\n");
 			break;
 		}
@@ -110,7 +110,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			//fflush(stdout);
 			//fflush(stderr);
 			//fflush(binout);
-			BinaryAccelerationRoutine(ComputationList[0]->CurrentTimeIrr+ComputationList[0]->TimeStepIrr);
+			GroupAccelerationRoutine(ComputationList[0]->CurrentTimeIrr+ComputationList[0]->TimeStepIrr, particle);
 			// fprintf(stdout, "Finishing Binaries ...\n");
 			//fflush(stdout);
 			fflush(binout);
@@ -255,7 +255,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		// global_time_irr = ComputationList[0]->CurrentBlockIrr+ComputationList[0]->TimeBlockIrr; // Eunwoo: should be checked
 		global_time_irr = ComputationList[0]->CurrentTimeIrr+ComputationList[0]->TimeStepIrr; // Eunwoo: should be checked
 		// std::cout << "ComputationList of " << ComputationList.size() << " : " ;
-		bool bin_termination=false;	
+		// bin_termination=false;	
 #endif
 		for (Particle* ptcl:ComputationList) {
 
@@ -326,6 +326,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 				 }
 				 fprintf(stderr,"\n");	
 				 */
+			bin_termination = false; // Change its value to false again.
 		}
 #endif
 

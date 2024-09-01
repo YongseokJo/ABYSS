@@ -28,6 +28,9 @@
 #include "interaction.h"
 #include "perturber.h"
 
+void InitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle);
+void UpdateNextRegTime(std::vector<Particle*> &particle);
+
 
 
 
@@ -38,87 +41,120 @@
 
 // I think it is better to change void function to bool function when we consider the group termination!
 // If Intererrupt_mode != none, then bin_terminatino = true;
-void Group::ARIntegration(REAL next_time){
+void Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
 
-    // sym_int.info.fix_step_option = AR::FixStepOption::none; // Eunwoo debug
-
-    sym_int.integrateToTime(next_time*EnzoTimeStep);
+    auto bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
 
     sym_int.particles.shiftToOriginFrame();
     sym_int.particles.template writeBackMemberAll<Particle>(); // Eunwoo: I'm not sure
+
+    if (bin_interrupt.status != AR::InterruptStatus::none) {
+
+        // Almost the same process as FBTermination
+        // However it is interrupted and we have to predict the position to the next_time!
+
+        groupCM->isErase = true;
+        particle.erase(
+                std::remove_if(particle.begin(), particle.end(),
+                    [](Particle* p) {
+                    bool to_remove = p->isErase;
+                    //if (to_remove) delete p;
+                    return to_remove;
+                    }),
+                particle.end());
+
+        for (int i=0; i<particle.size(); i++) {
+            particle[i]->ParticleOrder = i;
+        }
+
+        for (int i=0; i<sym_int.particles.getSize(); i++) {
+            if (sym_int.particles[i].Mass == 0) {
+                fprintf(binout, "PID: %d, Zero mass particle is removed from the simulation!!!\n", sym_int.particles[i].PID);
+                delete &sym_int.particles[i];
+                sym_int.particles.removeMember(i, true);    // true: shift last member to current position (defaulted);
+                                                            // This might call some memory error so should be checked later!!!
+                i--;                                            
+                continue;
+            }
+            sym_int.particles[i].ParticleOrder = particle.size();
+            particle.push_back(&sym_int.particles[i]);
+        }
+
+
+        for (Particle* member : Members) {
+            assert(member->Mass > 0); // Zero mass particles should be removed already!
+            InitializeFBParticle(member, particle);
+
+            member->CurrentTimeIrr = CurrentTime;
+            member->predictParticleSecondOrderIrr(bin_interrupt.time_now);
+            member->correctParticleFourthOrder(bin_interrupt.time_now, next_time, member->a_irr); // Eunwoo: Is this really necessary?
+            member->calculateTimeStepReg();
+            
+            // /* Eunwoo: just for a while
+            if (member->TimeLevelReg <= groupCM->TimeLevelReg-1 
+                    && member->TimeBlockReg/2+member->CurrentBlockReg > groupCM->CurrentBlockIrr+groupCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
+                member->TimeLevelReg = groupCM->TimeLevelReg-1;
+            }
+            else if  (member->TimeLevelReg >= groupCM->TimeLevelReg+1) {
+                member->TimeLevelReg = groupCM->TimeLevelReg+1;
+            }
+            else 
+                member->TimeLevelReg = groupCM->TimeLevelReg;
+            member->TimeStepReg  = static_cast<REAL>(pow(2, member->TimeLevelReg)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
+            member->TimeBlockReg = static_cast<ULL>(pow(2, member->TimeLevelReg-time_block)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
+
+            member->calculateTimeStepIrr(member->a_tot, member->a_irr);
+        }
+
+        int index = 0;
+        for (Particle* ptcl: particle) {
+
+            index = 0;
+            for (Particle* neighbor: ptcl->ACList) {
+                if (neighbor->PID == groupCM->PID) {
+                    ptcl->ACList.erase(ptcl->ACList.begin() + index);
+                    ptcl->ACList.insert(ptcl->ACList.end(), Members.begin(), Members.end());
+                    ptcl->NumberOfAC = ptcl->ACList.size();
+                    // InitializeFBParticle(ptcl, particle); // Eunwoo added
+                    // ptcl->calculateTimeStepReg(); // Eunwoo added
+                    // ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr); // Eunwoo added
+                    break; // Eunwoo check
+                }
+                index++;
+            }
+        }
+
+
+        UpdateNextRegTime(particle);
+
+        for (Particle* member : Members) {
+            member->isErase		= false;
+            member->isGroup		= false;
+            // member->GroupInfo	= nullptr;
+        }
+
+        // we also need to delete ptclGroup from the group list
+        // fprintf(binout,"deleting binary information from the GroupList \n");
+        this->isErase = true;
+        GroupList.erase(
+                std::remove_if(GroupList.begin(), GroupList.end(),
+                    [](Group* p) {
+                    bool to_remove = p->isErase;
+                    //if (to_remove) delete p;
+                    return to_remove;
+                    }),
+                GroupList.end());
+
+        delete this;
+        // delete ptclCM; // It is deleted automatically when delete ptclGroup!!!
+        // this = nullptr;
+        groupCM  = nullptr;
+
+        bin_termination = true;
+
+        return;
+    }
+
     sym_int.particles.shiftToCenterOfMassFrame();
-
     CurrentTime = next_time;
-    
-//     // integration loop
-//     const int n_particle = sym_int.particles.getSize();
-//     if (!synch_flag) {
-//         float time_out = time_zero.value + dt_out.value;
-//         Float time_table[manager.step.getCDPairSize()];
-//         sym_int.profile.step_count = 1;
-//         auto IntegrateOneStep = [&] (){
-// #if (defined AR_SLOWDOWN_ARRAY) || (defined AR_SLOWDOWN_TREE)
-//             sym_int.updateSlowDownAndCorrectEnergy(true, false);
-// #endif
-//             if(n_particle==2) sym_int.integrateTwoOneStep(sym_int.info.ds, time_table);
-//             else sym_int.integrateOneStep(sym_int.info.ds, time_table);
-//             if (sym_int.getTime()>=time_out) {
-//                 // sym_int.printColumn(std::cout, print_width.value, n_sd);
-//                 std::cout<<std::endl;
-//                 time_out += dt_out.value;
-//             }
-//             sym_int.profile.step_count_sum++;
-//         };
-
-//         if (nstep.value>0) for (int i=0; i<nstep.value; i++) IntegrateOneStep();
-//         else while (sym_int.getTime()<time_end.value) IntegrateOneStep();
-//     }
-//     else {
-//         if (dt_out.value>0.0) nstep.value = int(time_end.value/dt_out.value+0.5);
-//         else if (nstep.value>0) dt_out.value = time_end.value/nstep.value;
-//         for (int i=1; i<=nstep.value; i++) {
-//             auto bin_interrupt = sym_int.integrateToTime(dt_out.value*i);
-//             if (bin_interrupt.status!=AR::InterruptStatus::none) {
-//                 std::cerr<<"Interrupt condition triggered! ";
-//                 Particle* p1 = bin_interrupt.adr->getLeftMember();
-//                 Particle* p2 = bin_interrupt.adr->getRightMember();
-//                 switch (bin_interrupt.status) {
-//                 case AR::InterruptStatus::change:
-//                     std::cerr<<" Change";
-//                     break;
-//                 case AR::InterruptStatus::merge:
-//                     std::cerr<<" merge";
-//                     break;
-//                 case AR::InterruptStatus::destroy:
-//                     std::cerr<<" Destroy";
-//                     break;
-//                 case AR::InterruptStatus::none:
-//                     break;
-//                 }
-//                 std::cerr<<" Time: "<<bin_interrupt.time_now<<std::endl;
-//                 bin_interrupt.adr->printColumnTitle(std::cerr);
-//                 std::cerr<<std::endl;
-//                 bin_interrupt.adr->printColumn(std::cerr);
-//                 std::cerr<<std::endl;
-//                 // Particle::printColumnTitle(std::cerr);
-//                 std::cerr<<std::endl;
-//                 for (int j=0; j<2; j++) {
-//                     // bin_interrupt.adr->getMember(j)->printColumn(std::cerr);
-//                     std::cerr<<std::endl;
-//                 }
-
-//                 // merger case, quit integration
-//                 if (n_particle==2&&(p1->Mass==0||p2->Mass==0)) {
-//                     // sym_int.printColumn(std::cout, print_width.value, n_sd);
-//                     std::cout<<std::endl;
-//                     break;
-//                 }
-//             }
-//             sym_int.info.generateBinaryTree(sym_int.particles, manager.interaction.gravitational_constant);
-//             // sym_int.printColumn(std::cout, print_width.value, n_sd);
-//             std::cout<<std::endl;
-//         }
-//     }
-
-
 }
