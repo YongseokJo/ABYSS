@@ -85,6 +85,7 @@ int InitializeTimeStep(std::vector<Particle*> &particle) {
 		ptcl->TimeLevelReg = 0;
 		ptcl->TimeBlockReg = block_max;
 #endif
+		ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 	}
 
 
@@ -136,6 +137,7 @@ int InitializeTimeStep(Particle* particle, int size) {
 		ptcl->TimeBlockIrr = static_cast<ULL>(pow(2, ptcl->TimeLevelIrr-time_block));
 		ptcl->TimeBlockReg = static_cast<ULL>(pow(2, ptcl->TimeLevelReg-time_block));
 	} //endfor size
+	ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 	return true;
 }
 

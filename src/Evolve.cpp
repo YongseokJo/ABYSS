@@ -12,6 +12,11 @@ int writeParticle(std::vector<Particle*> &particle, REAL MinRegTime, int outputN
 bool CreateComputationChain(std::vector<Particle*> &particle);
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle);
 bool IrregularAccelerationRoutine(std::vector<Particle*> &particle);
+<<<<<<< HEAD
+=======
+bool IrregularAccelerationRoutineParallel(std::vector<Particle*> &particle);
+
+>>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
 
 bool IsOutput           = false;
 REAL binary_time      = 0;
@@ -72,7 +77,12 @@ nvtxRangePop();
 nvtxRangePushA("IrregularAccelerationRoutine");
 #endif
 
+
+#ifdef OMP
+		IrregularAccelerationRoutineParallel(particle);
+#else
 		IrregularAccelerationRoutine(particle);
+#endif
 
 #ifdef NSIGHT
 nvtxRangePop();

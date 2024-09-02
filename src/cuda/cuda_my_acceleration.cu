@@ -40,6 +40,7 @@ CUDA_REAL *h_result=nullptr, *d_result=nullptr;
 CUDA_REAL *d_diff=nullptr,*d_magnitudes=nullptr, *d_r2=nullptr;
 int *d_target=nullptr;
 
+<<<<<<< HEAD
 #define TEST_CUBLAS
 #ifndef TEST_CUBLAS
 extern int *h_neighbor, *d_neighbor, *h_num_neighbor, *d_num_neighbor;
@@ -51,13 +52,24 @@ extern int *h_num_neighbor;
 bool *h_neighbor=nullptr, *d_neighbor=nullptr;
 int *h_num_neighbor=nullptr; // added by wispedia
 #endif
+=======
+#ifdef debuggig_verification
+extern CUDA_REAL *h_r2;
+CUDA_REAL *h_r2=nullptr; //only for verification
+#endif
+
+extern int *h_neighbor, *d_neighbor;
+extern int *h_num_neighbor, *d_num_neighbor, *d_neighbor_block;
+int *h_neighbor=nullptr, *d_neighbor=nullptr;
+int *h_num_neighbor=nullptr, *d_num_neighbor=nullptr; // added by wispedia
+int *d_neighbor_block=nullptr; // added by wispedia
+>>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
 
 extern cudaStream_t stream;
 cudaStream_t stream;
 
 extern CUDA_REAL *h_diff, *h_magnitudes;
 CUDA_REAL *h_diff, *h_magnitudes;
-
 
 
 /*************************************************************************
@@ -70,7 +82,7 @@ void GetAcceleration(
 		CUDA_REAL acc[][3],
 		CUDA_REAL adot[][3],
 		int NumNeighbor[],
-		int **NeighborList
+		int *NeighborList
 		) {
 
 	assert(is_open);
@@ -112,6 +124,7 @@ void GetAcceleration(
 		//gridSize = NumTarget;
 		total_data_num = new_size(NNB*NumTarget);
 		/******* Initialize *********/
+<<<<<<< HEAD
 		checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
 					initialize, 0, 0));	
 		gridSize = (total_data_num + blockSize - 1) / blockSize;
@@ -153,22 +166,99 @@ void GetAcceleration(
 		// reduce_neighbors(handle, d_neighbor, d_num_neighbor, d_magnitudes, NNB, NumTarget, h_target_list);
 		cudaDeviceSynchronize();
 
+=======
+
+		// checkCudaError(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, initialize, 0, 0));	
+		// gridSize = (new_size(NumTarget*GridDimY) + blockSize - 1) / blockSize;
+		// initialize<<<gridSize, blockSize, 0, stream>>>(d_result, d_diff, GridDimY, NumTarget, d_target);
+		// cudaDeviceSynchronize();
+		
+
+
+		dim3 blockDim(64, 1, 1);  // Use a 1D block with 256 threads
+		dim3 gridDim((NumTarget + BatchSize + blockDim.x - 1) / blockDim.x, GridDimY);
+		// dim3 gridDim(32, 32, 1);    // Adjust grid size as needed
+		printf("blockDim=(%d, %d), gridDim=(%d, %d)\n", blockDim.x, blockDim.y, gridDim.x, gridDim.y);
+		compute_forces<<<gridDim, blockDim, 0, stream>>>\
+			(d_ptcl, d_r2, d_diff, NumTarget, NNB, d_target, d_neighbor_block, d_num_neighbor, TargetStart);
+
+		cudaDeviceSynchronize();
+
+		/******* Reduction *********/
+		reduce_forces_cublas(handle, d_diff, d_result, GridDimY, NumTarget);
+		//reduce_forces_thrust(d_diff, d_result, NNB, NumTarget);
+		cudaDeviceSynchronize();
+
+
+		#define newGather
+		#ifdef newGather
+
 		#ifdef NSIGHT
 		nvtxRangePushA("Reduction");
 		#endif
-		/******* Reduction *********/
-		reduce_forces_cublas(handle, d_diff, d_result, NNB, NumTarget); //test by wispedia
-		//reduce_forces_thrust(d_diff, d_result, NNB, NumTarget);
-		cudaDeviceSynchronize();
+
+		// blockSize = 64;
+		// gridSize = (total_data_num + blockSize - 1) / blockSize;
+		// print_forces_subset<<<gridSize, blockSize>>>(d_result, NumTarget);
+
+		dim3 gridDim2(NumTarget, 1);
+		dim3 blockDim2(GridDimY, 1);  // Use a 1D block with 256 threads
+
+		printf("blockDim=(%d, %d), gridDim=(%d, %d)\n", blockDim2.x, blockDim2.y, gridDim2.x, gridDim2.y);
+		gather_neighbor<<<gridDim2, blockDim2, 0, stream>>>\
+			(d_neighbor_block, d_num_neighbor, d_neighbor, NumTarget);
 
 		#ifdef NSIGHT
 		nvtxRangePop();
 		#endif
 
+		cudaStreamSynchronize(stream); // Wait for all operations to finish
+		toHost(h_result + _six * TargetStart, d_result, _six * NumTarget);
 
+		#ifdef NSIGHT
+		nvtxRangePushA("Neighbor in CPU1");
+		#endif
+
+		// toHost(NeighborList, d_neighbor, NumTarget * NumNeighborMax);
+		toHost(NeighborList, d_neighbor, NumTarget * NumNeighborMax);
+
+
+		#ifdef NSIGHT
+		nvtxRangePop();
+		#endif
+		// toHost(h_neighbor, d_neighbor, NumTarget * NumNeighborMax);//
+>>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
+		#ifdef NSIGHT
+		nvtxRangePushA("Neighbor in CPU2");
+		#endif
+
+		toHost(h_num_neighbor, d_num_neighbor, NumTarget * GridDimY);
+		#ifdef NSIGHT
+		nvtxRangePop();
+		#endif
+
+		#ifdef NSIGHT
+		nvtxRangePushA("Neighbor in CPU3");
+		#endif
+
+<<<<<<< HEAD
 		//print_forces_subset<<<gridSize, blockSize>>>\
 			(d_result, NumTarget);	
+=======
+		for (int i=0;i<NumTarget;i++) {
+	        int k = 0;
+			// Loop over each block in the Y dimension
+			for (int j = 0; j < GridDimY; j++) {
+				k += h_num_neighbor[i * GridDimY + j]; // Number of neighbors in the current block
+			}
+			NumNeighbor[i + TargetStart] = k;
+		}
+		#ifdef NSIGHT
+		nvtxRangePop();
+		#endif
+>>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
 
+		#else
 
 		cudaStreamSynchronize(stream); // Wait for all operations to finish
 		toHost(h_result + _six * TargetStart, d_result, _six * NumTarget);
@@ -177,33 +267,52 @@ void GetAcceleration(
 		nvtxRangePushA("Neighbor in CPU");
 		#endif
 
+		toHost(h_neighbor, d_neighbor_block, NumTarget * GridDimY * NNB_per_block);//
+		toHost(h_num_neighbor, d_num_neighbor, NumTarget * GridDimY);
 
-		toHost(h_neighbor, d_neighbor, NNB * NumTarget);
 		for (int i=0;i<NumTarget;i++) {
-			int k = 0;
 			int* targetNeighborList = NeighborList[i + TargetStart]; // Cache the row pointer
+<<<<<<< HEAD
 			int target = h_target_list[i + TargetStart]; // Cache the target value
+=======
+	        int k = 0; // Counter for the number of neighbors added
+>>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
 
-			for (int j=0;j<NNB;j++) {
-				if (h_neighbor[i * NNB + j] && (target != j)) {
-					if (k<NumNeighborMax){
-						targetNeighborList[k++] = j;
-						}
+			// Loop over each block in the Y dimension
+			for (int j = 0; j < GridDimY; j++) {
+				int* blockNeighborList = &h_neighbor[(i * GridDimY + j) * NNB_per_block]; // Pointer to the neighbor list of the current block
+				int numNeighborsInBlock = h_num_neighbor[i * GridDimY + j]; // Number of neighbors in the current block
+
+				// Loop over each neighbor in the current block
+				for (int n = 0; n < numNeighborsInBlock; n++) {
+					if (k < NumNeighborMax){
+						targetNeighborList[k++] = blockNeighborList[n];
+					}
 					else {
 						fprintf(stderr, "Number of neighbors exceeds the maximum number of neighbors %d\n", k);
 						exit(1);
-						}
+					}
 				}
 			}
-			NumNeighbor[i + TargetStart] = k; // h_num_neighbor[i];
+			// Store the number of neighbors for this target
+			NumNeighbor[i + TargetStart] = k;
 
 		}
 		#ifdef NSIGHT
 		nvtxRangePop();
 		#endif
+<<<<<<< HEAD
+=======
+		
+		#endif
+
+>>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
 
 	}
 
+	#ifdef NSIGHT
+	nvtxRangePushA("Out data");
+	#endif
 	// out data
 	for (int i=0; i<NumTargetTotal; i++) {
 		acc[i][0]  = h_result[_six*i];
@@ -212,17 +321,44 @@ void GetAcceleration(
 		adot[i][0] = h_result[_six*i+3];
 		adot[i][1] = h_result[_six*i+4];
 		adot[i][2] = h_result[_six*i+5];
+		
+		// #define debuggig_verification
+		#ifdef debuggig_verification
+		toHost(h_r2, d_r2, NNB); // only for verification
 
-		/*
 		fprintf(stderr, "%d (%d) neighbors of %d = ", i, h_target_list[i], NumNeighbor[i]);
 		for (int j=0;j<NumNeighbor[i];j++) {
-			fprintf(stderr, "%d, ", NeighborList[i][j]);
+			fprintf(stderr, "%d, ", NeighborList[i * NumNeighborMax + j]);
 		}
 		fprintf(stderr, "\n");
-		*/
+
+		// verification
+		fprintf(stderr, "%d (%d) neighbors of %d (veri)= ", i, h_target_list[i], NumNeighbor[i]);
+		double ix = h_ptcl[h_target_list[i]];
+		double iy = h_ptcl[h_target_list[i] + NNB * 1];
+		double iz = h_ptcl[h_target_list[i] + NNB * 2];
+		double i_r2 = h_r2[h_target_list[i]];
+		
+		fprintf(stderr, "h_r2 = %e \n", i_r2);
+
+		for (int j=0; j<NNB; j++) {
+			double dx = ix - h_ptcl[j];
+			double dy = iy - h_ptcl[j + NNB * 1];
+			double dz = iz - h_ptcl[j + NNB * 2];
+			double r2_temp = dx*dx + dy*dy + dz*dz;
+			if (r2_temp < i_r2) {
+				fprintf(stderr, "%d, (%e)", j, r2_temp);
+			}
+		}
+		fprintf(stderr, "\n");
+		exit(1);
+		#endif
 	}
 
-
+	#ifdef NSIGHT
+	nvtxRangePop();
+	#endif
+	
 	cublasDestroy(handle);
 	/*
 	my_free(h_background , d_background);
@@ -273,6 +409,7 @@ void _ReceiveFromHost(
 		if (!first) {
 			my_free(h_ptcl				 , d_ptcl);
 			my_free(h_result       , d_result);
+<<<<<<< HEAD
 			my_free(h_neighbor     , d_neighbor);
 			// my_free(h_num_neighbor , d_num_neighbor);
 			cudaFreeHost(h_num_neighbor);
@@ -281,6 +418,22 @@ void _ReceiveFromHost(
 			cudaFree(d_diff);
 			cudaFree(d_magnitudes);
 
+=======
+			my_free(h_num_neighbor , d_num_neighbor);
+			// cudaFreeHost(h_num_neighbor);
+			cudaFree(d_target);
+			cudaFree(d_r2);
+			cudaFree(d_diff);
+			#ifdef newGather
+			cudaFree(d_neighbor_block);
+			my_free(h_neighbor     , d_neighbor);
+			#else
+			my_free(h_neighbor     , d_neighbor_block);
+			#endif
+			// cudaFree(d_magnitudes);
+			// cudaFree(d_acc);
+			// cudaFree(d_adot);
+>>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
 		}
 		else {
 			first = false;
@@ -291,6 +444,7 @@ void _ReceiveFromHost(
 		// my_allocate(&h_neighbor     , &d_neighbor    , NumNeighborMax*variable_size);
 		cudaMalloc((void**)&d_r2        ,        variable_size * sizeof(CUDA_REAL));
 		cudaMalloc((void**)&d_target    ,        variable_size * sizeof(int));
+<<<<<<< HEAD
 		cudaMalloc((void**)&d_diff      , _six * variable_size * target_size * sizeof(CUDA_REAL));
 		cudaMalloc((void**)&d_magnitudes, _two * variable_size * target_size * sizeof(CUDA_REAL));
 		//cudaMallocHost((void**)&h_diff          , _six * variable_size * variable_size * sizeof(CUDA_REAL));
@@ -299,6 +453,27 @@ void _ReceiveFromHost(
 		my_allocate(&h_neighbor     , &d_neighbor    , variable_size * target_size);
 		cudaMallocHost((void**)&h_num_neighbor, variable_size * sizeof(int));
 		#endif
+=======
+		// cudaMalloc((void**)&d_diff      , _six * variable_size * target_size * sizeof(CUDA_REAL));
+		cudaMalloc((void**)&d_diff      , _six * GridDimY * target_size * sizeof(CUDA_REAL));
+
+		// my_allocate(&h_neighbor     , &d_neighbor    , variable_size * target_size);
+		// my_allocate(&h_neighbor     , &d_neighbor    , Grid * target_size);
+		#ifdef newGather
+		cudaMalloc((void**)&d_neighbor_block, GridDimY * NNB_per_block * target_size * sizeof(int));
+		my_allocate(&h_neighbor     , &d_neighbor    , NumNeighborMax * target_size);
+		#else
+		my_allocate(&h_neighbor     , &d_neighbor_block    , GridDimY * NNB_per_block * target_size);
+		#endif
+		my_allocate(&h_num_neighbor , &d_num_neighbor,                GridDimY * variable_size);
+
+		#ifdef debuggig_verification
+		cudaMallocHost((void**)&h_r2        ,        variable_size * sizeof(CUDA_REAL)); // only for verification
+		#endif debuggig_verification
+
+		// cudaMallocHost((void**)&h_num_neighbor, GridDimY * variable_size * sizeof(int));
+		// cudaMalloc((void**)&d_num_neighbor, GridDimY * variable_size * sizeof(int));
+>>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
 		
 	}
 
@@ -517,7 +692,7 @@ extern "C" {
 	void ProfileDevice(int *irank){
 		_ProfileDevice(*irank);
 	}
-	void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, CUDA_REAL acc[][3], CUDA_REAL adot[][3], int NumNeighbor[], int **NeighborList) {
+	void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, CUDA_REAL acc[][3], CUDA_REAL adot[][3], int NumNeighbor[], int *NeighborList) {
 		GetAcceleration(*NumTargetTotal, h_target_list, acc, adot, NumNeighbor, NeighborList);
 	}
 }

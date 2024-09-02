@@ -8,6 +8,8 @@ std::vector<Particle*> ComputationList{};
 int writeParticle(std::vector<Particle*> &particle, REAL MinRegTime, int outputNum);
 bool CreateComputationChain(std::vector<Particle*> &particle);
 bool UpdateComputationChain(Particle* ptcl);
+//bool UpdateComputationChainParallel(std::vector<Particle*> &particle);
+bool CreateComputationListParallel(std::vector<Particle*> &particle);
 bool CreateComputationList(Particle* ptcl);
 bool AddNewGroupsToList(std::vector<Particle*> &particle);
 void GroupAccelerationRoutine(REAL next_time, std::vector<Particle*> &particle);
@@ -22,19 +24,24 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 {
 
 	//fprintf(binout, "Starting irregular force\n");
-#ifdef time_trace
-	_time.irr_chain.markStart();
-#endif
 	//std::cout << "Creating a computation chain ...\n";
 
 	bool first = true;
 	Particle *ParticleForComputation;
 	//AddNewGroupsToList(particle, particle);
 	//std::cout << "Create Chain\n" << std::flush;
+#ifdef time_trace
+	_time.irr_chain.markStart();
+#endif
+
 	if (CreateComputationChain(particle) == false) {
 		std::cout << "No irregular particle to update ...\n";
 		return true;
 	}
+#ifdef time_trace
+	_time.irr_chain.markEnd();
+	_time.irr_chain.getDuration();
+#endif
 
 	/*
 	fprintf(stderr,"Entire IrrChain=");
@@ -48,10 +55,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 
 	//std::cout << "Calculating irregular force ...\n" << std::endl;
-#ifdef time_trace
-	_time.irr_chain.markEnd();
-	_time.irr_chain.getDuration();
-#endif
+
 	// Caculating irregular acceleration
 
 
@@ -161,9 +165,32 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 #endif
 
+
+
+<<<<<<< HEAD
+=======
 		for (Particle* ptcl:ComputationList) {
+			/*
+			//if(ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6 < 1e-7) {
+			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
+				fprintf(stdout,"--------------------error--------------------------------------------------------------------\n");
 
+			fprintf(stdout, "PID=%d, NextRegTimeBlock= %llu, NextIrrBlock = %llu (%.2e Myr)\n",
+					ptcl->getPID(), NextRegTimeBlock,
+					ptcl->CurrentBlockIrr+ptcl->TimeBlockIrr,
+					(ptcl->CurrentTimeIrr + ptcl->TimeStepIrr)*EnzoTimeStep*1e10/1e6);
+			fprintf(stdout, "CurrentTimeIrr = %.2e Myr (%llu), CurrentTimeReg = %.2e Myr (%llu), TimeStepIrr = %.2e Myr (%llu), TimeStepReg= %.2e Myr (%llu)\n",
+					ptcl->CurrentTimeIrr*EnzoTimeStep*1e10/1e6, ptcl->CurrentBlockIrr,
+					ptcl->CurrentTimeReg*EnzoTimeStep*1e10/1e6, ptcl->CurrentBlockReg,
+					ptcl->TimeStepIrr*EnzoTimeStep*1e10/1e6, ptcl->TimeBlockIrr, 
+					ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6, ptcl->TimeBlockReg
+					); 
 
+			if (ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr || ptcl->CurrentBlockReg+ptcl->TimeBlockReg < ptcl->CurrentBlockIrr)
+				fprintf(stdout,"----------------------------------------------------------------------------------------\n");
+			//}
+			*/
+>>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
 			/*
 			for (Particle* ptcl:particle) {
 				if (ptcl->CurrentTimeIrr > 1) {
@@ -185,8 +212,8 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 #ifdef time_trace
 			_time.irr_force.markStart();
 #endif
-			ptcl->calculateIrrForce(); // this includes particle position
 
+			ptcl->calculateIrrForce(); // this includes particle position
 #ifdef time_trace
 			_time.irr_force.markEnd();
 			_time.irr_force.getDuration();
@@ -198,6 +225,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		}
 
 		// fprintf(stdout, "Here I am! 3\n"); // Eunwoo debug
+
 
 
 		//std::cout << "Update and Sort\n" << std::flush;
@@ -257,8 +285,11 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		// std::cout << "ComputationList of " << ComputationList.size() << " : " ;
 		// bin_termination=false;	
 #endif
-		for (Particle* ptcl:ComputationList) {
 
+
+
+
+		for (Particle* ptcl:ComputationList) {
 			if (ptcl->CurrentTimeIrr > 1) 
 				fprintf(stderr, "outside, PID=%d, CurrentTimeIrr=%e\n", ptcl->PID, ptcl->CurrentTimeIrr);
 			//std::cout << ptcl->PID << " " ;
@@ -271,6 +302,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			// fprintf(stdout, "PID: %d, TimeStepIrr: %e\n", ptcl->PID, ptcl->TimeStepIrr); // Eunwoo debug
 
 			//std::cout << "after TimeStepCal\n" << std::flush;
+			ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 #ifdef binary
 			if (ptcl->isCMptcl) {
 
@@ -292,6 +324,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 				}
 			}
 #endif
+
 
 #ifdef time_trace
 		_time.irr_sort.markStart();

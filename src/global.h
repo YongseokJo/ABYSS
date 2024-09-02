@@ -1,9 +1,11 @@
+#ifndef GLOBAL_H
+#define GLOBAL_H
 #include <vector>
 // #include <mpi.h>
 #include <iostream>
 #include "Particle/Particle.h"
-// #include "Binary/Binary.h" // Eunwoo deleted
 #include "FewBody/Group.h" // Eunwoo added
+//#include "ParticleScheduler/ParticleScheduler.h"
 #include <stdio.h>
 #include <stdexcept>
 
@@ -66,3 +68,8 @@ extern int outNum;
 //
 
 extern FILE* binout;
+
+typedef std::vector<int> Ivector;
+typedef std::vector<ULL> Uvector;
+typedef std::vector<double> Dvector;
+#endif
