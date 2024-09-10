@@ -229,7 +229,6 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 		std::cout << nn->PID << ", ";
 	}
 	std::cout << std::endl;
-	fflush(stdout); // Eunwoo check
 	/*
 	std::sort(nb_index.begin(), nb_index.end());
 	for (int j:nb_index) {

@@ -64,13 +64,6 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 	CUDA_REAL dt       = RegularList[0]->TimeStepReg;
 	CUDA_REAL new_time = RegularList[0]->CurrentTimeReg + dt;  // next regular time
 	ULL new_block = RegularList[0]->CurrentBlockReg + RegularList[0]->TimeBlockReg;  // next regular time
-
-	// for (Particle* p : particle) {
-	// 	for (Particle* pp: p->ACList) {
-	// 		if (p->PID == pp->PID)
-	// 		fprintf(stdout, "0, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-	// 	}
-	// }
 	
 	if (new_block != NextRegTimeBlock) {
 		if (NextRegTimeBlock == 0) {
@@ -83,13 +76,6 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 		}
 		return;
 	}
-
-	// for (Particle* p : particle) {
-	// 	for (Particle* pp: p->ACList) {
-	// 		if (p->PID == pp->PID)
-	// 		fprintf(stdout, "1, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-	// 	}
-	// }
 
 
 	// need to make array to send to GPU
@@ -140,22 +126,8 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 	_time.reg_sendall.markStart();
 #endif
 
-	// for (Particle* p : particle) {
-	// 	for (Particle* pp: p->ACList) {
-	// 		if (p->PID == pp->PID)
-	// 		fprintf(stdout, "2, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-	// 	}
-	// }
-
 	// Particles have been already at T_new through irregular time step
 	SendAllParticlesToGPU(new_time, particle);  // needs to be updated
-
-	// for (Particle* p : particle) {
-	// 	for (Particle* pp: p->ACList) {
-	// 		if (p->PID == pp->PID)
-	// 		fprintf(stdout, "3, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-	// 	}
-	// }
 
 #ifdef time_trace
 	_time.reg_sendall.markEnd();
@@ -181,14 +153,6 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 
 	_time.reg_cpu1.markStart();
 #endif
-
-	// for (Particle* p : particle) {
-	// 	for (Particle* pp: p->ACList) {
-	// 		if (p->PID == pp->PID)
-	// 		fprintf(stdout, "4, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-	// 	}
-	// }
-
 
 	// Calculate the irregular acceleration components based on neighbors of current regular time.
 	for (int i=0; i<ListSize; i++) {
@@ -354,14 +318,6 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 		}
 		*/
 	} // endfor i, over regular particles
-
-	// for (Particle* p : particle) {
-	// 	for (Particle* pp: p->ACList) {
-	// 		if (p->PID == pp->PID)
-	// 		fprintf(stdout, "5, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-	// 	}
-	// }
-
 #ifdef time_trace
 	_time.reg_cpu1.markEnd();
 	_time.reg_cpu1.getDuration();
@@ -394,65 +350,25 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 		ptcl->updateParticle();
 		//ptcl->calculateTimeStepReg();
 		//ptcl->calculateTimeStepIrr(ptcl->a_tot,ptcl->a_irr);
-
-		// for (Particle* p : particle) {
-		// 	for (Particle* pp: p->ACList) {
-		// 		if (p->PID == pp->PID)
-		// 		fprintf(stdout, "0, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-		// 	}
-		// }
-
 		if (ptcl->NumberOfAC == 0) {
 			ptcl->CurrentBlockIrr = NextRegTimeBlock;
 			ptcl->CurrentTimeIrr = NextRegTimeBlock*time_step;
 		}
-
-		// for (Particle* p : particle) {
-		// 	for (Particle* pp: p->ACList) {
-		// 		if (p->PID == pp->PID)
-		// 		fprintf(stdout, "1, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-		// 	}
-		// }
-
 		if (ptcl->Position[0] !=  ptcl->Position[0] || ptcl->Velocity[0] !=  ptcl->Velocity[0]) {
 			fprintf(stdout, "after, myself = %d\n", ptcl->PID);
 			fprintf(stdout, "x[0]=%e, a[0]=%e\n", ptcl->Position[0], ptcl->a_tot[0][0]);
 			fflush(stdout);
 			//assert(ptcl->Position[0] ==  ptcl->Position[0]);
 		}
-
-		// for (Particle* p : particle) {
-		// 	for (Particle* pp: p->ACList) {
-		// 		if (p->PID == pp->PID)
-		// 		fprintf(stdout, "2, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-		// 	}
-		// }
-
 		ptcl->ACList.clear();
 		ptcl->NumberOfAC = NumNeighborReceive[i];
 		for (int j=0; j<ptcl->NumberOfAC;j++) {
 			NeighborIndex = ACListReceive[i * NumNeighborMax + j];  // gained neighbor particle (in next time list)
 			ptcl->ACList.push_back(particle[NeighborIndex]);
 		}
-
-		// for (Particle* p : particle) {
-		// 	for (Particle* pp: p->ACList) {
-		// 		if (p->PID == pp->PID)
-		// 		fprintf(stdout, "3, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-		// 	}
-		// }
-
 		ptcl->UpdateRadius();
 		ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 	}
-
-	// for (Particle* p : particle) {
-	// 	for (Particle* pp: p->ACList) {
-	// 		if (p->PID == pp->PID)
-	// 		fprintf(stdout, "6, PID: %d, What the fuck!!!\n", p->PID); // Eunwoo WTF
-	// 	}
-	// }
-
 #ifdef time_trace
 	_time.reg_cpu2.markEnd();
 	_time.reg_cpu2.getDuration();

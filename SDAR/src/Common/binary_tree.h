@@ -83,13 +83,13 @@ namespace COMM{
             _p2.Position[1] =  m1_mt * pos_red.y;
             _p2.Position[2] =  m1_mt * pos_red.z;
 
-            _p1.Velocity[0] = -m2_mt * Velocity_red.x;
-            _p1.Velocity[1] = -m2_mt * Velocity_red.y;
-            _p1.Velocity[2] = -m2_mt * Velocity_red.z;
+            _p1.Velocity[0] = -m2_mt * vel_red.x;
+            _p1.Velocity[1] = -m2_mt * vel_red.y;
+            _p1.Velocity[2] = -m2_mt * vel_red.z;
 
-            _p2.Velocity[0] =  m1_mt * Velocity_red.x;
-            _p2.Velocity[1] =  m1_mt * Velocity_red.y;
-            _p2.Velocity[2] =  m1_mt * Velocity_red.z;
+            _p2.Velocity[0] =  m1_mt * vel_red.x;
+            _p2.Velocity[1] =  m1_mt * vel_red.y;
+            _p2.Velocity[2] =  m1_mt * vel_red.z;
         }
 
         //! position velocity to orbit

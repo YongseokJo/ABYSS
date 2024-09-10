@@ -416,7 +416,7 @@ void SendAllParticlesToGPU(CUDA_REAL time, std::vector <Particle*> &particle) {
 	// send the arrays to GPU
 	SendToDevice(&size, Mass, Position, Velocity, Radius2, Mdot);
 
-	// fprintf(stdout, "Done.\n"); // Eunwoo debug
+	// fprintf(stdout, "Done.\n");
 	fflush(stdout);
 	// free the temporary variables
 	delete[] Mass;

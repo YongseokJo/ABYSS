@@ -25,8 +25,8 @@
 #include "Common/io.h"
 #include "AR/symplectic_integrator.h"
 #include "AR/information.h"
-#include "interaction.h"
-#include "perturber.h"
+#include "ar_interaction.hpp"
+#include "ar_perturber.hpp"
 
 void InitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle);
 void UpdateNextRegTime(std::vector<Particle*> &particle);
@@ -40,13 +40,20 @@ void UpdateNextRegTime(std::vector<Particle*> &particle);
 // No debugging yet
 
 // I think it is better to change void function to bool function when we consider the group termination!
-// If Intererrupt_mode != none, then bin_terminatino = true;
+// If Intererrupt_mode != none, then bin_termination = true;
 void Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
 
     auto bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
 
     sym_int.particles.shiftToOriginFrame();
     sym_int.particles.template writeBackMemberAll<Particle>(); // Eunwoo: I'm not sure
+    // for (Particle* member : Members) {
+    //     fprintf(binout, "PID: %d. posx: %e, posy: %e, posz: %e\n", member->PID, member->Position[0], member->Position[1], member->Position[2]);
+    // }
+    // sym_int.particles.writeBackMemberAll<Particle>();
+    // for (Particle* member : Members) {
+    //     fprintf(binout, "PID: %d. posx: %e, posy: %e, posz: %e\n", member->PID, member->Position[0], member->Position[1], member->Position[2]);
+    // }
 
     if (bin_interrupt.status != AR::InterruptStatus::none) {
 
@@ -86,8 +93,8 @@ void Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
             InitializeFBParticle(member, particle);
 
             member->CurrentTimeIrr = CurrentTime;
-            member->predictParticleSecondOrderIrr(bin_interrupt.time_now);
-            member->correctParticleFourthOrder(bin_interrupt.time_now, next_time, member->a_irr); // Eunwoo: Is this really necessary?
+            member->predictParticleSecondOrderIrr(bin_interrupt.time_now/EnzoTimeStep);
+            member->correctParticleFourthOrder(bin_interrupt.time_now/EnzoTimeStep, next_time, member->a_irr); // Eunwoo: Is this really necessary?
             member->calculateTimeStepReg();
             
             // /* Eunwoo: just for a while
@@ -157,4 +164,5 @@ void Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
 
     sym_int.particles.shiftToCenterOfMassFrame();
     CurrentTime = next_time;
+    // fprintf(binout, "AR done! time: %e\n", next_time*EnzoTimeStep*1e4);
 }

@@ -11,8 +11,10 @@
 #include "Common/io.h"
 #include "AR/symplectic_integrator.h"
 #include "AR/information.h"
-#include "interaction.h"
-#include "perturber.h"
+#include "ar_interaction.hpp"
+#include "ar_perturber.hpp"
+// #include "artificial_particles.hpp"
+// #include "ArtificialParticleInformation.h"
 
 class Particle;
 class Group
@@ -30,6 +32,8 @@ class Group
 
 		AR::TimeTransformedSymplecticIntegrator<Particle, Particle, Perturber, Interaction, AR::Information<Particle,Particle>> sym_int;
 		AR::TimeTransformedSymplecticManager<Interaction> manager;
+		// ArtificialParticleInformation artificial;
+		// ArtificialParticleManager ap_manager; // Eunwoo: Where is clear?
 
 		// Constructor
 		Group(void) 
@@ -39,6 +43,8 @@ class Group
 			CurrentTime(0),
 			sym_int(),
 			manager()
+			// ap_manager(),
+			// artificial()
 
 		{
 			Members.clear();

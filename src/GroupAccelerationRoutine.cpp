@@ -1,13 +1,15 @@
 #include <iostream>
 #include "global.h"
 #include "defs.h"
+#include <cassert> // Eunwoo debug
 
 // Eunwoo edited
 
 void NewFBInitialization(Group* group, std::vector<Particle*> &particle);
-void FBModification(std::vector<Particle*> addMembers, std::vector<Particle*> &particle);
+void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle);
 void MergeGroups(std::vector<Group*> &groups);
 bool FindCMParticle(Group* group);
+bool isNeighborInsideGroup(Particle* member, const std::vector<Particle*>& groupMembers);
 
 bool AddNewGroupsToList(std::vector<Particle*> &particle) {
 
@@ -25,80 +27,65 @@ bool AddNewGroupsToList(std::vector<Particle*> &particle) {
 
 	for (Group *groupCandidate : GroupCandidateList) {
 
-		bool cmInGroup = FindCMParticle(groupCandidate);
+        // fprintf(binout, "groupCandidate Member: ");
+        // for (Particle *p : groupCandidate->Members) {
+        //     fprintf(binout, "PID: %d ", p->PID);
+        // }
+        // fprintf(binout, "\n");
 
-		if (cmInGroup == false) { // No CM particle inside a groupCandidate --> Simply just make new group!
+		bool cmInGroup = FindCMParticle(groupCandidate);
+        // fprint(binout, "cmInGroup>");
+
+		if (!cmInGroup) { // No CM particle inside a groupCandidate --> Simply just make new group!
 
 			NewFBInitialization(groupCandidate, particle); // New group added.
+            continue;
 
 		} else {	// 1. CM + particles case
 					// 2. CM + CM + particles case --> Add newly detected members to the existing group!
-					// In these cases, remove CM particles from the particle vector and ACList of particles.
-					// Then remove groups related with CM particles from the GroupList
-					// FBModification function --> Almost similar to the NewFBInitialization function!
+					// In these cases, replace CM particles to their member particles inside the current groupCandidate vector.
+					// Then, use FBTermination to those CM particles and use NewFBInitialization.
 
-			std::vector<Particle*> membersToAdd;	// members to add in the group
-													// CM particles should be splitted up to its individual members, cmIndex too!!
-													// group members of cmIndex should be included also because it is impossible to add particles to the existing group in SDAR
 
-			for (Particle *member : groupCandidate->Members) {
+            std::vector<Particle*> particlesToErase;  // Collect particles to be erased later
 
-				if (!member->isCMptcl) {
-					membersToAdd.push_back(member); // If it is not the CM particle, just add to the membersToAdd!
-													// They are not included in the already existing groups so not the problem at all
-				} else {	// member is CM ptcl and we have to delete it from particle vector and ACList of particle in vector before we move on!!!
-							// Because we are going to delete group which is connected to CM ptcl and CM ptcl will be deleted automatically.
-					member->isErase = true;
-					particle.erase(
-							std::remove_if(particle.begin(), particle.end(),
-								[](Particle* p) {
-								bool to_remove = p->isErase;
-								return to_remove;
-								}),
-							particle.end());
+            for (Particle *member : groupCandidate->Members) {
 
-					for (int i = 0; i < particle.size(); i++) {
-						particle[i]->ParticleOrder = i;
+                if (!member->isCMptcl) {
+                    continue;
+                } else {
+                    // Add all group members from member->GroupInfo->Members to groupCandidate
+                    groupCandidate->Members.insert(groupCandidate->Members.end(), member->GroupInfo->Members.begin(), member->GroupInfo->Members.end());
 
-						auto& acList = particle[i]->ACList;
+                    // Mark this CM particle for erasure by adding it to a separate vector
+                    particlesToErase.push_back(member);
 
-						acList.erase(
-							std::remove_if(acList.begin(), acList.end(),
-								[](Particle* p) {
-									bool to_remove = p->isErase;
-									return to_remove;       // Keep this member in ACList
-									}),
-							acList.end());
-						particle[i]->NumberOfAC = particle[i]->ACList.size();
-					}
-					member->isErase = false;
+                }
+            }
 
-					membersToAdd.insert(membersToAdd.end(), member->GroupInfo->Members.begin(), member->GroupInfo->Members.end());
+            // Now erase particles and terminate them
+            for (Particle *member : particlesToErase) {
+                member->isErase = true;
 
-					GroupList.erase(
-							std::remove_if(GroupList.begin(), GroupList.end(), 
-								[member](Group* g) {
-								if (g->groupCM->PID == member->PID) {
-									delete g;
-									return true;
-								}
-								return false;
-							}),
-							GroupList.end()
-					);
-				}
-			}
+                // Remove the marked particle from groupCandidate->Members
+                groupCandidate->Members.erase(
+                    std::remove_if(groupCandidate->Members.begin(), groupCandidate->Members.end(),
+                        [](Particle* p) {
+                            return p->isErase;
+                        }),
+                    groupCandidate->Members.end());
 
-			// CM particle and its following group which is added to groupCandidate->Members[cmIndex] should be deleted!!!
-			// I think I did it in the very above but I'm not sure it is correct or not...
+                member->isErase = false;  // Reset the erase flag (if necessary)
 
-			FBModification(membersToAdd, particle);
+                // Terminate the member
+                FBTermination(member, particle);
+            }
+            particlesToErase.clear();
+            particlesToErase.shrink_to_fit();
 
-			membersToAdd.clear();
-			membersToAdd.shrink_to_fit();
+			NewFBInitialization(groupCandidate, particle);
 		}		
 	}
-
 	GroupCandidateList.clear();
 	GroupCandidateList.shrink_to_fit();
 
@@ -182,4 +169,15 @@ bool FindCMParticle(Group* group) {
             return true; // Return the index of the first CM particle        
     }
     return false; // No CM particle found
+}
+
+bool isNeighborInsideGroup(Particle* member, const std::vector<Particle*>& groupMembers) {
+    // Check if every neighbor of 'member' is also inside groupMembers
+    for (Particle* neighbor : member->ACList) {
+        if (std::find(groupMembers.begin(), groupMembers.end(), neighbor) == groupMembers.end()) {
+            // Found a neighbor that is not in groupMembers
+            return false;
+        }
+    }
+    return true; // All neighbors are inside groupMembers
 }

@@ -37,9 +37,6 @@ __global__ void print_forces_subset(CUDA_REAL* result, int m) {
 	}
 }
 
-<<<<<<< HEAD
-
-=======
 // NTHREAED = 64;
 // NJBlock = 28
 // NNB_per_block = 256;
@@ -405,22 +402,9 @@ __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighb
             neighbor_block[(i * num_blocks_per_m + b) * num_neighbors_per_block + n];
     }
 }
->>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
 
-__global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, CUDA_REAL *magnitudes, int n, int m, int* subset) {
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-	diff[_six*idx    ] = 0.;
-	diff[_six*idx + 1] = 0.;
-	diff[_six*idx + 2] = 0.;
-	diff[_six*idx + 3] = 0.;
-	diff[_six*idx + 4] = 0.;
-	diff[_six*idx + 5] = 0.;
 
-<<<<<<< HEAD
-	magnitudes[_two*idx    ] = 0.;
-	magnitudes[_two*idx + 1] = 0.;
-=======
 #endif
 
 __global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, int n, int m, int* subset) {
@@ -433,8 +417,8 @@ __global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, int n, int m, int
 		diff[_six*idx + 4] = 0.;
 		diff[_six*idx + 5] = 0.;
 	}
->>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
 
+	#ifdef old
 	if (idx < m * n) {
 		int i = idx / n;
 		int j = idx % n;
@@ -453,6 +437,7 @@ __global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, int n, int m, int
 				*/
 		}
 	}
+	#endif
 }
 
 // CUDA kernel to compute pairwise differences for a subset of particles
@@ -950,53 +935,6 @@ __global__ void assign_neighbor(int *neighbor, int* num_neighbor, const REAL* r2
 
 #endif
 
-<<<<<<< HEAD
-void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REAL *result, int n, int m) {
-
-	CUDA_REAL *d_matrix;
-    cudaMalloc(&d_matrix, m * n * sizeof(CUDA_REAL));
-
-    // Create a vector of ones for the summation
-    double *ones;
-    cudaMalloc(&ones, n * sizeof(double));
-    double *h_ones = new double[n];
-    for (int i = 0; i < n; ++i) {
-        h_ones[i] = 1.0;
-    }
-    cudaMemcpy(ones, h_ones, n * sizeof(double), cudaMemcpyHostToDevice);
-    // Initialize result array to zero
-    cudaMemset(result, 0, m * 6 * sizeof(double));
-
-    const double alpha = 1.0;
-    const double beta = 0.0;
-
-    // Sum over the second axis (n) for each of the 6 elements
-    for (int i = 0; i < _six; ++i) {
-
-		cublasDcopy(handle, m * n, diff + i, _six, d_matrix, 1);
-        cublasDgemv(
-            handle,
-            CUBLAS_OP_T,  // Transpose
-            n,            // Number of rows of the matrix A
-            m,            // Number of columns of the matrix A
-            &alpha,       // Scalar alpha
-            d_matrix, // Pointer to the first element of the i-th sub-matrix
-            n,     // Leading dimension of the sub-matrix
-            ones,         // Pointer to the vector x
-            1,            // Increment between elements of x
-            &beta,        // Scalar beta
-            result + i, // Pointer to the first element of the result vector
-            _six             // Increment between elements of the result vector
-        );
-    }
-    // Cleanup
-    delete[] h_ones;
-    cudaFree(ones);
-	cudaFree(d_matrix);
-}
-
-=======
->>>>>>> f688615c336c02f68febfc5c6d41376999e08ae3
 #ifdef THRUST
 
 struct less_than_zero
@@ -1072,5 +1010,97 @@ void reduce_neighbors(cublasHandle_t handle, int *neighbor, int* num_neighbor, C
     }
 
     cudaFree(d_matrix);
+}
+
+
+__global__ void compute_forces_test2(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ diff, int m, int n, const int* __restrict__ subset, bool* __restrict__ neighbor, int start){
+    extern __shared__ CUDA_REAL shared_ptcl[]; // Shared memory for particle data
+
+    int tid = threadIdx.x; // Thread ID within the block
+    int i = blockIdx.y * blockDim.y + threadIdx.y; // Index for subset (i)
+    int tile_size = blockDim.x; // Number of threads per block
+    int tiles = (n + tile_size - 1) / tile_size; // Number of tiles required to cover all particles
+
+    // Initialize shared memory for storing particle data
+    CUDA_REAL* sh_x = shared_ptcl;
+    CUDA_REAL* sh_y = sh_x + tile_size;
+    CUDA_REAL* sh_z = sh_y + tile_size;
+    CUDA_REAL* sh_vx = sh_z + tile_size;
+    CUDA_REAL* sh_vy = sh_vx + tile_size;
+    CUDA_REAL* sh_vz = sh_vy + tile_size;
+    CUDA_REAL* sh_mass = sh_vz + tile_size;
+	
+	if (i < m) {
+        int i_ptcl = subset[i + start];
+        CUDA_REAL pi_x = ptcl[i_ptcl];
+        CUDA_REAL pi_y = ptcl[i_ptcl + n];
+        CUDA_REAL pi_z = ptcl[i_ptcl + 2 * n];
+        CUDA_REAL pi_vx = ptcl[i_ptcl + 3 * n];
+        CUDA_REAL pi_vy = ptcl[i_ptcl + 4 * n];
+        CUDA_REAL pi_vz = ptcl[i_ptcl + 5 * n];
+
+        for (int t = 0; t < tiles; ++t) {
+            int j = t * tile_size + tid; // Global index for particle j
+            if (j < n) {
+                // Load particle data into shared memory
+                sh_x[tid] = ptcl[j];
+                sh_y[tid] = ptcl[j + n];
+                sh_z[tid] = ptcl[j + 2 * n];
+                sh_vx[tid] = ptcl[j + 3 * n];
+                sh_vy[tid] = ptcl[j + 4 * n];
+                sh_vz[tid] = ptcl[j + 5 * n];
+                sh_mass[tid] = ptcl[j + 6 * n];
+            }
+            __syncthreads();
+
+            if (j < n) {
+                int idx = i * n + j;
+
+                // Calculate position differences
+                CUDA_REAL dx = sh_x[tid] - pi_x;
+                CUDA_REAL dy = sh_y[tid] - pi_y;
+                CUDA_REAL dz = sh_z[tid] - pi_z;
+
+                CUDA_REAL magnitude0 = dx * dx + dy * dy + dz * dz;
+
+                // Initialize result variables
+                double ax = 0.0, ay = 0.0, az = 0.0;
+                double adotx = 0.0, adoty = 0.0, adotz = 0.0;
+
+                bool isNeighbor = magnitude0 <= r2[i_ptcl];
+                neighbor[idx] = isNeighbor;
+
+                if (!isNeighbor) {
+                    // Calculate velocity differences
+                    CUDA_REAL dvx = sh_vx[tid] - pi_vx;
+                    CUDA_REAL dvy = sh_vy[tid] - pi_vy;
+                    CUDA_REAL dvz = sh_vz[tid] - pi_vz;
+
+                    CUDA_REAL magnitude1 = dx * dvx + dy * dvy + dz * dvz;
+                    CUDA_REAL inv_sqrt_m0 = rsqrt(magnitude0);
+                    CUDA_REAL inv_m0 = inv_sqrt_m0 * inv_sqrt_m0; // or 1 / magnitude0
+
+                    CUDA_REAL scale = sh_mass[tid] * inv_sqrt_m0 * inv_m0;
+                    ax = scale * dx;
+                    ay = scale * dy;
+                    az = scale * dz;
+
+                    CUDA_REAL common_factor = 3.0 * magnitude1 * inv_m0;
+                    adotx = scale * (dvx - common_factor * dx);
+                    adoty = scale * (dvy - common_factor * dy);
+                    adotz = scale * (dvz - common_factor * dz);
+                }
+
+                // Store results in the diff array
+                diff[idx] = ax;
+                diff[idx + n * m] = ay;
+                diff[idx + 2 * n * m] = az;
+                diff[idx + 3 * n * m] = adotx;
+                diff[idx + 4 * n * m] = adoty;
+                diff[idx + 5 * n * m] = adotz;
+            }
+            __syncthreads(); // Ensure all threads are done before loading the next tile
+        }
+    }
 }
 #endif

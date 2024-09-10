@@ -7,7 +7,7 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 
 bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 {
-	// fprintf(stdout, "Calculating regular force ... particle size=%lu, regular size=%lu\n", particle.size(), RegularList.size()); // Eunwoo debug
+	// fprintf(stdout, "Calculating regular force ... particle size=%lu, regular size=%lu\n", particle.size(), RegularList.size());
 	fflush(stdout);
 	// Calulating regular acceleration of the particles
 	if (RegularList.size() > 0) {
@@ -90,7 +90,7 @@ bool RegularAccelerationRoutine(std::vector<Particle*> &particle)
 	// update the next regular time step
 	//fprintf(stdout, "NextRegTimeBlock=%llu\n", NextRegTimeBlock);
 	//fprintf(binout, "Finishing regular force\n");
-	std::cout << "Finishing regular force ...\n" << std::flush;
+	// std::cout << "Finishing regular force ...\n" << std::flush;
 	//fprintf(stderr, "Finishing regular force.. NextRegTime=%.3e\n", NextRegTimeBlock*time_step);
 	//fprintf(stdout, "Finishing regular force.. NextRegTime=%.3e\n", NextRegTimeBlock*time_step);
 	return true;

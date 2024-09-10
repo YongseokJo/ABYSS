@@ -2584,7 +2584,7 @@ namespace AR {
                 for (int i=0; i<cd_pair_size; i++) std::cerr<<" "<<time_table[manager->step.getSortCumSumCKIndex(i)];
                 std::cerr<<std::endl;
 #endif
-
+                if (ISNAN(integration_error_rel_abs)) fprintf(stderr, "H: %e, H_bk: %e\n", H, H_bk); // Eunwoo debug
                 ASSERT(!ISNAN(integration_error_rel_abs));
 
                 // modify step if energy error is large
@@ -3002,17 +3002,17 @@ namespace AR {
             }
             else {
                 for (int i=0; i<particles.getSize(); i++) {
-                    Tptcl pc = particle_data[i];
+                    Tptcl ptc = particle_data[i];
 
-                    pc.Position[0] = particle_data[i].Position[0] + particles.cm.Position[0];
-                    pc.Position[1] = particle_data[i].Position[1] + particles.cm.Position[1];
-                    pc.Position[2] = particle_data[i].Position[2] + particles.cm.Position[2];
+                    ptc.Position[0] = particle_data[i].Position[0] + particles.cm.Position[0];
+                    ptc.Position[1] = particle_data[i].Position[1] + particles.cm.Position[1];
+                    ptc.Position[2] = particle_data[i].Position[2] + particles.cm.Position[2];
 
-                    pc.Velocity[0] = particle_data[i].Velocity[0] + particles.cm.Velocity[0];
-                    pc.Velocity[1] = particle_data[i].Velocity[1] + particles.cm.Velocity[1];
-                    pc.Velocity[2] = particle_data[i].Velocity[2] + particles.cm.Velocity[2];
+                    ptc.Velocity[0] = particle_data[i].Velocity[0] + particles.cm.Velocity[0];
+                    ptc.Velocity[1] = particle_data[i].Velocity[1] + particles.cm.Velocity[1];
+                    ptc.Velocity[2] = particle_data[i].Velocity[2] + particles.cm.Velocity[2];
                     
-                    *(Tptcl*)particle_adr[i] = pc;
+                    *(Tptcl*)particle_adr[i] = ptc;
                 }
             }
         }
@@ -3211,6 +3211,7 @@ namespace AR {
         Float getHSlowDown() const {
 #ifdef AR_TTL
             //return (ekin_sd_ - etot_sd_ref_)/gt_drift_inv_ + epot_sd_/gt_kick_inv_;
+            // fprintf(stderr, "gt_kick_inv_: %e\n", gt_kick_inv_); // Eunwoo debug
             return (ekin_sd_ + epot_sd_ - etot_sd_ref_)/gt_kick_inv_;
 #else
             return manager->interaction.calcH(ekin_sd_ - etot_sd_ref_, epot_sd_);

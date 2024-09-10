@@ -8,6 +8,7 @@
 
 int getLineNumber();
 void write_out(std::ofstream& outputFile, const Particle* ptcl);
+void write_out_group(std::ofstream& outputFile, const Particle* ptclCM, const Particle* ptcl);
 void write_neighbor(std::ofstream& outputFile, const Particle* ptcl); 
 const int NUM_COLUMNS = 7; // Define the number of columns
 const int width = 18;
@@ -195,7 +196,7 @@ int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outpu
 			ptcl->predictParticleSecondOrderIrr(current_time);
 			if (ptcl->isCMptcl)  { // Eunwoo edited
 				for (Particle* members : ptcl->GroupInfo->Members) { // Eunwoo edited
-					write_out(outputFile, members); // Eunwoo edited
+					write_out_group(outputFile, ptcl, members); // Eunwoo edited
 				} // Eunwoo edited
 				// //write_neighbor(output_nn, ptcl->BinaryParticleI); // Eunwoo edited
 				// write_out(outputFile, ptcl->BinaryParticleJ); // Eunwoo edited
@@ -230,6 +231,19 @@ void write_out(std::ofstream& outputFile, const Particle* ptcl) {
                     << std::setw(width) << ptcl->PredVelocity[0]*velocity_unit/yr*pc/1e5
                     << std::setw(width) << ptcl->PredVelocity[1]*velocity_unit/yr*pc/1e5
                     << std::setw(width) << ptcl->PredVelocity[2]*velocity_unit/yr*pc/1e5 << '\n';
+}
+
+// This function is for group members cause group members have pos, vel in original frame, not predicted values.
+void write_out_group(std::ofstream& outputFile, const Particle* ptclCM, const Particle* ptcl) {
+        outputFile  << std::left
+										<< std::setw(width) << ptcl->PID
+										<< std::setw(width) << ptcl->Mass*mass_unit
+                    << std::setw(width) << (ptclCM->PredPosition[0] - ptclCM->Position[0] + ptcl->Position[0])*position_unit
+                    << std::setw(width) << (ptclCM->PredPosition[1] - ptclCM->Position[1] + ptcl->Position[1])*position_unit
+                    << std::setw(width) << (ptclCM->PredPosition[2] - ptclCM->Position[2] + ptcl->Position[2])*position_unit
+                    << std::setw(width) << (ptclCM->PredVelocity[0] - ptclCM->Velocity[0] + ptcl->Velocity[0])*velocity_unit/yr*pc/1e5
+                    << std::setw(width) << (ptclCM->PredVelocity[1] - ptclCM->Velocity[1] + ptcl->Velocity[1])*velocity_unit/yr*pc/1e5
+                    << std::setw(width) << (ptclCM->PredVelocity[2] - ptclCM->Velocity[2] + ptcl->Velocity[2])*velocity_unit/yr*pc/1e5 << '\n';
 }
 
 void write_neighbor(std::ofstream& outputFile, const Particle* ptcl) {

@@ -3,8 +3,8 @@
 //#define NUM_THREAD 16
 #endif
 
-#define FixNumNeighbor 20
-#define NumNeighborMax 200
+#define FixNumNeighbor 50
+#define NumNeighborMax 1000
 #define HERMITE_ORDER 4
 #define Dim 3
 
@@ -39,9 +39,8 @@
 
 // Physics related parameters
 #define eta 0.01 // by YS Jo subject to modifty
-// #define EPS2 1e-4 // smoothing length
-#define EPS2 0 // Eunwoo modified
-#define InitialRadiusOfAC 0.04 // 0.04 pc
+#define EPS2 0.0 // smoothing length
+#define InitialRadiusOfAC 0.1 // 0.04 pc // 0.1
 //#define InitialRadiusOfAC 1000. // 0.04 pc
 #define MIN_LEVEL_BUFFER 30
 
@@ -100,6 +99,7 @@ typedef double REAL;
 typedef float CUDA_REAL;
 #else
 typedef double CUDA_REAL;
+#endif
 
 
 //typedef double3 CUDA_REAL3;
@@ -108,6 +108,8 @@ typedef double CUDA_REAL;
 
 #define NAN_CHECK(val) assert((val) == (val));
 
+#define nbodymax 100000000 //100000000 for node14
+// #define NSIGHT // for nsight debugging
 
 #define BatchSize 64 // each thread calculates BatchSize particles
 #define GridDimY 32 // each block calcuates NNB/GridDimY particles

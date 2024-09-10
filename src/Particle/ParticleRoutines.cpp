@@ -145,8 +145,9 @@ void Particle::normalizeParticle() {
 	}
 }
 
-/* Eunwoo deleted
+// Eunwoo deleted
 
+/*
 void Particle::convertBinaryCoordinatesToCartesian() {
 	if (!this->isCMptcl)  {
 		fprintf(stderr,"This is NOT a CM particle!\n");
@@ -223,5 +224,4 @@ void Particle::convertBinaryCoordinatesToCartesian() {
 }
 
 */
-
 

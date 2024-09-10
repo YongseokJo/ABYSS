@@ -14,7 +14,8 @@
 #include "AR/information.h"
 #include "../Particle/Particle.h"
 #include "perturber.h"
-#include "global.h"
+#include "../global.h"
+
 
     
 //! a sample interaction class with newtonian acceleration
@@ -315,7 +316,7 @@ public:
       @param[in] _bin_interrupt: interrupt binary information: adr: binary tree address; time_now: current physical time; time_end: integration finishing time; status: interrupt status: change, merge,none
       @param[in] _bin: binarytree to check iteratively
      */
-    void  modifyAndInterruptIter(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin) {
+    void modifyAndInterruptIter(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin) {
         if (_bin_interrupt.status==AR::InterruptStatus::none) {
             auto* p1 = _bin.getLeftMember();
             auto* p2 = _bin.getRightMember();
@@ -336,7 +337,7 @@ public:
                 p2->setBinaryInterruptState(BinaryInterruptState::none);
                 p1->dm = mcm - p1->Mass;
                 p2->dm = -p2->Mass;
-                p1->Mass = mcm; // Eunwoo corrected 0.8 to 1
+                p1->Mass = mcm;
                 p2->Mass = 0.0;
             };
 
@@ -375,13 +376,13 @@ public:
                             Float t_peri = mean_anomaly/mean_motion;
                             if (drdv<0 && t_peri<_bin_interrupt.time_end-_bin_interrupt.time_now) {
                                 if ((p1->Mass*mass_unit > 8) && (p2->Mass*mass_unit < 8)) { // BH + star
-                                    fprintf(binout, "TDE happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
-                                    fprintf(binout, "Periapsis dist: %e pc\n", peri*position_unit);
+                                    fprintf(stdout, "TDE happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
+                                    fprintf(stdout, "Periapsis dist: %e pc\n", peri*position_unit);
                                     TDE();
                                 }
                                 else { // Star + star
-                                    fprintf(binout, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
-                                    fprintf(binout, "Periapsis dist: %e pc\n", peri*position_unit);
+                                    fprintf(stdout, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
+                                    fprintf(stdout, "Periapsis dist: %e pc\n", peri*position_unit);
                                     merge();
                                 }
                             }
@@ -402,13 +403,13 @@ public:
                         Float dr2  = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
                         if (dr2<radius*radius) {
                             if ((p1->Mass*mass_unit > 8) && (p2->Mass*mass_unit < 8)) { // BH + star
-                                fprintf(binout, "TDE happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
-                                fprintf(binout, "Periapsis dist: %e pc\n", std::sqrt(dr2)*position_unit);
+                                fprintf(stdout, "TDE happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
+                                fprintf(stdout, "Periapsis dist: %e pc\n", std::sqrt(dr2)*position_unit);
                                 TDE();
                             }
                             else { // Star + star
-                                fprintf(binout, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
-                                fprintf(binout, "Periapsis dist: %e pc\n", std::sqrt(dr2)*position_unit);
+                                fprintf(stdout, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
+                                fprintf(stdout, "Periapsis dist: %e pc\n", std::sqrt(dr2)*position_unit);
                                 merge();
                             }
                         }
