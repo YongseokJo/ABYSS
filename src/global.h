@@ -42,7 +42,7 @@ extern std::vector<Particle*> ComputationList;
 extern int ComputationTimeMarker;
 extern std::vector<Particle*> RegularList;
 extern std::vector<Group*> GroupCandidateList; // Newly detected group candidates // Eunwoo added
-extern std::vector<Group*> GroupList; // List of groups to calculate // Eunwoo added
+// extern std::vector<Group*> GroupList; // List of groups to calculate // Eunwoo added
 
 //extern bool debug;
 extern char* fname;

@@ -140,17 +140,17 @@ void Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
             // member->GroupInfo	= nullptr;
         }
 
-        // we also need to delete ptclGroup from the group list
-        // fprintf(binout,"deleting binary information from the GroupList \n");
-        this->isErase = true;
-        GroupList.erase(
-                std::remove_if(GroupList.begin(), GroupList.end(),
-                    [](Group* p) {
-                    bool to_remove = p->isErase;
-                    //if (to_remove) delete p;
-                    return to_remove;
-                    }),
-                GroupList.end());
+        // // we also need to delete ptclGroup from the group list
+        // // fprintf(binout,"deleting binary information from the GroupList \n");
+        // this->isErase = true;
+        // GroupList.erase(
+        //         std::remove_if(GroupList.begin(), GroupList.end(),
+        //             [](Group* p) {
+        //             bool to_remove = p->isErase;
+        //             //if (to_remove) delete p;
+        //             return to_remove;
+        //             }),
+        //         GroupList.end());
 
         delete this;
         // delete ptclCM; // It is deleted automatically when delete ptclGroup!!!

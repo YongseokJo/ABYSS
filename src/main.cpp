@@ -15,7 +15,7 @@ REAL EnzoTimeStep;
 int newNNB = 0;
 std::vector<Particle*> RegularList;
 std::vector<Group*> GroupCandidateList; // Eunwoo edited
-std::vector<Group*> GroupList; // Eunwoo edited
+// std::vector<Group*> GroupList; // Eunwoo edited
 FILE* binout;
 
 //int NumNeighborMax = 100;

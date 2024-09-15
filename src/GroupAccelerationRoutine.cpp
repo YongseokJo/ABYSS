@@ -6,85 +6,33 @@
 // Eunwoo edited
 
 void NewFBInitialization(Group* group, std::vector<Particle*> &particle);
+void NewFBInitialization2(Group* group, std::vector<Particle*> &particle);
 void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle);
 void MergeGroups(std::vector<Group*> &groups);
 bool FindCMParticle(Group* group);
-bool isNeighborInsideGroup(Particle* member, const std::vector<Particle*>& groupMembers);
+bool isNeighborInsideGroup(Group* groupCandidate);
 
 bool AddNewGroupsToList(std::vector<Particle*> &particle) {
 
 	assert(GroupCandidateList.empty()); // Let's check GroupCandidateList is initially empty!
 
 	for (Particle *ptcl : particle) {
+        // if (ptcl->isCMptcl) continue; // Eunwoo: test
 		ptcl->isFBCandidate();
 	}
 
-	if (GroupCandidateList.empty())
-		return true;
+	if (GroupCandidateList.empty()) return true;
 
 	MergeGroups(GroupCandidateList);	// Merge GroupCandidateList
 										// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
 
 	for (Group *groupCandidate : GroupCandidateList) {
 
-        // fprintf(binout, "groupCandidate Member: ");
-        // for (Particle *p : groupCandidate->Members) {
-        //     fprintf(binout, "PID: %d ", p->PID);
-        // }
-        // fprintf(binout, "\n");
+        if (isNeighborInsideGroup(groupCandidate)) continue;    // Don't make a real group if it has no neighbor.
+                                                                // Its TimeStepIrr will be so big and it can raise errors.
 
-		bool cmInGroup = FindCMParticle(groupCandidate);
-        // fprint(binout, "cmInGroup>");
-
-		if (!cmInGroup) { // No CM particle inside a groupCandidate --> Simply just make new group!
-
-			NewFBInitialization(groupCandidate, particle); // New group added.
-            continue;
-
-		} else {	// 1. CM + particles case
-					// 2. CM + CM + particles case --> Add newly detected members to the existing group!
-					// In these cases, replace CM particles to their member particles inside the current groupCandidate vector.
-					// Then, use FBTermination to those CM particles and use NewFBInitialization.
-
-
-            std::vector<Particle*> particlesToErase;  // Collect particles to be erased later
-
-            for (Particle *member : groupCandidate->Members) {
-
-                if (!member->isCMptcl) {
-                    continue;
-                } else {
-                    // Add all group members from member->GroupInfo->Members to groupCandidate
-                    groupCandidate->Members.insert(groupCandidate->Members.end(), member->GroupInfo->Members.begin(), member->GroupInfo->Members.end());
-
-                    // Mark this CM particle for erasure by adding it to a separate vector
-                    particlesToErase.push_back(member);
-
-                }
-            }
-
-            // Now erase particles and terminate them
-            for (Particle *member : particlesToErase) {
-                member->isErase = true;
-
-                // Remove the marked particle from groupCandidate->Members
-                groupCandidate->Members.erase(
-                    std::remove_if(groupCandidate->Members.begin(), groupCandidate->Members.end(),
-                        [](Particle* p) {
-                            return p->isErase;
-                        }),
-                    groupCandidate->Members.end());
-
-                member->isErase = false;  // Reset the erase flag (if necessary)
-
-                // Terminate the member
-                FBTermination(member, particle);
-            }
-            particlesToErase.clear();
-            particlesToErase.shrink_to_fit();
-
-			NewFBInitialization(groupCandidate, particle);
-		}		
+        NewFBInitialization2(groupCandidate, particle);
+				
 	}
 	GroupCandidateList.clear();
 	GroupCandidateList.shrink_to_fit();
@@ -92,17 +40,6 @@ bool AddNewGroupsToList(std::vector<Particle*> &particle) {
 	return true;
 }
 
-void GroupAccelerationRoutine(REAL next_time, std::vector<Particle*> &particle) {
-
-	if (next_time == 0) {
-		return;
-	}
-
-	for (Group* ptclGroup: GroupList) {
-		ptclGroup->ARIntegration(next_time, particle);
-	}
-	// fprintf(stdout, "BinaryAccelerationRoutine ended, current time: %e\n", next_time); // Eunwoo added for debug
-}
 
 void MergeGroups(std::vector<Group*> &groups) {
 
@@ -171,12 +108,14 @@ bool FindCMParticle(Group* group) {
     return false; // No CM particle found
 }
 
-bool isNeighborInsideGroup(Particle* member, const std::vector<Particle*>& groupMembers) {
+bool isNeighborInsideGroup(Group* groupCandidate) {
     // Check if every neighbor of 'member' is also inside groupMembers
-    for (Particle* neighbor : member->ACList) {
-        if (std::find(groupMembers.begin(), groupMembers.end(), neighbor) == groupMembers.end()) {
-            // Found a neighbor that is not in groupMembers
-            return false;
+    for (Particle* member : groupCandidate->Members) {
+        for (Particle* neighbor : member->ACList) {
+            if (std::find(groupCandidate->Members.begin(), groupCandidate->Members.end(), neighbor) == groupCandidate->Members.end()) {
+                // Found a neighbor that is not in groupMembers
+                return false;
+            }
         }
     }
     return true; // All neighbors are inside groupMembers

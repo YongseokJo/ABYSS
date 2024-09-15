@@ -22,6 +22,7 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 	// fprintf(stdout,"In FBTermination.cpp...\n\n");
 	fprintf(binout,"--------------------------------------\n");
 	fprintf(binout,"In FBTermination.cpp... (CM PID: %d)\n\n", ptclCM->PID);
+	fprintf(binout, "CurrentTimeIrr of ptclCM (Myr): %e\n", ptclCM->CurrentTimeIrr*EnzoTimeStep*1e4);
 
 	ptclGroup	= ptclCM->GroupInfo;
 
@@ -34,13 +35,13 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 		members->CurrentTimeIrr		= ptclCM->CurrentTimeIrr;
 		members->CurrentTimeReg		= ptclCM->CurrentTimeReg;
 
-		members->TimeStepIrr		= ptclCM->TimeStepIrr; // Eunwoo: I think this is redundant.
-		members->TimeBlockIrr		= ptclCM->TimeBlockIrr; // Eunwoo: I think this is redundant.
-		members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // Eunwoo: I think this is redundant.
+		// members->TimeStepIrr		= ptclCM->TimeStepIrr; // Eunwoo: I think this is redundant.
+		// members->TimeBlockIrr		= ptclCM->TimeBlockIrr; // Eunwoo: I think this is redundant.
+		// members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // Eunwoo: I think this is redundant.
 
-		members->TimeStepReg		= ptclCM->TimeStepReg; // Eunwoo: I think this is redundant.
-		members->TimeBlockReg		= ptclCM->TimeBlockReg; // Eunwoo: I think this is redundant.
-		members->TimeLevelReg		= ptclCM->TimeLevelReg; // Eunwoo: I think this is redundant.
+		// members->TimeStepReg		= ptclCM->TimeStepReg; // Eunwoo: I think this is redundant.
+		// members->TimeBlockReg		= ptclCM->TimeBlockReg; // Eunwoo: I think this is redundant.
+		// members->TimeLevelReg		= ptclCM->TimeLevelReg; // Eunwoo: I think this is redundant.
 	}
 	// fprintf(binout, "CM Time Steps (Myr) - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr*EnzoTimeStep*1e4, ptclCM->TimeStepReg*EnzoTimeStep*1e4);
 
@@ -169,7 +170,7 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 	//re-do UpdateNextRegTime
 	UpdateNextRegTime(particle);
 
-	fprintf(binout,"total number of particles = %lu, total number of groups = %lu \n", particle.size(), GroupList.size()-1); // GroupList.size() - 1 because we are terminating it.
+	// fprintf(binout,"total number of particles = %lu, total number of groups = %lu \n", particle.size(), GroupList.size()-1); // GroupList.size() - 1 because we are terminating it.
 	fprintf(binout,"total number of ComputationList = %lu\n", ComputationList.size());
 
 	for (Particle* members : ptclGroup->Members) {
@@ -204,17 +205,17 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 		// members->GroupInfo		= nullptr; // GroupInfo is only assigned to the CMptcl, so it is needless
 	}
 
-	// we also need to delete ptclGroup from the group list
-	// fprintf(binout,"deleting binary information from the GroupList \n");
-	ptclGroup->isErase = true;
-	GroupList.erase(
-			std::remove_if(GroupList.begin(), GroupList.end(),
-				[](Group* p) {
-				bool to_remove = p->isErase;
-				//if (to_remove) delete p;
-				return to_remove;
-				}),
-			GroupList.end());
+	// // we also need to delete ptclGroup from the group list
+	// // fprintf(binout,"deleting binary information from the GroupList \n");
+	// ptclGroup->isErase = true;
+	// GroupList.erase(
+	// 		std::remove_if(GroupList.begin(), GroupList.end(),
+	// 			[](Group* p) {
+	// 			bool to_remove = p->isErase;
+	// 			//if (to_remove) delete p;
+	// 			return to_remove;
+	// 			}),
+	// 		GroupList.end());
 
 	delete ptclGroup;
 	// delete ptclCM; // It is deleted automatically when delete ptclGroup!!!
