@@ -73,6 +73,7 @@ void Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
         for (int i=0; i<particle.size(); i++) {
             particle[i]->ParticleOrder = i;
         }
+        
 
         for (int i=0; i<sym_int.particles.getSize(); i++) {
             if (sym_int.particles[i].Mass == 0) {
@@ -122,9 +123,6 @@ void Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
                     ptcl->ACList.erase(ptcl->ACList.begin() + index);
                     ptcl->ACList.insert(ptcl->ACList.end(), Members.begin(), Members.end());
                     ptcl->NumberOfAC = ptcl->ACList.size();
-                    // InitializeFBParticle(ptcl, particle); // Eunwoo added
-                    // ptcl->calculateTimeStepReg(); // Eunwoo added
-                    // ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr); // Eunwoo added
                     break; // Eunwoo check
                 }
                 index++;

@@ -12,7 +12,9 @@ bool UpdateComputationChain(Particle* ptcl);
 bool CreateComputationListParallel(std::vector<Particle*> &particle);
 bool CreateComputationList(Particle* ptcl);
 bool AddNewGroupsToList(std::vector<Particle*> &particle);
+void NewFBInitialization2(std::vector<Particle*> &stillGroup, std::vector<Particle*> &particle);
 void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle);
+void FBTermination2(Particle* ptclCM, std::vector<Particle*> &stillGroup, std::vector<Particle*> &noMoreGroup, std::vector<Particle*> &particle);
 
 
 
@@ -186,36 +188,77 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 #ifdef binary
 			if (ptcl->isCMptcl) {
 				ptcl->GroupInfo->ARIntegration(binary_time, particle);
+// /*
+				if (ptcl->GroupInfo->Members.size() == 2) {
+					Particle* ptclI = ptcl->GroupInfo->Members[0];
+					Particle* ptclJ = ptcl->GroupInfo->Members[1];
 
-/*  // Terminate a group if there is a particle is far away from the every other particles.
-	// This version needs too many integration step for more than two body case (Too high stab: unstable)
-	
-				for (size_t i = 0; i < ptcl->GroupInfo->Members.size(); ++i) {
+					// REAL rv = (ptclI->Position[0]-ptclJ->Position[0])*(ptclI->Velocity[0]-ptclJ->Velocity[0])
+					// 				+ (ptclI->Position[1]-ptclJ->Position[1])*(ptclI->Velocity[1]-ptclJ->Velocity[1])
+					// 				+ (ptclI->Position[2]-ptclJ->Position[2])*(ptclI->Velocity[2]-ptclJ->Velocity[2]);
 
-					Particle* ptclI = ptcl->GroupInfo->Members[i];
-					bool isFarFromAll = true;
+					// if ((dist(ptclI->Position, ptclJ->Position) > 5e-3/position_unit) && (rv > 0)) {
+					if (dist(ptclI->Position, ptclJ->Position) > 5e-3/position_unit) {
 
-					for (size_t j = 0; j < ptcl->GroupInfo->Members.size(); ++j) {
+							fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
+							fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
+							FBTermination(ptcl, particle);
+							bin_termination = true;
+							continue;
+					}		
 
-						if (i == j) continue;
-
-						Particle* ptclJ = ptcl->GroupInfo->Members[j];
-						if (dist(ptclI->Position, ptclJ->Position) < 1e-2/position_unit) {
-							isFarFromAll =false;
-							break;
-
-						}
-					}
-					if (isFarFromAll) {
-						fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
-						fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
-						FBTermination(ptcl, particle);
-						bin_termination=true;
-						break;	
-					}
 				}
-*/
+				else {
 
+					std::vector<Particle*> stillGroup;
+					// std::vector<Particle*> noMoreGroup;
+
+					for (size_t i = 0; i < ptcl->GroupInfo->Members.size(); ++i) {
+						Particle* ptclI = ptcl->GroupInfo->Members[i];
+						// bool ptclInoMoreGroup = true;
+
+						for (size_t j = 0; j < ptcl->GroupInfo->Members.size(); ++j) {
+							if (i == j) continue;
+
+							Particle* ptclJ = ptcl->GroupInfo->Members[j];
+
+							// REAL rv = (ptclI->Position[0]-ptclJ->Position[0])*(ptclI->Velocity[0]-ptclJ->Velocity[0])
+							// 			+ (ptclI->Position[1]-ptclJ->Position[1])*(ptclI->Velocity[1]-ptclJ->Velocity[1])
+							// 			+ (ptclI->Position[2]-ptclJ->Position[2])*(ptclI->Velocity[2]-ptclJ->Velocity[2]);
+
+							// if ((dist(ptclI->Position, ptclJ->Position) > 5e-3/position_unit) && (rv > 0)) {
+							if (dist(ptclI->Position, ptclJ->Position) <= 5e-3/position_unit) {
+
+								stillGroup.push_back(ptclI);
+								// ptclInoMoreGroup = false;
+								break;						
+							}
+						}
+						// if (ptclInoMoreGroup) noMoreGroup.push_back(ptclI);
+					}
+
+					if (ptcl->GroupInfo->Members.size() != stillGroup.size()) {
+						// bin_termination = true;
+
+						// if (stillGroup.size() == 0) {
+						// 	FBTermination(ptcl, particle);
+						// }
+						// else {
+						// 	FBTermination2(ptcl, stillGroup, noMoreGroup, particle);	
+						// }
+
+						bin_termination = true;
+						FBTermination(ptcl, particle);
+						if (stillGroup.size() != 0)
+							NewFBInitialization2(stillGroup, particle);
+					}
+
+					stillGroup.clear();
+					// noMoreGroup.clear();
+				}
+			}
+// */
+/*
 				for (size_t i = 0; i < ptcl->GroupInfo->Members.size(); ++i) {
 					Particle* ptclI = ptcl->GroupInfo->Members[i];
 					for (size_t j = i + 1; j < ptcl->GroupInfo->Members.size(); ++j) {
@@ -239,7 +282,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 				}
 
 			}
-
+*/
 			if (bin_termination=true) continue;
 
 #endif
@@ -313,8 +356,10 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		}
 #endif
 
-		//fflush(stdout);
+
 	}
+
+
 	//std::cout << "Finishing irregular force ..." << std::endl;
 	//kstd::cerr << "Finishing irregular force ..." << std::endl;
 	//fflush(stderr);

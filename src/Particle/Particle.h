@@ -177,7 +177,9 @@ class Particle
 
 		void normalizeParticle();
 		void calculateTimeStepIrr(REAL f[3][4], REAL df[3][4]);
+		void calculateTimeStepIrr2(REAL f[3][4], REAL df[3][4]); // Eunwoo add
 		void calculateTimeStepReg();
+		void calculateTimeStepReg2();
 		bool checkNeighborForEvolution();
 		void updateEvolveParticle(std::vector<Particle*> &particle);
 		void updateParticle();

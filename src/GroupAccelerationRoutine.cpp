@@ -6,7 +6,6 @@
 // Eunwoo edited
 
 void NewFBInitialization(Group* group, std::vector<Particle*> &particle);
-void NewFBInitialization2(Group* group, std::vector<Particle*> &particle);
 void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle);
 void MergeGroups(std::vector<Group*> &groups);
 bool FindCMParticle(Group* group);
@@ -31,7 +30,7 @@ bool AddNewGroupsToList(std::vector<Particle*> &particle) {
         if (isNeighborInsideGroup(groupCandidate)) continue;    // Don't make a real group if it has no neighbor.
                                                                 // Its TimeStepIrr will be so big and it can raise errors.
 
-        NewFBInitialization2(groupCandidate, particle);
+        NewFBInitialization(groupCandidate, particle);
 				
 	}
 	GroupCandidateList.clear();
