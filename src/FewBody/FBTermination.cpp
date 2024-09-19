@@ -10,7 +10,6 @@ bool CreateComputationList(Particle* ptcl);
 bool CreateComputationChain(std::vector<Particle*> &particle);
 void generate_Matrix(REAL a[3], REAL (&A)[3][4]);
 void InitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle);
-// Particle* NewFBInitialization3(std::vector<Particle*> &stillGroup, std::vector<Particle*> &particle);
 void UpdateNextRegTime(std::vector<Particle*> &particle);
 bool UpdateComputationChain(Particle* ptcl);
 
@@ -191,8 +190,11 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 
 }
 
+// Use this function when SDAR is interrupted in the middle of its integration by stellar merger, TDE, GW merger, etc.
+// current_time: interrupted time in SDAR
+// next_time: intended time to integrate
+void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> &particle){
 
-void FBTermination2(Particle* ptclCM, std::vector<Particle*> &stillGroup, std::vector<Particle*> &noMoreGroup, std::vector<Particle*> &particle) {
 
 	Group* ptclGroup;
 
@@ -205,25 +207,17 @@ void FBTermination2(Particle* ptclCM, std::vector<Particle*> &stillGroup, std::v
 	ptclGroup	= ptclCM->GroupInfo;
 
 
-	// Eunwoo: Set CurrentBlock and CurrentTime for group particles. This was originally from convertBinaryCoordinatesCartesian().
+	// Set CurrentBlock and CurrentTime for group particles.
 
 	for (Particle* members : ptclGroup->Members) {
 		members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr;
 		members->CurrentBlockReg	= ptclCM->CurrentBlockReg;
-		members->CurrentTimeIrr		= ptclCM->CurrentTimeIrr;
+		members->CurrentTimeIrr		= current_time; // This will be updated later.
 		members->CurrentTimeReg		= ptclCM->CurrentTimeReg;
-
-		// members->TimeStepIrr		= ptclCM->TimeStepIrr; // Eunwoo: I think this is redundant.
-		// members->TimeBlockIrr		= ptclCM->TimeBlockIrr; // Eunwoo: I think this is redundant.
-		// members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // Eunwoo: I think this is redundant.
-
-		// members->TimeStepReg		= ptclCM->TimeStepReg; // Eunwoo: I think this is redundant.
-		// members->TimeBlockReg		= ptclCM->TimeBlockReg; // Eunwoo: I think this is redundant.
-		// members->TimeLevelReg		= ptclCM->TimeLevelReg; // Eunwoo: I think this is redundant.
 	}
-	// fprintf(binout, "CM Time Steps (Myr) - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr*EnzoTimeStep*1e4, ptclCM->TimeStepReg*EnzoTimeStep*1e4);
+	
 
-	// Update particle vector: erase ptclCM and add group particles
+	// Erase ptclCM from particle vector
 
 	ptclCM->isErase = true;
 	particle.erase(
@@ -239,22 +233,50 @@ void FBTermination2(Particle* ptclCM, std::vector<Particle*> &stillGroup, std::v
 		particle[i]->ParticleOrder = i;
 	}
 
-	// fprintf(stdout,"add the group components to particle list (to be included neighbor search)\n");
+	// Add group members to the particle vector except zero mass particles!
 
-	for (Particle* members : noMoreGroup) {
-		members->ParticleOrder = particle.size();
-		particle.push_back(members);
+	for (Particle* members : ptclGroup->Members) {
+		if (members->Mass == 0)
+			members->isErase = true;
+		else {
+			members->ParticleOrder = particle.size();
+			particle.push_back(members);
+		}
 	}
 
-	// Particle* newptclCM = NewFBInitialization3(stillGroup, particle);
+	// Erase zero mass particles from the ptclGroup->Members!
 
-	// Find neighbors and calculate the 0th, 1st, 2nd, 3rd derivative of accleration for group particles 
+	ptclGroup->Members.erase(
+		std::remove_if(
+			ptclGroup->Members.begin(), ptclGroup->Members.end(),
+			[](Particle* p) {
+				bool to_remove = p->isErase;
+				if (to_remove) delete p; // Delete the memory of zero mass particles.
+				return to_remove;
+			}
+		),
+		ptclGroup->Members.end()
+	);
 
-	fprintf(binout,"initialize group particles \n");
-	for (Particle* members : noMoreGroup) {
-		InitializeFBParticle(members, particle);
+
+	for (Particle* members : ptclGroup->Members) {
+
+		assert(members->Mass > 0); // Zero mass particles should be removed in the above!
+
+		InitializeFBParticle(members, particle); // Find neighbors and set accelerations
+
+		members->predictParticleSecondOrderIrr(ptclCM->CurrentTimeIrr); // Integrate particle to the intended irregular time
+		members->CurrentTimeIrr = ptclCM->CurrentTimeIrr;
+
+		for (int dim=0; dim<Dim; dim++) {
+			members->Position[dim] =  members->PredPosition[dim];
+			members->Velocity[dim] =  members->PredVelocity[dim];
+			members->NewPosition[dim]  =  members->Position[dim];
+			members->NewVelocity[dim]  =  members->Velocity[dim];
+		}
 		members->calculateTimeStepReg2();
-		// /* // Eunwoo: just for a while
+		
+		// /* Eunwoo: just for a while
 		if (members->TimeLevelReg <= ptclCM->TimeLevelReg-1 
 				&& members->TimeBlockReg/2+members->CurrentBlockReg > ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
 			members->TimeLevelReg = ptclCM->TimeLevelReg-1;
@@ -267,11 +289,11 @@ void FBTermination2(Particle* ptclCM, std::vector<Particle*> &stillGroup, std::v
 		members->TimeStepReg  = static_cast<REAL>(pow(2, members->TimeLevelReg)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
 		members->TimeBlockReg = static_cast<ULL>(pow(2, members->TimeLevelReg-time_block)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
 
-		// Eunwoo added
 		members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
 	}
 
 
+// /* Eunwoo: Is this the problem?
 	fprintf(binout,"replacing CM particle in neighbor list to component particles \n");
 
 	int index = 0;
@@ -282,9 +304,11 @@ void FBTermination2(Particle* ptclCM, std::vector<Particle*> &stillGroup, std::v
 		for (Particle* neighbor: ptcl->ACList) {
 			if (neighbor->PID == ptclCM->PID) {
 				ptcl->ACList.erase(ptcl->ACList.begin() + index);
-				ptcl->ACList.insert(ptcl->ACList.end(), noMoreGroup.begin(), noMoreGroup.end());
-				// ptcl->ACList.push_back(newptclCM);
+				ptcl->ACList.insert(ptcl->ACList.end(), ptclGroup->Members.begin(), ptclGroup->Members.end());
 				ptcl->NumberOfAC = ptcl->ACList.size();
+				// InitializeFBParticle(ptcl, particle); // Eunwoo added
+				// ptcl->calculateTimeStepReg(); // Eunwoo added
+				// ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr); // Eunwoo added
 				break; // Eunwoo check
 			}
 			index++;
@@ -299,7 +323,7 @@ void FBTermination2(Particle* ptclCM, std::vector<Particle*> &stillGroup, std::v
 	// fprintf(binout,"total number of particles = %lu, total number of groups = %lu \n", particle.size(), GroupList.size()-1); // GroupList.size() - 1 because we are terminating it.
 	fprintf(binout,"total number of ComputationList = %lu\n", ComputationList.size());
 
-	for (Particle* members : noMoreGroup) {
+	for (Particle* members : ptclGroup->Members) {
 		fprintf(binout,"PID: %d\n", members->PID);
 		fprintf(binout, "Position (pc) - x:%e, y:%e, z:%e, \n", members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
 		fprintf(binout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
@@ -325,23 +349,11 @@ void FBTermination2(Particle* ptclCM, std::vector<Particle*> &stillGroup, std::v
 
 	// Change the booleans, pointers, and vectors about group information for the group members
 
-	for (Particle* members : noMoreGroup) {
+	for (Particle* members : ptclGroup->Members) {
 		members->isErase		= false;
 		members->isGroup		= false;
 		// members->GroupInfo		= nullptr; // GroupInfo is only assigned to the CMptcl, so it is needless
 	}
-
-	// // we also need to delete ptclGroup from the group list
-	// // fprintf(binout,"deleting binary information from the GroupList \n");
-	// ptclGroup->isErase = true;
-	// GroupList.erase(
-	// 		std::remove_if(GroupList.begin(), GroupList.end(),
-	// 			[](Group* p) {
-	// 			bool to_remove = p->isErase;
-	// 			//if (to_remove) delete p;
-	// 			return to_remove;
-	// 			}),
-	// 		GroupList.end());
 
 	delete ptclGroup;
 	// delete ptclCM; // It is deleted automatically when delete ptclGroup!!!
@@ -355,5 +367,4 @@ void FBTermination2(Particle* ptclCM, std::vector<Particle*> &stillGroup, std::v
 	// fflush(stdout);
 	fprintf(binout,"--------------------------------------\n");
 	fflush(binout);
-
 }

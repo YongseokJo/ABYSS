@@ -8,7 +8,6 @@
 void NewFBInitialization(Group* group, std::vector<Particle*> &particle);
 void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle);
 void MergeGroups(std::vector<Group*> &groups);
-bool FindCMParticle(Group* group);
 bool isNeighborInsideGroup(Group* groupCandidate);
 
 bool AddNewGroupsToList(std::vector<Particle*> &particle) {
@@ -97,14 +96,6 @@ void MergeGroups(std::vector<Group*> &groups) {
             groups.end()
         );
     }
-}
-
-bool FindCMParticle(Group* group) {
-    for (size_t i = 0; i < group->Members.size(); ++i) {
-        if (group->Members[i]->isCMptcl) 
-            return true; // Return the index of the first CM particle        
-    }
-    return false; // No CM particle found
 }
 
 bool isNeighborInsideGroup(Group* groupCandidate) {

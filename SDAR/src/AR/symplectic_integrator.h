@@ -2088,6 +2088,8 @@ namespace AR {
             updateSlowDownAndCorrectEnergy(true, true);
 #endif
 
+            Float time_step = 0; // Eunwoo added for orbit_shrinking_GR
+
 
             // reset binary stab_check_time
             for (int i=0; i<info.binarytree.getSize(); i++)
@@ -2111,7 +2113,7 @@ namespace AR {
                         //for (int i=0; i<n_particle; i++) {
                         //    epert += force_[i].pot_pert*particles[i].Mass;
                         //}
-                        manager->interaction.modifyAndInterruptIter(bin_interrupt, bin_root);
+                        manager->interaction.modifyAndInterruptIter(bin_interrupt, bin_root, time_step); // Eunwoo added for orbit_shrinking_GR
                         //InterruptBinary<Tparticle>* bin_intr_ptr = &bin_interrupt;
                         //bin_intr_ptr = bin_root.processRootIter(bin_intr_ptr, Tmethod::modifyAndInterruptIter);
                         ASSERT(bin_interrupt.checkParams());
@@ -2400,7 +2402,9 @@ namespace AR {
 
                 // real step size
                 dt =  time_ - dt;
-//                ASSERT(dt>0.0);
+            //    ASSERT(dt>0.0);
+                time_step = dt; // Eunwoo added for orbit_shrinking_GR
+                // fprintf(stderr, "time_step: %e\n", time_step); // Eunwoo debug
                 
                 step_count++;
 
