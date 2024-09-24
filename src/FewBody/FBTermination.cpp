@@ -73,7 +73,8 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 	fprintf(binout,"initialize group particles \n");
 	for (Particle* members : ptclGroup->Members) {
 		InitializeFBParticle(members, particle);
-		members->calculateTimeStepReg2();
+		// members->calculateTimeStepReg2();
+		members->calculateTimeStepReg();
 		// /* // Eunwoo: just for a while
 		if (members->TimeLevelReg <= ptclCM->TimeLevelReg-1 
 				&& members->TimeBlockReg/2+members->CurrentBlockReg > ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
@@ -96,7 +97,18 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 		}
 		// */ // Eunwoo added
 
-		members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
+		// members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
+		members->calculateTimeStepIrr(members->a_tot, members->a_irr);
+		// members->TimeLevelIrr = members->TimeLevelIrr - 2; // Eunwoo test
+		// members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
+		// members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+/* // Eunwoo added
+		while (members->TimeStepIrr*EnzoTimeStep*1e4 < 1e-8) {
+			members->TimeLevelIrr += 1;
+			members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
+			members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+		}
+*/
 	}
 
 
@@ -120,6 +132,13 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 			}
 			index++;
 		}
+		// Eunwoo added
+		// if (dist(ptcl->Position, ptclCM->Position) > ptcl->RadiusOfAC 
+		// 		&& dist(ptcl->Position, ptclCM->Position) < 2*ptcl->RadiusOfAC) {
+		// 	ptcl->ACList.insert(ptcl->ACList.end(), ptclGroup->Members.begin(), ptclGroup->Members.end());
+		// 	ptcl->NumberOfAC = ptcl->ACList.size();
+		// }
+		// Eunwoo added
 	}
 // */
 
@@ -274,7 +293,8 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 			members->NewPosition[dim]  =  members->Position[dim];
 			members->NewVelocity[dim]  =  members->Velocity[dim];
 		}
-		members->calculateTimeStepReg2();
+		// members->calculateTimeStepReg2();
+		members->calculateTimeStepReg();
 		
 		// /* Eunwoo: just for a while
 		if (members->TimeLevelReg <= ptclCM->TimeLevelReg-1 
@@ -289,7 +309,11 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 		members->TimeStepReg  = static_cast<REAL>(pow(2, members->TimeLevelReg)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
 		members->TimeBlockReg = static_cast<ULL>(pow(2, members->TimeLevelReg-time_block)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
 
-		members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
+		// members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
+		members->calculateTimeStepIrr(members->a_tot, members->a_irr);
+		members->TimeLevelIrr--;
+		members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
+		members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
 	}
 
 

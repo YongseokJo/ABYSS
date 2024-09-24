@@ -87,13 +87,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		}
 
 		for (Particle* ptcl:particle) {
-			if (ptcl->CurrentTimeIrr > 1)  {
-				fprintf(stderr, "outside after bin, PID=%d, CurrentTimeIrr=%e\n", ptcl->PID, ptcl->CurrentTimeIrr);
-				fflush(stderr);
-			}
-		}
-
-		for (Particle* ptcl:particle) {
 				if (ptcl->Position[0] !=  ptcl->Position[0] || ptcl->Velocity[0] !=  ptcl->Velocity[0] 
 						|| ptcl->a_tot[0][0] !=  ptcl->a_tot[0][0]) {
 					fprintf(stdout, "after, myself = %d\n", ptcl->PID);
@@ -190,19 +183,24 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 						Particle* ptclI = ptcl->GroupInfo->Members[0];
 						Particle* ptclJ = ptcl->GroupInfo->Members[1];
 
-						// REAL rv = (ptclI->Position[0]-ptclJ->Position[0])*(ptclI->Velocity[0]-ptclJ->Velocity[0])
-						// 				+ (ptclI->Position[1]-ptclJ->Position[1])*(ptclI->Velocity[1]-ptclJ->Velocity[1])
-						// 				+ (ptclI->Position[2]-ptclJ->Position[2])*(ptclI->Velocity[2]-ptclJ->Velocity[2]);
+						REAL r = dist(ptclI->Position, ptclJ->Position); // relative distance between particles
+						REAL v = dist(ptclI->Velocity, ptclJ->Velocity); // relative speed between particles
+						REAL energy = v*v/2 - (ptclI->Mass + ptclJ->Mass)/r;
 
-						// if ((dist(ptclI->Position, ptclJ->Position) > 5e-3/position_unit) && (rv > 0)) {
-						if (dist(ptclI->Position, ptclJ->Position) > 5e-3/position_unit) {
-
-								fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
-								fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
+						if (energy < 0) { // bound case
+							if ((r > ptclI->r_crit)) {
 								FBTermination(ptcl, particle);
 								bin_termination = true;
 								continue; // Do not UpdateComputationChain!
-						}		
+							}
+						}
+						else { // unbound case
+							if ((r > 1e-3/position_unit)) {
+								FBTermination(ptcl, particle);
+								bin_termination = true;
+								continue; // Do not UpdateComputationChain!
+							}
+						}	
 					}
 					else {
 						std::vector<Particle*> stillGroup;
@@ -215,23 +213,36 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 
 								Particle* ptclJ = ptcl->GroupInfo->Members[j];
 
-								// REAL rv = (ptclI->Position[0]-ptclJ->Position[0])*(ptclI->Velocity[0]-ptclJ->Velocity[0])
-								// 			+ (ptclI->Position[1]-ptclJ->Position[1])*(ptclI->Velocity[1]-ptclJ->Velocity[1])
-								// 			+ (ptclI->Position[2]-ptclJ->Position[2])*(ptclI->Velocity[2]-ptclJ->Velocity[2]);
+								REAL r = dist(ptclI->Position, ptclJ->Position); // relative distance between particles
+								REAL v = dist(ptclI->Velocity, ptclJ->Velocity); // relative speed between particles
+								REAL energy = v*v/2 - (ptclI->Mass + ptclJ->Mass)/r;
 
-								// if ((dist(ptclI->Position, ptclJ->Position) > 5e-3/position_unit) && (rv > 0)) {
-								if (dist(ptclI->Position, ptclJ->Position) <= 5e-3/position_unit) {
+								REAL rv = 0;
+								for (int k=0; k < Dim; k++)
+									rv += (ptclI->Position[k]-ptclJ->Position[k])*(ptclI->Velocity[k]-ptclJ->Velocity[k]);
 
-									stillGroup.push_back(ptclI);
-									break;						
+
+								if (energy < 0) {
+									// if ((r <= 2e-3/position_unit)) {
+									if ((r < ptclI->r_crit) || (rv < 0)) {
+										stillGroup.push_back(ptclI);
+										break;
+									}
+
+								}
+								else {
+									if ((r <= 1e-3/position_unit)) {
+										stillGroup.push_back(ptclI);
+										break;
+									}
 								}
 							}
 						}
 
 						if (ptcl->GroupInfo->Members.size() != stillGroup.size()) {
 							FBTermination(ptcl, particle);
-							if (stillGroup.size() != 0)
-								NewFBInitialization2(stillGroup, particle);			
+							// if (stillGroup.size() != 0)
+							// 	NewFBInitialization2(stillGroup, particle);			
 							stillGroup.clear();
 							bin_termination = true;
 							continue; // Do not UpdateComputationChain!			
@@ -239,29 +250,6 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 						stillGroup.clear();
 					}
 // */
-/*
-					for (size_t i = 0; i < ptcl->GroupInfo->Members.size(); ++i) {
-						Particle* ptclI = ptcl->GroupInfo->Members[i];
-						for (size_t j = i + 1; j < ptcl->GroupInfo->Members.size(); ++j) {
-							Particle* ptclJ = ptcl->GroupInfo->Members[j];
-							REAL rv = (ptclI->Position[0]-ptclJ->Position[0])*(ptclI->Velocity[0]-ptclJ->Velocity[0])
-										+ (ptclI->Position[1]-ptclJ->Position[1])*(ptclI->Velocity[1]-ptclJ->Velocity[1])
-										+ (ptclI->Position[2]-ptclJ->Position[2])*(ptclI->Velocity[2]-ptclJ->Velocity[2]);
-
-							// if ((dist(ptclI->Position, ptclJ->Position) > 5e-3/position_unit) && (rv > 0)) {
-							if (dist(ptclI->Position, ptclJ->Position) > 5e-3/position_unit) {
-
-								fprintf(binout, "Terminating Binary at time : %e \n", binary_time);
-								fprintf(stdout, "Terminating Binary at time : %e \n", binary_time);
-								FBTermination(ptcl, particle);
-								bin_termination=true;
-								break;							
-							}
-						}
-						if (bin_termination=true) 
-							break;
-					}
-*/
 				}
 				else { // false: terminated by stellar merger, TDE, GW merger, etc.
 					bin_termination = true;

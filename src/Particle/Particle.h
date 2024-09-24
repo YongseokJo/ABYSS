@@ -79,6 +79,7 @@ class Particle
 		REAL time_check; // time to check next interrupt
 		long long int binary_state; // contain two parts, low bits (first BINARY_STATE_ID_SHIFT bits) is binary interrupt state and high bits are pair ID
 		Group* GroupInfo;
+		REAL r_crit; // semi-major axis
 
 		// Constructor
 		Particle(void) {__initializer__();};
@@ -124,10 +125,7 @@ class Particle
 			}
 			NextParticleInEnzo         = nullptr;
 			NextParticleForComputation = nullptr;
-			// BinaryPairParticle         = nullptr; // Eunwoo deleted
-			// BinaryParticleI            = nullptr; // Eunwoo deleted
-			// BinaryParticleJ            = nullptr; // Eunwoo deleted
-			// BinaryInfo                 = nullptr; // Eunwoo deleted
+
 			ACList.clear();
 
 			// Eunwoo added for SDAR
@@ -138,6 +136,7 @@ class Particle
 			time_check		= NUMERIC_FLOAT_MAX;
 			isGroup			= false;
 			GroupInfo		= nullptr;
+			r_crit			= 0.0;
 
 
 		};

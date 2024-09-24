@@ -13,11 +13,11 @@ extern REAL EnzoTimeStep;
 #include "ar_perturber.hpp"
 // #include "two_body_tide.hpp"
 #include <cassert>
-#include "orbit_shrinking_GR.hpp"
+#include "GR_energy_loss.hpp"
 
 #define ASSERT(x) assert(x)
 
-void orbit_shrinking_GR(AR::BinaryTree<Particle> _bin, REAL dtime);
+void GR_energy_loss(AR::BinaryTree<Particle> _bin, REAL dtime);
 
 
 //! AR interaction clas
@@ -541,7 +541,7 @@ public:
 
   
 // This function is used if manager->interrupt_detection_option>0
-// Eunwoo added dt to use orbit_shrinking_GR
+// Eunwoo added dt to use GR_energy_loss
 //! (Necessary) modify the orbits and interrupt check 
     /*! check the inner left binary whether their separation is smaller than particle radius sum and become close, if true, set one component stauts to merger with cm mass and the other unused with zero mass. Return the binary tree address 
       @param[in] _bin_interrupt: interrupt binary information: adr: binary tree address; time_now: current physical time; time_end: integration finishing time; status: interrupt status: change, merge,none
@@ -595,7 +595,7 @@ public:
 // /* // Eunwoo: I'm not sure!
                 if (p1->Mass*mass_unit > 8 && dt>0) {   // Eunwoo: to consider GR, at least one particle should be BH.
                                                         // Sometimes dt < 0, but it is very rare so just ignore this.
-                    orbit_shrinking_GR(_bin, dt);
+                    GR_energy_loss(_bin, dt);
                     _bin.calcParticles(gravitational_constant);
                     for (int i; i < Dim; i++) {
                         p1->Position[i] += _bin.Position[i];

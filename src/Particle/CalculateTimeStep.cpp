@@ -45,7 +45,7 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 		std::cerr << "       TimeLevelTmp=" << TimeLevelTmp << std::endl;
 	}
 	*/
-
+// /*
 	if (TimeLevelTmp > TimeLevelIrr) {
 		if (fmod(CurrentBlockIrr, 2*TimeBlockIrr)==0) {
 			TimeLevelTmp = TimeLevelIrr+1;
@@ -69,6 +69,7 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 		TimeLevelTmp = TimeLevelIrr;
 		TimeBlockTmp = TimeBlockIrr;
 	}
+// */
 
 	/*
 	if (PID == 430) {
@@ -131,10 +132,11 @@ void Particle::calculateTimeStepIrr2(REAL f[3][4],REAL df[3][4]) {
 		return;
 	}
 
-	getBlockTimeStep(getNewTimeStepIrr2(Velocity, a_tot, a_irr), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
+	// getBlockTimeStep(getNewTimeStepIrr2(Velocity, a_tot, a_irr), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
+	getBlockTimeStep(getNewTimeStepIrr(a_tot, a_irr), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
 	TimeLevelTmp0 = TimeLevelTmp;
 
-// /* // Eunwoo: test
+/* // Eunwoo: test
 	if (TimeLevelTmp > TimeLevelIrr) {
 		if (fmod(CurrentBlockIrr, 2*TimeBlockIrr)==0) {
 			TimeLevelTmp = TimeLevelIrr+1;
@@ -150,7 +152,7 @@ void Particle::calculateTimeStepIrr2(REAL f[3][4],REAL df[3][4]) {
 		// 	TimeLevelTmp = TimeLevelIrr - 5;
 		// 	TimeBlockTmp = TimeBlockIrr/32;
 		// }
-		if (TimeLevelTmp < TimeLevelIrr-4) {
+		if (TimeLevelTmp < TimeLevelIrr-3) {
 			TimeLevelTmp = TimeLevelIrr - 4;
 			TimeBlockTmp = TimeBlockIrr/16;
 		}
@@ -170,7 +172,7 @@ void Particle::calculateTimeStepIrr2(REAL f[3][4],REAL df[3][4]) {
 		TimeLevelTmp = TimeLevelIrr;
 		TimeBlockTmp = TimeBlockIrr;
 	}
-// */ // Eunwoo: test
+*/ // Eunwoo: test
 
 
 	//std::cout << "TimeStepIrrTmp=" << TimeStepIrrTmp << std::endl;
@@ -203,13 +205,13 @@ void Particle::calculateTimeStepIrr2(REAL f[3][4],REAL df[3][4]) {
 	TimeStepIrr = static_cast<REAL>(pow(2, TimeLevelIrr));
 	TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
 
-	// Eunwoo added
+/* // Eunwoo added
 	while (TimeStepIrr*EnzoTimeStep*1e4 < 1e-9) {
 		TimeLevelIrr += 1;
 		TimeStepIrr = static_cast<REAL>(pow(2, TimeLevelIrr));
 		TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
 	}
-
+*/
 
 	if (TimeStepIrr > 1) {
 		fprintf(stderr, "TimeStepIrr=%e, TimeLevelIrr=%d, TimeLevelTmp0=%d\n",TimeStepIrr, TimeLevelIrr, TimeLevelTmp0);
@@ -335,6 +337,7 @@ void Particle::calculateTimeStepReg2() {
 	int TimeLevelTmp, TimeLevelTmp0;
 
 	getBlockTimeStep(getNewTimeStepReg2(Velocity, a_reg), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
+	// getBlockTimeStep(getNewTimeStepReg(Velocity, a_reg), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
 
 	//fprintf(stderr, "in CalReg, raw time step=%.2eMyr, ", TimeStepRegTmp*EnzoTimeStep*1e10/1e6);
 

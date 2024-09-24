@@ -4,7 +4,7 @@
 #include <algorithm>
 #include "../global.h"
 #include "../defs.h"
-// #include "Group.h"
+// #include "Particle.h"
 
 REAL getNewTimeStepIrr(REAL f[3][4], REAL df[3][4]);
 void getBlockTimeStep(REAL dt, int& TimeLevel, ULL &TimeBlock, REAL &TimeStep);
@@ -101,11 +101,13 @@ void Particle::isFBCandidate() {
 			if ((r2 < r_group*r_group) || (semi < r_group)) { // distant binary near periapsis OR close binary
 				groupParticles.push_back(ptcl);
 				fprintf(binout, "Bound group member added!\n"); // Eunwoo debug
-				fprintf(binout, "PID: %d, periapsis dist: %e pc\n", ptcl->PID, semi*(1-ecc)*position_unit);
+				// fprintf(binout, "PID: %d, periapsis dist: %e pc\n", ptcl->PID, semi*(1-ecc)*position_unit);
+				fprintf(binout, "PID: %d, semi-major axis: %e pc\n", ptcl->PID, semi*position_unit);
+				this->r_crit = fmin(2*semi, this->RadiusOfAC);
 			}
 
 		}
-		else if (r2 < r_group*r_group) { //close fly-by
+		else if (r2 < r_group*r_group) { // close fly-by
 			groupParticles.push_back(ptcl);
 			fprintf(binout, "Unbound group member added!\n"); // Eunwoo debug
 			fprintf(binout, "PID: %d, periapsis dist: %e pc\n", ptcl->PID, semi*(1-ecc)*position_unit);
@@ -135,7 +137,7 @@ void Group::initialManager() {
 	manager.ds_scale = 1.0; // step size scaling factor // reference: ar.cxx
 	manager.time_error_max = 0.25*manager.time_step_min; // time synchronization absolute error limit for AR, default is 0.25*dt-min
 	// reference: ar.cxx
-	manager.energy_error_relative_max = 1e-10; // relative energy error limit for AR, phase error requirement
+	manager.energy_error_relative_max = 1e-13; // relative energy error limit for AR, phase error requirement
 	// 1e-10 in ar.cxx
 	// 1e-8 in PeTar
 	manager.slowdown_timescale_max = NUMERIC_FLOAT_MAX; // maximum timescale for maximum slowdown factor, time-end
@@ -146,7 +148,7 @@ void Group::initialManager() {
 	manager.slowdown_pert_ratio_ref = 1e-6; // slowdown perturbation ratio reference
 	// 1e-6 in ar.cxx
 	// 1e-4 in PeTar
-	manager.step_count_max = 1000000; // number of maximum (integrate/output) step for AR integration // set symplectic order
+	manager.step_count_max = 100000; // number of maximum (integrate/output) step for AR integration // set symplectic order
 	// 1000000 in PeTar & ar.cxx
 	manager.step.initialSymplecticCofficients(-6); // Symplectic integrator order, should be even number
 	// -6 in PeTar & ar.cxx
@@ -682,7 +684,8 @@ void NewFBInitialization2(std::vector<Particle*> &stillGroup, std::vector<Partic
 		ptclCM->NewVelocity[dim]  =  ptclCM->Velocity[dim];
 	}
 
-	ptclCM->calculateTimeStepReg2();
+	// ptclCM->calculateTimeStepReg2();
+	ptclCM->calculateTimeStepReg();
 	if (ptclCM->TimeLevelReg <= ptcl->TimeLevelReg-1 
 			&& ptcl->TimeBlockReg/2+ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr+ptcl->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
 		ptclCM->TimeLevelReg = ptcl->TimeLevelReg-1;
@@ -696,7 +699,8 @@ void NewFBInitialization2(std::vector<Particle*> &stillGroup, std::vector<Partic
 	ptclCM->TimeStepReg  = static_cast<REAL>(pow(2, ptclCM->TimeLevelReg));
 	ptclCM->TimeBlockReg = static_cast<ULL>(pow(2, ptclCM->TimeLevelReg-time_block));
 
-	ptclCM->calculateTimeStepIrr2(ptclCM->a_tot, ptclCM->a_irr);
+	// ptclCM->calculateTimeStepIrr2(ptclCM->a_tot, ptclCM->a_irr);
+	ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr);
 	// /* // Eunwoo: just for a while
 	// while (ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr <= global_time_irr 
 	// 		&& ptclCM->TimeLevelIrr <= ptcl->TimeLevelIrr) { //first condition guarantees that ptclcm is small than ptcl
