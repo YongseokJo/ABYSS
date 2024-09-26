@@ -42,6 +42,8 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
 
     auto bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
+    // ASSERT((next_time - StartTime) > 0);
+    // auto bin_interrupt = sym_int.integrateToTime((next_time - StartTime)*EnzoTimeStep);
 
     sym_int.particles.shiftToOriginFrame();
     sym_int.particles.template writeBackMemberAll<Particle>(); // Eunwoo: I'm not sure

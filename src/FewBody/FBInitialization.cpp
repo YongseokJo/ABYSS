@@ -315,9 +315,11 @@ void NewFBInitialization(Group* group, std::vector<Particle*> &particle) {
     }
 
 	ptclGroup->groupCM		= ptclCM;
+	// ptclGroup->StartTime	= ptclCM->CurrentTimeIrr;
 	ptclGroup->CurrentTime	= ptclCM->CurrentTimeIrr;
 
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
+	// ptclGroup->sym_int.initialIntegration(0);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
 
 	// Erase group particles from particle vector because now they should be replaced with CM particle
@@ -385,6 +387,11 @@ void NewFBInitialization(Group* group, std::vector<Particle*> &particle) {
 	}
 
 	ptclCM->calculateTimeStepReg();
+	// while (ptclCM->TimeStepReg < ptclCM->CurrentTimeIrr - ptclCM->CurrentTimeReg) {
+	// 	ptclCM->TimeLevelReg++;
+	// 	ptclCM->TimeStepReg  = static_cast<REAL>(pow(2, ptclCM->TimeLevelReg));
+	// 	ptclCM->TimeBlockReg = static_cast<ULL>(pow(2, ptclCM->TimeLevelReg-time_block));
+	// }
 	if (ptclCM->TimeLevelReg <= ptcl->TimeLevelReg-1 
 			&& ptcl->TimeBlockReg/2+ptcl->CurrentBlockReg > ptcl->CurrentBlockIrr+ptcl->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
 		ptclCM->TimeLevelReg = ptcl->TimeLevelReg-1;

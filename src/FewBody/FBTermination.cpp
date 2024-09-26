@@ -75,6 +75,12 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 		InitializeFBParticle(members, particle);
 		// members->calculateTimeStepReg2();
 		members->calculateTimeStepReg();
+		// while (members->TimeStepReg < members->CurrentTimeIrr - members->CurrentTimeReg) {
+		// 	members->TimeLevelReg++;
+		// 	members->TimeStepReg  = static_cast<REAL>(pow(2, members->TimeLevelReg));
+		// 	members->TimeBlockReg = static_cast<ULL>(pow(2, members->TimeLevelReg-time_block));
+		// }
+
 		// /* // Eunwoo: just for a while
 		if (members->TimeLevelReg <= ptclCM->TimeLevelReg-1 
 				&& members->TimeBlockReg/2+members->CurrentBlockReg > ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.

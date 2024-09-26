@@ -43,6 +43,23 @@ REAL getNewTimeStepReg2(REAL v[3], REAL df[3][4]) {
 	return dta; //dta;
 }
 
+REAL getNewTimeStepReg3(REAL v[3], REAL df[3][4]) {
+
+	REAL v2, F2, Fdot2, F2dot2, F3dot2;
+
+	F2     = df[0][0]*df[0][0] + df[1][0]*df[1][0] + df[2][0]*df[2][0];
+	Fdot2  = df[0][1]*df[0][1] + df[1][1]*df[1][1] + df[2][1]*df[2][1];
+	F2dot2 = df[0][2]*df[0][2] + df[1][2]*df[1][2] + df[2][2]*df[2][2];
+	F3dot2 = df[0][3]*df[0][3] + df[1][3]*df[1][3] + df[2][3]*df[2][3];
+	v2     = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+
+
+	REAL dta;
+	dta  = 0.25*(F2/std::sqrt(F2dot2)+std::sqrt(F2*Fdot2/F3dot2))/(std::sqrt(v2)+F2/std::sqrt(Fdot2));
+	// dta  = std::sqrt(eta*dta);
+	return dta; //dta;
+}
+
 
 REAL getNewTimeStepIrr(REAL f[3][4], REAL df[3][4]) {
 
@@ -115,6 +132,24 @@ REAL getNewTimeStepIrr2(REAL v[3], REAL f[3][4], REAL df[3][4]) {
 	TimeStep  = 0.25*eta*std::sqrt(TimeStep);
 
 	return TimeStep;
+}
+
+// Eunwoo: test
+REAL getNewTimeStepIrr3(REAL v[3], REAL f[3][4], REAL df[3][4]) {
+
+	REAL v2, F2, Fdot2, F2dot2, F3dot2;
+
+	F2     = f[0][0]*f[0][0] + f[1][0]*f[1][0] + f[2][0]*f[2][0];
+	Fdot2  = df[0][1]*df[0][1] + df[1][1]*df[1][1] + df[2][1]*df[2][1];
+	F2dot2 = df[0][2]*df[0][2] + df[1][2]*df[1][2] + df[2][2]*df[2][2];
+	F3dot2 = df[0][3]*df[0][3] + df[1][3]*df[1][3] + df[2][3]*df[2][3];
+	v2     = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+
+
+	REAL dta;
+	dta  = 0.25*(F2/std::sqrt(F2dot2)+std::sqrt(F2*Fdot2/F3dot2))/(std::sqrt(v2)+F2/std::sqrt(Fdot2));
+	// dta  = std::sqrt(eta*dta);
+	return dta; //dta;
 }
 
 REAL getNewTimeStep(REAL f[3][4], REAL df[3][4]) {

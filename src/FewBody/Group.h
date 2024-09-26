@@ -28,6 +28,7 @@ class Group
 		bool isTerminate; // For later use: I will use this when Binary Interrupt State is being used
 		bool isErase;
 
+		// REAL StartTime; // group integration starting time
 		REAL CurrentTime;  // this show how much the binary system has evolved
 
 		AR::TimeTransformedSymplecticIntegrator<Particle, Particle, Perturber, Interaction, AR::Information<Particle,Particle>> sym_int;
@@ -41,6 +42,7 @@ class Group
 			isTerminate(false),
 			isErase(false),
 			CurrentTime(0),
+			// StartTime(0),
 			sym_int(),
 			manager()
 			// ap_manager(),
