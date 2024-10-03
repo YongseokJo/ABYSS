@@ -398,7 +398,33 @@ namespace AR {
                 std::cerr<<"Error: Data reading fails! requiring data number is 1, only obtain "<<rcount<<".\n";
                 abort();
             }
-        }    
+        }
+// Eunwoo added
+        //! get dr * dv for two particles
+        /*!
+          @param[out] _dr2: dr*dr
+          @param[out] _drdv: dr*dv
+          @param[in] _p1: particle 1
+          @param[in] _p2: particle 2
+        */
+        void getDrDv(Float& _dr2, Float& _drdv, Tparticle& _p1, Tparticle& _p2) {
+            Float dx[3],dv[3];
+            const Float* pos1 = _p1.getPos();
+            const Float* pos2 = _p2.getPos();
+            const Float* vel1 = _p1.getVel();
+            const Float* vel2 = _p2.getVel();
+            dx[0] = pos1[0] - pos2[0];
+            dx[1] = pos1[1] - pos2[1];
+            dx[2] = pos1[2] - pos2[2];
+
+            dv[0] = vel1[0] - vel2[0];
+            dv[1] = vel1[1] - vel2[1];
+            dv[2] = vel1[2] - vel2[2];
+        
+            _dr2 = dx[0]*dx[0] + dx[1]*dx[1] + dx[2]*dx[2];
+            _drdv= dx[0]*dv[0] + dx[1]*dv[1] + dx[2]*dv[2];
+        }
+// Eunwoo added
     };
 
 }

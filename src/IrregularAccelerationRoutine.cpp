@@ -12,6 +12,7 @@ bool UpdateComputationChain(Particle* ptcl);
 bool CreateComputationListParallel(std::vector<Particle*> &particle);
 bool CreateComputationList(Particle* ptcl);
 bool AddNewGroupsToList(std::vector<Particle*> &particle);
+bool AddNewGroupsToList2(std::vector<Particle*> &members, std::vector<Particle*> &particle);
 void NewFBInitialization2(std::vector<Particle*> &stillGroup, std::vector<Particle*> &particle);
 void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle);
 void FBTermination2(Particle* ptclCM, std::vector<Particle*> &stillGroup, std::vector<Particle*> &noMoreGroup, std::vector<Particle*> &particle);
@@ -178,78 +179,21 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 #ifdef binary
 			if (ptcl->isCMptcl) {
 				if (ptcl->GroupInfo->ARIntegration(binary_time, particle)){ // true: integrated normally
-// /*
-					if (ptcl->GroupInfo->Members.size() == 2) {
-						Particle* ptclI = ptcl->GroupInfo->Members[0];
-						Particle* ptclJ = ptcl->GroupInfo->Members[1];
-
-						REAL r = dist(ptclI->Position, ptclJ->Position); // relative distance between particles
-						REAL v = dist(ptclI->Velocity, ptclJ->Velocity); // relative speed between particles
-						REAL energy = v*v/2 - (ptclI->Mass + ptclJ->Mass)/r;
-
-						if (energy < 0) { // bound case
-							if ((r > ptclI->r_crit)) {
-								FBTermination(ptcl, particle);
-								bin_termination = true;
-								continue; // Do not UpdateComputationChain!
-							}
-						}
-						else { // unbound case
-							if ((r > 1e-3/position_unit)) {
-								FBTermination(ptcl, particle);
-								bin_termination = true;
-								continue; // Do not UpdateComputationChain!
-							}
-						}	
-					}
-					else {
-						std::vector<Particle*> stillGroup;
-
-						for (size_t i = 0; i < ptcl->GroupInfo->Members.size(); ++i) {
-							Particle* ptclI = ptcl->GroupInfo->Members[i];
-
-							for (size_t j = 0; j < ptcl->GroupInfo->Members.size(); ++j) {
-								if (i == j) continue;
-
-								Particle* ptclJ = ptcl->GroupInfo->Members[j];
-
-								REAL r = dist(ptclI->Position, ptclJ->Position); // relative distance between particles
-								REAL v = dist(ptclI->Velocity, ptclJ->Velocity); // relative speed between particles
-								REAL energy = v*v/2 - (ptclI->Mass + ptclJ->Mass)/r;
-
-								REAL rv = 0;
-								for (int k=0; k < Dim; k++)
-									rv += (ptclI->Position[k]-ptclJ->Position[k])*(ptclI->Velocity[k]-ptclJ->Velocity[k]);
-
-
-								if (energy < 0) {
-									// if ((r <= 2e-3/position_unit)) {
-									if ((r < ptclI->r_crit) || (rv < 0)) {
-										stillGroup.push_back(ptclI);
-										break;
-									}
-
-								}
-								else {
-									if ((r <= 1e-3/position_unit)) {
-										stillGroup.push_back(ptclI);
-										break;
-									}
-								}
-							}
-						}
-
-						if (ptcl->GroupInfo->Members.size() != stillGroup.size()) {
+					if (ptcl->GroupInfo->CheckBreak()) {
+						if (ptcl->GroupInfo->Members.size() > 2) {
+							std::vector<Particle*> members = ptcl->GroupInfo->Members;
 							FBTermination(ptcl, particle);
-							// if (stillGroup.size() != 0)
-							// 	NewFBInitialization2(stillGroup, particle);			
-							stillGroup.clear();
+							AddNewGroupsToList2(members, particle);
+							members.clear();
 							bin_termination = true;
-							continue; // Do not UpdateComputationChain!			
+							continue;
 						}
-						stillGroup.clear();
+						else {
+							FBTermination(ptcl, particle);
+							bin_termination = true;
+							continue; // Do not UpdateComputationChain!
+						}
 					}
-// */
 				}
 				else { // false: terminated by stellar merger, TDE, GW merger, etc.
 					bin_termination = true;

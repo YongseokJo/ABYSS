@@ -38,7 +38,8 @@
 #define mytolerance 5.4210109e-20
 
 // Physics related parameters
-#define eta 0.01 // by YS Jo subject to modifty
+#define eta 0.01 // 0.001 // original value: 0.01 // by YS Jo subject to modifty
+// #define etaR 0.001 // Eunwoo added
 #define EPS2 0.0 // smoothing length
 #define InitialRadiusOfAC 0.1 // 0.04 pc // 0.1
 //#define InitialRadiusOfAC 1000. // 0.04 pc

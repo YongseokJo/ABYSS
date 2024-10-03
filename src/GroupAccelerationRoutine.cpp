@@ -6,7 +6,7 @@
 // Eunwoo edited
 
 void NewFBInitialization(Group* group, std::vector<Particle*> &particle);
-void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle);
+void NewFBInitialization2(Group* group, std::vector<Particle*> &particle);
 void MergeGroups(std::vector<Group*> &groups);
 bool isNeighborInsideGroup(Group* groupCandidate);
 
@@ -16,7 +16,13 @@ bool AddNewGroupsToList(std::vector<Particle*> &particle) {
 
 	for (Particle *ptcl : particle) {
         // if (ptcl->isCMptcl) continue; // Eunwoo: test
-		ptcl->isFBCandidate();
+		// ptcl->isFBCandidate();
+
+        // Eunwoo test
+        if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > 1e-5)
+            continue;
+        // Eunwoo test
+        ptcl->checkNewGroup();
 	}
 
 	if (GroupCandidateList.empty()) return true;
@@ -30,6 +36,35 @@ bool AddNewGroupsToList(std::vector<Particle*> &particle) {
                                                                 // Its TimeStepIrr will be so big and it can raise errors.
 
         NewFBInitialization(groupCandidate, particle);
+				
+	}
+	GroupCandidateList.clear();
+	GroupCandidateList.shrink_to_fit();
+
+	return true;
+}
+
+bool AddNewGroupsToList2(std::vector<Particle*> &members, std::vector<Particle*> &particle) {
+
+	assert(GroupCandidateList.empty()); // Let's check GroupCandidateList is initially empty!
+
+	for (Particle *ptcl : members) {
+        // if (ptcl->isCMptcl) continue; // Eunwoo: test
+		// ptcl->isFBCandidate();
+        ptcl->checkNewGroup2();
+	}
+
+	if (GroupCandidateList.empty()) return true;
+
+	MergeGroups(GroupCandidateList);	// Merge GroupCandidateList
+										// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
+
+	for (Group *groupCandidate : GroupCandidateList) {
+
+        if (isNeighborInsideGroup(groupCandidate)) continue;    // Don't make a real group if it has no neighbor.
+                                                                // Its TimeStepIrr will be so big and it can raise errors.
+
+        NewFBInitialization2(groupCandidate, particle);
 				
 	}
 	GroupCandidateList.clear();

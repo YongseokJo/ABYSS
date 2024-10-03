@@ -79,7 +79,6 @@ class Particle
 		REAL time_check; // time to check next interrupt
 		long long int binary_state; // contain two parts, low bits (first BINARY_STATE_ID_SHIFT bits) is binary interrupt state and high bits are pair ID
 		Group* GroupInfo;
-		REAL r_crit; // semi-major axis
 
 		// Constructor
 		Particle(void) {__initializer__();};
@@ -136,7 +135,6 @@ class Particle
 			time_check		= NUMERIC_FLOAT_MAX;
 			isGroup			= false;
 			GroupInfo		= nullptr;
-			r_crit			= 0.0;
 
 
 		};
@@ -189,6 +187,8 @@ class Particle
 		void UpdateRadius();
 		void UpdateNeighbor(std::vector<Particle*> &particle);
 		void isFBCandidate(); // Eunwoo
+		void checkNewGroup(); // Eunwoo
+		void checkNewGroup2(); // Eunwoo
 
 		// Eunwoo added for SDAR
 

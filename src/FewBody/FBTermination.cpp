@@ -105,16 +105,14 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 
 		// members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
 		members->calculateTimeStepIrr(members->a_tot, members->a_irr);
-		// members->TimeLevelIrr = members->TimeLevelIrr - 2; // Eunwoo test
+		// members->TimeLevelIrr--; // Eunwoo test
 		// members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
 		// members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
-/* // Eunwoo added
-		while (members->TimeStepIrr*EnzoTimeStep*1e4 < 1e-8) {
-			members->TimeLevelIrr += 1;
-			members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
-			members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
-		}
-*/
+		// if (ptclGroup->sym_int.particles.getSize() > 2) {
+		// 	members->TimeLevelIrr--;
+			// members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
+			// members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+		// }
 	}
 
 
@@ -317,9 +315,9 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 
 		// members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
 		members->calculateTimeStepIrr(members->a_tot, members->a_irr);
-		members->TimeLevelIrr--;
-		members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
-		members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+		// members->TimeLevelIrr--;
+		// members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
+		// members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
 	}
 
 
@@ -391,7 +389,7 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 	ptclCM  = nullptr;
 
 	// fprintf(stdout,"end of Few Body Termination\n");
-	fprintf(binout,"end of Few Body Termination\n");
+	fprintf(binout,"end of Few Body Termination2\n");
 
 	// fprintf(stdout,"--------------------------------------\n");
 	// fflush(stdout);

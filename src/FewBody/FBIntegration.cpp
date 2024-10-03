@@ -35,7 +35,6 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 // made 2024.08.12 by Eunwoo Chung
 
 // Reference: SDAR/sample/AR/ar.cxx & PeTar/src/hard.hpp
-// No debugging yet
 
 // true: integrated normally, false: terminated by stellar merger, TDE, GW merger, etc.
 // If Intererrupt_mode != none, then bin_termination = true;
@@ -58,6 +57,8 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
     if (bin_interrupt.status != AR::InterruptStatus::none) {
 
         FBTermination2(groupCM, bin_interrupt.time_now/EnzoTimeStep, particle);
+
+        // Eunwoo: AddNewGroupsToList2 might be needed if Group composed of more than 3 bodies!
 
         // bin_termination = true;
 

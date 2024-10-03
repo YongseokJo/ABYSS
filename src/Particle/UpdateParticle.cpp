@@ -156,7 +156,7 @@ void Particle::updateParticle(REAL current_time, REAL next_time, REAL a[3][4]) {
 void Particle::UpdateRadius() {
 
 	if (LocalDensity == 0) {
-		RadiusOfAC = 0.11; // 0.11
+		RadiusOfAC = 0.03; // 0.11
 		//RadiusOfAC = InitialRadiusOfAC;
 		//RadiusOfAC = 1.00;
 		LocalDensity = 10;

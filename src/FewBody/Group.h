@@ -53,6 +53,7 @@ class Group
 		}
 
 		bool ARIntegration(REAL next_time, std::vector<Particle*> &particle);
+		bool CheckBreak();
 		void initialManager();
 		void initialIntegrator();
 

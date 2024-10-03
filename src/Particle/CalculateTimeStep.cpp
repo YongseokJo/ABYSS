@@ -55,7 +55,7 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 		std::cerr << "       TimeLevelTmp=" << TimeLevelTmp << std::endl;
 	}
 	*/
-
+// /*
 	if (TimeLevelTmp > TimeLevelIrr) {
 		if (fmod(CurrentBlockIrr, 2*TimeBlockIrr)==0) {
 			TimeLevelTmp = TimeLevelIrr+1;
@@ -79,7 +79,7 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 		TimeLevelTmp = TimeLevelIrr;
 		TimeBlockTmp = TimeBlockIrr;
 	}
-
+// */
 
 	/*
 	if (PID == 430) {
@@ -265,7 +265,7 @@ void Particle::calculateTimeStepReg() {
 	//std::cout << "NBODY+: TimeStepRegTmp = " << TimeStepRegTmp << std::endl;
 
 	TimeLevelTmp0 = TimeLevelTmp;
-
+// /*
 	if (TimeLevelTmp >= TimeLevelReg+1) {
 		if (fmod(CurrentBlockReg, 2*TimeBlockReg)==0 \
 				&& CurrentTimeReg != 0) {
@@ -290,7 +290,7 @@ void Particle::calculateTimeStepReg() {
 	else {
 		TimeLevelTmp = TimeLevelReg;
 	}
-
+// */
 
 	// update needed. regcor_gpu.for:725 (Makino, ApJ, 369)
 	/*
