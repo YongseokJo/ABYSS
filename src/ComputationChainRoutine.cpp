@@ -29,6 +29,7 @@ bool CreateComputationList(Particle* ptcl) {
 	if (ThisParticleNextIrrBlock <= global_time_irr) {
 		fprintf(stderr, "Particle %d's next time (%.3e) is smaller than global time of %.3e.\n",
 				ptcl->PID, ThisParticleNextIrrBlock*time_step, global_time_irr*time_step);
+		fprintf(stderr, "ThisParticleNextIrrBlock: %lld, global_time_irr: %lld\n", ThisParticleNextIrrBlock, global_time_irr);
 		throw std::runtime_error("Fatal Error in CreateComputationList\n");	
 	}
 

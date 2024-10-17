@@ -149,6 +149,7 @@ void InitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle
 }
 
 
+
 /*
  *  Purporse: find neighbors
  *
@@ -175,6 +176,15 @@ void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle) {
 
 	// first search for neighbors for ptcl
 	ptcl1->NumberOfAC = 0;
+	// Eunwoo added
+	for(int dim=0; dim<Dim; dim++) {
+		for (int order=0; order<HERMITE_ORDER; order++) {
+			ptcl1->a_reg[dim][order] = 0.0;
+			ptcl1->a_irr[dim][order] = 0.0;
+			ptcl1->a_tot[dim][order] = 0.0;
+		}
+	}
+	// Eunwoo added
 	for (Particle *ptcl2:particle) {
 		if  (ptcl1 == ptcl2) {
 			i++;
@@ -288,7 +298,6 @@ void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle) 
 		r2 = 0;
 		vx = 0;
 		v2 = 0;
-
 		if (ptcl1 == ptcl2) {
 			continue;
 		}
@@ -304,7 +313,7 @@ void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle) 
 			v2    += v[dim]*v[dim];
 		}
 
-		m_r3 = ptcl2->Mass/r2/sqrt(r2); 
+		m_r3 = ptcl2->Mass/r2/sqrt(r2);
 
 		if ((ptcl1->NumberOfAC==0) || (j >= ptcl1->NumberOfAC) || (ptcl2 != ptcl1->ACList[j])) {
 			for (int dim=0; dim<Dim; dim++) {

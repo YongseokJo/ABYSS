@@ -89,9 +89,20 @@ int InitializeTimeStep(std::vector<Particle*> &particle) {
 	}
 
 
-
-
 	fprintf(stdout, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
+
+// /* // Eunwoo added
+	min_timestep = particle[0]->TimeStepIrr;
+	int min_timelevel = particle[0]->TimeLevelIrr;
+	while (min_timestep*EnzoTimeStep*1e4 >= 1e-8) {
+		min_timelevel -= 1;
+		min_timestep = static_cast<REAL>(pow(2, min_timelevel));
+	}
+	min_timelevel += 1;
+	min_timestep = static_cast<REAL>(pow(2, min_timelevel));
+	fprintf(stdout, "min_timestep = %e Myr\n", min_timestep*EnzoTimeStep*1e4);
+// */ // Eunwoo added
+
 	return true;
 }
 

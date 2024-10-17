@@ -23,11 +23,14 @@ extern int newNNB;
 
 // Time
 extern REAL global_time;
-extern REAL global_time_irr;
+// extern REAL global_time_irr;
+extern ULL global_time_irr;
 extern ULL NextRegTimeBlock;
 extern int time_block;
 extern REAL time_step;
 extern ULL block_max;
+
+extern REAL min_timestep; // Eunwoo added
 
 
 extern REAL binary_time;
@@ -68,6 +71,7 @@ extern int outNum;
 //
 
 extern FILE* binout;
+extern FILE* mergerout;
 
 typedef std::vector<int> Ivector;
 typedef std::vector<ULL> Uvector;

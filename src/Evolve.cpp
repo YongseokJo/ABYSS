@@ -22,7 +22,8 @@ ULL binary_block        = 0;
 REAL outputTime       = 0;
 ULL NextRegTimeBlock    = 0;
 int outNum              = 0;
-REAL global_time_irr  = 0;
+// REAL global_time_irr  = 0;
+ULL global_time_irr  = 0;
 std::vector<Particle*> ComputationChain{};
 #ifdef time_trace
 TimeTracer _time;

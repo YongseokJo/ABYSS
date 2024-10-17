@@ -50,7 +50,7 @@ class TimeTracer {
 		TimeEntity irr_chain;
 		TimeEntity irr_force;
 		TimeEntity irr_sort;
-		TimeEntity irr_bin;
+		TimeEntity irr_bin_search;
 
 	void output() {
 
@@ -120,14 +120,14 @@ class TimeTracer {
 			<< std::setw(width) << "Particle Chain" \
 			<< std::setw(width) << "Force Calculation" \
 			<< std::setw(width) << "Particle Sort" \
-			<< std::setw(width) << "Binary Calculation" \
+			<< std::setw(width) << "Binary Searching" \
 		 	<< '\n';
 
 		outputFile  << std::left
 			<< std::setw(width) << irr_chain.duration.count() \
 			<< std::setw(width) << irr_force.duration.count() \
 			<< std::setw(width) << irr_sort.duration.count() \
-			<< std::setw(width) << irr_bin.duration.count() \
+			<< std::setw(width) << irr_bin_search.duration.count() \
 			<< '\n';
 
 		outputFile << "----------------------------------------------------\n" ;

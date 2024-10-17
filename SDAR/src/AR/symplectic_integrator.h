@@ -76,6 +76,8 @@ namespace AR {
         Tmethod interaction; ///> class contain interaction function
         SymplecticStep step;  ///> class to manager kick drift step
 
+        // bool bhinside; // Eunwoo added
+
         //! constructor
         TimeTransformedSymplecticManager(): time_error_max(Float(-1.0)), energy_error_relative_max(Float(-1.0)), time_step_min(Float(-1.0)), ds_scale(1.0), slowdown_pert_ratio_ref(Float(-1.0)), 
 #ifdef AR_SLOWDOWN_MASSRATIO
@@ -83,6 +85,12 @@ namespace AR {
 #endif
                                             slowdown_timescale_max(0.0),
                                             step_count_max(0), interrupt_detection_option(0), interaction(), step() {}
+                                            // bhinside(false) {} // Eunwoo added
+        // // Eunwoo added
+        // void setBHinside() {
+        //     bhinside = true;
+        // }
+        // // Eunwoo added
 
         //! check whether parameters values are correct
         /*! \return true: all correct
@@ -234,6 +242,12 @@ namespace AR {
                                 binary_slowdown(), 
 #endif
                                 perturber(), info(), profile() {}
+
+        
+        // Eunwoo added to set time
+        void updateTime(const Float& _dt) {
+            time_ += _dt;
+        }
 
         //! check whether parameters values are correct
         /*! \return true: all correct
@@ -416,6 +430,8 @@ namespace AR {
                 }
             }
             else set_sd_flag = false;
+
+            // if (manager->bhinside) set_sd_flag = false; // Eunwoo added
             
             if (set_sd_flag) {
                 _bin.slowdown.period = _bin.period;
@@ -1370,8 +1386,16 @@ namespace AR {
                 Float stab = bin_root.stableCheckIter(bin_root,10000*bin_root.period);
                 Float apo = bin_root.semi*(1+bin_root.ecc);
                 if (stab<1.0 && apo<info.r_break_crit) {
-                    sd_root.period = bin_root.period;
-                    sd_root.calcSlowDownFactor();
+                    sd_root.period = bin_root.period;   // Eunwoo: original
+                    sd_root.calcSlowDownFactor();       // Eunwoo: original
+                    // // Eunwoo fixed
+                    // if (manager->bhinside)
+                    //     sd_root.setSlowDownFactor(1.0);
+                    // else {
+                    //     sd_root.period = bin_root.period;
+                    //     sd_root.calcSlowDownFactor();
+                    // }
+                    // // Eunwoo fixed
                 }
                 else sd_root.setSlowDownFactor(1.0);
 
@@ -1383,8 +1407,16 @@ namespace AR {
                 //}
             }
             else if (bin_root.semi>0) {
-                sd_root.period = bin_root.period;
-                sd_root.calcSlowDownFactor();
+                sd_root.period = bin_root.period;   // Eunwoo: original
+                sd_root.calcSlowDownFactor();       // Eunwoo: original
+                // // Eunwoo fixed
+                // if (manager->bhinside)
+                //     sd_root.setSlowDownFactor(1.0);
+                // else {
+                //     sd_root.period = bin_root.period;
+                //     sd_root.calcSlowDownFactor();
+                // }
+                // // Eunwoo fixed
             }
             else sd_root.setSlowDownFactor(1.0);
 
@@ -1469,9 +1501,17 @@ namespace AR {
                 // check whether the system is stable for 10000 out period
                 Float stab = bin_root.stableCheckIter(bin_root,10000*bin_root.period);
                 if (stab<1.0) {
-                    sd_root.period = bin_root.period;
-                    sd_root.calcSlowDownFactor();
-                }
+                    sd_root.period = bin_root.period;   // Eunwoo: original
+                    sd_root.calcSlowDownFactor();       // Eunwoo: original
+                    // // Eunwoo fixed
+                    // if (manager->bhinside)
+                    //     sd_root.setSlowDownFactor(1.0);
+                    // else {
+                    //     sd_root.period = bin_root.period;
+                    //     sd_root.calcSlowDownFactor();
+                    // }
+                    // // Eunwoo fixed
+                    }
                 else sd_root.setSlowDownFactor(1.0);
                 // stablility criterion
                 // The slowdown factor should not make the system unstable, thus the Qst/Q set the limitation of the increasing of inner semi-major axis.
@@ -1481,8 +1521,16 @@ namespace AR {
                 //}
             }
             else if (bin_root.semi>0) {
-                sd_root.period = bin_root.period;
-                sd_root.calcSlowDownFactor();
+                sd_root.period = bin_root.period;   // Eunwoo: original
+                sd_root.calcSlowDownFactor();       // Eunwoo: original
+                // // Eunwoo fixed
+                // if (manager->bhinside)
+                //     sd_root.setSlowDownFactor(1.0);
+                // else {
+                //     sd_root.period = bin_root.period;
+                //     sd_root.calcSlowDownFactor();
+                // }
+                // // Eunwoo fixed
             }
             else sd_root.setSlowDownFactor(1.0);
 
@@ -1579,8 +1627,23 @@ namespace AR {
                     bin.Velocity[2] -= particles.cm.Velocity[2];
                 }
             }
+            // Eunwoo debug
+            // if (!(info.getBinaryTreeRoot().Position[0]*info.getBinaryTreeRoot().Position[0]<1e-10)) { 
+            //     fprintf(stderr, "N: %d\n", info.binarytree.getSize());
+            //     for (int i=0; i<info.binarytree.getSize(); i++) {
+            //         auto& bin = info.binarytree[i];
+            //         fprintf(stderr, "x: %e\n", bin.Position[0]);
+            //         fprintf(stderr, "y: %e\n", bin.Position[1]);
+            //         fprintf(stderr, "z: %e\n", bin.Position[2]);
+            //         fprintf(stderr, "vx: %e\n", bin.Velocity[0]);
+            //         fprintf(stderr, "vy: %e\n", bin.Velocity[1]);
+            //         fprintf(stderr, "vz: %e\n", bin.Velocity[2]);
+            //     }
+            // }
+            // Eunwoo debug
             ASSERT(info.getBinaryTreeRoot().Position[0]*info.getBinaryTreeRoot().Position[0]<1e-10);
             ASSERT(info.getBinaryTreeRoot().Velocity[0]*info.getBinaryTreeRoot().Velocity[0]<1e-10);
+            // Eunwoo debug
 
 #if (defined AR_SLOWDOWN_ARRAY) || (defined AR_SLOWDOWN_TREE)
 #ifdef AR_SLOWDOWN_TREE
@@ -2405,6 +2468,7 @@ namespace AR {
             //    ASSERT(dt>0.0);
                 time_step = dt; // Eunwoo added for orbit_shrinking_GR
                 // fprintf(stderr, "time_step: %e\n", time_step); // Eunwoo debug
+                // fprintf(stderr, "dt: %e\n", dt); // Eunwoo debug
                 
                 step_count++;
 
@@ -2519,11 +2583,12 @@ namespace AR {
                             std::cerr<<"  Binary["<<i<<"]: "
                                      <<"  i1="<<bin.getMemberIndex(0)
                                      <<"  i2="<<bin.getMemberIndex(1)
-                                     <<"  m1="<<bin.m1
-                                     <<"  m2="<<bin.m2
-                                     <<"  semi= "<<bin.semi
+                                     <<"  m1="<<bin.m1*mass_unit
+                                     <<"  m2="<<bin.m2*mass_unit
+                                     <<"  sep="<<bin.r*position_unit
+                                     <<"  semi= "<<bin.semi*position_unit
                                      <<"  ecc= "<<bin.ecc
-                                     <<"  period= "<<bin.period
+                                     <<"  period= "<<bin.period*1e4
                                      <<"  stab= "<<bin.stab
                                      <<"  SD= "<<bin.slowdown.getSlowDownFactor()
                                      <<"  SD_org= "<<bin.slowdown.getSlowDownFactorOrigin()
@@ -2742,7 +2807,8 @@ namespace AR {
                         step_count_tsyn++;
 
                         Float dt_end = _time_end - time_;
-                        if (dt<0) {
+                        if (dt<0) { // Eunwoo: original
+                        // if (dt<=0) { // Eunwoo: modified
                             // limit step_modify_factor to 0.125
                             step_modify_factor = std::min(std::max(regularStepFactor(manager->step.calcStepModifyFactorFromErrorRatio(abs(_time_end/dt))), Float(0.0625)),Float(0.5)); 
                             ASSERT(step_modify_factor>0.0);
@@ -2755,6 +2821,8 @@ namespace AR {
                             // dt should be >0.0
                             // ASSERT(dt>0.0);
                             ds[1-ds_switch] = ds[ds_switch] * dt_end/dt;
+                            // fprintf(stderr, "ds[ds_switch]: %e, dt_end: %e, dt: %e\n", ds[ds_switch], dt_end, dt); // Eunwoo debug
+                            // if (dt == 0) break; // Eunwoo debug
                             ASSERT(!ISINF(ds[1-ds_switch]));
 #ifdef AR_DEEP_DEBUG
                             std::cerr<<"Time step dt(real) "<<dt<<" <0.3*(time_end-time)(real) "<<dt_end<<" enlarge step factor: "<<dt_end/dt<<" new ds: "<<ds[1-ds_switch]<<std::endl;

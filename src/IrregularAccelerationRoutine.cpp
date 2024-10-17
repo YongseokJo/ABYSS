@@ -59,7 +59,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 #define binary
 #ifdef binary
 #ifdef time_trace
-	_time.irr_bin.markStart();
+	_time.irr_bin_search.markStart();
 #endif
 		//if (AddNewBinariesToList(ComputationList, particle) && ComputationList.size() == 0) {
 		if (AddNewGroupsToList(particle) && ComputationList.size() == 0) {
@@ -98,8 +98,8 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		}
 
 #ifdef time_trace
-	_time.irr_bin.markEnd();
-	_time.irr_bin.getDuration();
+	_time.irr_bin_search.markEnd();
+	_time.irr_bin_search.getDuration();
 #endif
 #endif
 
@@ -160,7 +160,7 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		binary_time_prev = binary_time;
 		binary_block = ComputationList[0]->CurrentBlockIrr+ComputationList[0]->TimeBlockIrr;
 		binary_time  = binary_block*time_step;
-		global_time_irr = ComputationList[0]->CurrentBlockIrr+ComputationList[0]->TimeBlockIrr;
+		// global_time_irr = ComputationList[0]->CurrentBlockIrr+ComputationList[0]->TimeBlockIrr;
 		//std::cout << "ComputationList of " << ComputationList.size() << " : " ;
 #endif
 
@@ -168,17 +168,17 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 		for (Particle* ptcl:ComputationList) {
 			if (ptcl->CurrentTimeIrr > 1) 
 				fprintf(stderr, "outside, PID=%d, CurrentTimeIrr=%e\n", ptcl->PID, ptcl->CurrentTimeIrr);
-			//std::cout << ptcl->PID << " " ;
-			ptcl->updateParticle();
-			ptcl->CurrentBlockIrr += ptcl->TimeBlockIrr;
-			ptcl->CurrentTimeIrr   = ptcl->CurrentBlockIrr*time_step;
-			//std::cout << "before TimeStepCal\n" << std::flush;
-			ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr);
-			//std::cout << "after TimeStepCal\n" << std::flush;
-			ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+			// std::cout << ptcl->PID << " " ;
 #ifdef binary
 			if (ptcl->isCMptcl) {
-				if (ptcl->GroupInfo->ARIntegration(binary_time, particle)){ // true: integrated normally
+				if (ptcl->GroupInfo->Members[0]->PID == 716 && ptcl->GroupInfo->Members[1]->PID == 44) {
+					fprintf(mergerout, "TimeStepIrr: %e Myr\n", ptcl->TimeStepIrr*EnzoTimeStep*1e4);
+					fprintf(mergerout, "TimeStepReg: %e Myr\n", ptcl->TimeStepReg*EnzoTimeStep*1e4);
+					fprintf(mergerout, "ACnum: %d\n", ptcl->NumberOfAC);
+				}
+			}
+			if (ptcl->isCMptcl) {
+				if (ptcl->GroupInfo->ARIntegration(ptcl->CurrentTimeIrr + ptcl->TimeStepIrr, particle)){ // true: integrated normally
 					if (ptcl->GroupInfo->CheckBreak()) {
 						if (ptcl->GroupInfo->Members.size() > 2) {
 							std::vector<Particle*> members = ptcl->GroupInfo->Members;
@@ -200,8 +200,12 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 					continue; // Do not UpdateComputationChain!
 				}	
 			}
-
 #endif
+			ptcl->updateParticle();
+			ptcl->CurrentBlockIrr += ptcl->TimeBlockIrr;
+			ptcl->CurrentTimeIrr   = ptcl->CurrentBlockIrr*time_step;
+			ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr);
+			ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 
 
 #ifdef time_trace
@@ -232,12 +236,12 @@ bool IrregularAccelerationRoutine(std::vector<Particle*> &particle)
 			//std::cerr << "After termination, NextRegTimeBlock=" << NextRegTimeBlock << std::endl; 
 			CreateComputationChain(particle); // because NextRegTime might have been changed.
 			/* 
-				 fprintf(stderr, "in irr, particle: ");
-				 for (Particle* ptcl: particle) {
-				 fprintf(stderr,"%d, ",ptcl->PID);	
-				 }
-				 fprintf(stderr,"\n");	
-				 */
+			fprintf(stderr, "in irr, particle: ");
+			for (Particle* ptcl: particle) {
+			fprintf(stderr,"%d, ",ptcl->PID);	
+			}
+			fprintf(stderr,"\n");	
+			*/
 			bin_termination = false; // Change its value to false again.
 		}
 #endif

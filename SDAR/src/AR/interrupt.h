@@ -5,7 +5,7 @@
 namespace AR {
 
     //! binary interrupt status
-    enum class InterruptStatus{change=1, merge=2, destroy=3, TDE=4, none=0}; // Eunwoo add TDE case
+    enum class InterruptStatus{change=1, merge=2, destroy=3, TDE=4, GWmerge=5, none=0}; // Eunwoo add TDE & GWmerge
 
     //! Binary interrupt recoreder
     template <class Tparticle>

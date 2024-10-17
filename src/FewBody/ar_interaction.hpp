@@ -6,6 +6,7 @@
 // #include "../defs.h"
 
 extern REAL EnzoTimeStep;
+extern FILE* mergerout;
 
 #include "Common/Float.h"
 #include "Common/binary_tree.h"
@@ -13,11 +14,11 @@ extern REAL EnzoTimeStep;
 #include "ar_perturber.hpp"
 // #include "two_body_tide.hpp"
 #include <cassert>
-#include "GR_energy_loss.hpp"
+// #include "GR_energy_loss.hpp"
 
 #define ASSERT(x) assert(x)
 
-void GR_energy_loss(AR::BinaryTree<Particle> _bin, REAL dtime);
+// void GR_energy_loss(AR::BinaryTree<Particle>& _bin, REAL dtime);
 
 
 //! AR interaction clas
@@ -554,84 +555,122 @@ public:
             auto* p1 = _bin.getLeftMember();
             auto* p2 = _bin.getRightMember();
 
-            if (p1->Mass < p2->Mass) {
+            if (p1->Mass < p2->Mass) 
                 std::swap(p1, p2); // p1 has the larger mass (p1->Mass > p2->Mass)
-            }
 
-
-            auto merge = [&]() { // Stellar merger
-                _bin_interrupt.adr = &_bin;
-                _bin_interrupt.status = AR::InterruptStatus::merge;
-                Float mcm = p1->Mass + p2->Mass;
-                for (int k=0; k<3; k++) {
-                    p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
-                    p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
-                }
-                p1->setBinaryInterruptState(BinaryInterruptState::none);
-                p2->setBinaryInterruptState(BinaryInterruptState::none);
-                p1->dm = mcm - p1->Mass;
-                p2->dm = -p2->Mass;
-                p1->Mass = mcm;
-                p2->Mass = 0.0;
-            };
-
-            auto TDE = [&]() { // Tidal Disruption Event
-                _bin_interrupt.adr = &_bin;
-                _bin_interrupt.status = AR::InterruptStatus::TDE;
-                Float mcm = p1->Mass + p2->Mass * 0.5; // If TDE happens, the half of the mass of star is accreted to a BH.
-                for (int k=0; k<3; k++) {
-                    p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
-                    p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
-                }
-                p1->setBinaryInterruptState(BinaryInterruptState::none);
-                p2->setBinaryInterruptState(BinaryInterruptState::none);
-                p1->dm = mcm - p1->Mass;
-                p2->dm = -p2->Mass;
-                p1->Mass = mcm;
-                p2->Mass = 0.0;
-            };
+            // if (p1->PID == 50 || p1->PID == 51)
+            //     fprintf(mergerout, "PID: %d, %d, dt: %e Myr, ecc: %e, semi: %e pc\n", p1->PID, p2->PID, dt*1e4, _bin.ecc, _bin.semi*position_unit);
 
             if(_bin.getMemberN()==2) {
-// /* // Eunwoo: I'm not sure!
-                if (p1->Mass*mass_unit > 8 && dt>0) {   // Eunwoo: to consider GR, at least one particle should be BH.
+/* // Eunwoo: test needed
+                if (p1->ParticleType == (Blackhole+SingleParticle) && dt>0) {   // Eunwoo: to consider GR, at least one particle should be BH.
                                                         // Sometimes dt < 0, but it is very rare so just ignore this.
-                    GR_energy_loss(_bin, dt);
-                    _bin.calcParticles(gravitational_constant);
-                    for (int i; i < Dim; i++) {
-                        p1->Position[i] += _bin.Position[i];
-                        p2->Position[i] += _bin.Position[i];
-                        p1->Velocity[i] += _bin.Velocity[i];
-                        p2->Velocity[i] += _bin.Velocity[i];
+                    // fprintf(mergerout, "Here I am\n");
+                    if (_bin.ecc < 1) {
+                        // fprintf(mergerout, "B. p1 PID: %d. ecc: %e, semi; %e\n", p1->PID, _bin.ecc, _bin.semi);
+                        _bin.calcOrbit(gravitational_constant);
+                        if (p1->PID == 50 || p1->PID == 51)
+                            fprintf(mergerout, "A. PID: %d, %d, T: %e Myr, ecc: %e, semi: %e pc\n", p1->PID, p2->PID, _bin_interrupt.time_now*1e4, _bin.ecc, _bin.semi*position_unit);
+                        GR_energy_loss(_bin, dt);
+                        if (p1->PID == 50 || p1->PID == 51)
+                            fprintf(mergerout, "A. PID: %d, %d, T: %e Myr, ecc: %e, semi: %e pc\n", p1->PID, p2->PID, _bin_interrupt.time_now*1e4, _bin.ecc, _bin.semi*position_unit);
+                            // fprintf(mergerout, "A. p1 PID: %d. ecc: %e, semi; %e\n", p1->PID, _bin.ecc, _bin.semi);
+
+                        if (_bin.semi < 0 || _bin.r < _bin.semi*(1 - _bin.ecc)) {
+                            REAL radius = (p1->radius > p2->radius) ? p1->radius : p2->radius; // r_ISCO == 3 * Schwartzschild raiuds
+                            fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
+                            fprintf(mergerout, "r_ISCO: %e pc\n", radius*position_unit);
+                            GWmerge(_bin_interrupt, _bin);
+                            return;
+                        }
+                        _bin.calcParticles(gravitational_constant);
+                        
+                        // fprintf(mergerout, "A. p1 PID: %d. ecc: %e, semi; %e\n", p1->PID, _bin.ecc, _bin.semi);
                     }
+                    // for (int i; i < Dim; i++) {
+                    //     p1->Position[i] += _bin.Position[i];
+                    //     p2->Position[i] += _bin.Position[i];
+                    //     p1->Velocity[i] += _bin.Velocity[i];
+                    //     p2->Velocity[i] += _bin.Velocity[i];
+                    // }
                 }
-// */ // Eunwoo: I'm not sure!
+*/ // Eunwoo: test needed
+
+                Float radius = 0;
 
                 if (p1->getBinaryInterruptState()== BinaryInterruptState::collision && 
                     p2->getBinaryInterruptState()== BinaryInterruptState::collision &&
                     (p1->time_check<_bin_interrupt.time_end || p2->time_check<_bin_interrupt.time_end) &&
-                    (p1->getBinaryPairID()==p2->PID||p2->getBinaryPairID()==p1->PID)) merge();
+                    (p1->getBinaryPairID()==p2->PID||p2->getBinaryPairID()==p1->PID)) {
+                        if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
+                            radius = (p1->radius > p2->radius) ? p1->radius : p2->radius; // r_ISCO == 3 * Schwartzschild raiuds
+                            // if (dr2<radius*radius) {
+                            fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
+                            fprintf(mergerout, "r_ISCO: %e pc\n", radius*position_unit);
+                            GWmerge(_bin_interrupt, _bin);
+                            // }
+                        }
+                        else if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+                            radius = 1.3*pow((p1->Mass + p2->Mass)/p2->Mass, 1./3)*p2->radius; // TDE radius
+                            // if (dr2<radius*radius) {
+                            fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
+                            fprintf(mergerout, "r_TDE: %e pc\n", radius*position_unit);
+                            TDE(_bin_interrupt, _bin);
+                            // }
+                        }
+                        else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+                            radius = p1->radius + p2->radius; // Sum of two stellar radius
+                            // if (dr2<radius*radius) {
+                            fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
+                            fprintf(mergerout, "r1 + r2: %e pc\n", radius*position_unit);
+                            merge(_bin_interrupt, _bin);
+                            // }
+                        }
+                    }
                 else {
-                    Float radius = p1->radius + p2->radius;
+                    // Float radius = p1->radius + p2->radius;
                     // slowdown case
                     if (_bin.slowdown.getSlowDownFactor()>1.0) {
                         Float semi, ecc, dr, drdv;
                         _bin.particleToSemiEcc(semi, ecc, dr, drdv, *_bin.getLeftMember(), *_bin.getRightMember(), gravitational_constant);
                         Float peri = semi*(1 - ecc);
+
+                        if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
+                            radius = (p1->radius > p2->radius) ? p1->radius : p2->radius; // r_ISCO == 3 * Schwartzschild raiuds
+                        }
+                        else if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+                            radius = 1.3*pow((p1->Mass + p2->Mass)/p2->Mass, 1./3)*p2->radius; // TDE radius
+                        }
+                        else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+                            radius = p1->radius + p2->radius; // Sum of two stellar radius
+                        }
+
                         if (peri<radius && p1->getBinaryPairID()!=p2->PID&&p2->getBinaryPairID()!=p1->PID) {
                             Float ecc_anomaly  = _bin.calcEccAnomaly(dr);
                             Float mean_anomaly = _bin.calcMeanAnomaly(ecc_anomaly, ecc);
                             Float mean_motion  = sqrt(gravitational_constant*_bin.Mass/(fabs(_bin.semi*_bin.semi*_bin.semi))); 
                             Float t_peri = mean_anomaly/mean_motion;
                             if (drdv<0 && t_peri<_bin_interrupt.time_end-_bin_interrupt.time_now) {
-                                if ((p1->Mass*mass_unit > 8) && (p2->Mass*mass_unit < 8)) { // BH + star
-                                    fprintf(stdout, "TDE happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
-                                    fprintf(stdout, "Periapsis dist: %e pc\n", peri*position_unit);
-                                    TDE();
+                                if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
+
+                                    fprintf(mergerout, "peri: %e pc\n", peri*position_unit);
+                                    fprintf(mergerout, "r_ISCO: %e pc\n", radius*position_unit);
+                                    GWmerge(_bin_interrupt, _bin);
+                                    
                                 }
-                                else { // Star + star
-                                    fprintf(stdout, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
-                                    fprintf(stdout, "Periapsis dist: %e pc\n", peri*position_unit);
-                                    merge();
+                                else if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+
+                                    fprintf(mergerout, "peri: %e pc\n", peri*position_unit);
+                                    fprintf(mergerout, "r_TDE: %e pc\n", radius*position_unit);
+                                    TDE(_bin_interrupt, _bin);
+                                    
+                                }
+                                else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+
+                                    fprintf(mergerout, "peri: %e pc\n", peri*position_unit);
+                                    fprintf(mergerout, "r1 + r2: %e pc\n", radius*position_unit);
+                                    merge(_bin_interrupt, _bin);
+                                    
                                 }
                             }
                             else if (semi>0||(semi<0&&drdv<0)) {
@@ -649,16 +688,29 @@ public:
                                        p1->Position[1] - p2->Position[1], 
                                        p1->Position[2] - p2->Position[2]};
                         Float dr2  = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
-                        if (dr2<radius*radius) {
-                            if ((p1->Mass*mass_unit > 8) && (p2->Mass*mass_unit < 8)) { // BH + star
-                                fprintf(stdout, "TDE happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
-                                fprintf(stdout, "Periapsis dist: %e pc\n", std::sqrt(dr2)*position_unit);
-                                TDE();
+
+                        if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
+                            radius = (p1->radius > p2->radius) ? p1->radius : p2->radius; // r_ISCO == 3 * Schwartzschild raiuds
+                            if (dr2<radius*radius) {
+                                fprintf(mergerout, "Separation: %e pc\n", std::sqrt(dr2)*position_unit);
+                                fprintf(mergerout, "r_ISCO: %e pc\n", radius*position_unit);
+                                GWmerge(_bin_interrupt, _bin);
                             }
-                            else { // Star + star
-                                fprintf(stdout, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
-                                fprintf(stdout, "Periapsis dist: %e pc\n", std::sqrt(dr2)*position_unit);
-                                merge();
+                        }
+                        else if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+                            radius = 1.3*pow((p1->Mass + p2->Mass)/p2->Mass, 1./3)*p2->radius; // TDE radius
+                            if (dr2<radius*radius) {
+                                fprintf(mergerout, "Separation: %e pc\n", std::sqrt(dr2)*position_unit);
+                                fprintf(mergerout, "r_TDE: %e pc\n", radius*position_unit);
+                                TDE(_bin_interrupt, _bin);
+                            }
+                        }
+                        else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+                            radius = p1->radius + p2->radius; // Sum of two stellar radius
+                            if (dr2<radius*radius) {
+                                fprintf(mergerout, "Separation: %e pc\n", std::sqrt(dr2)*position_unit);
+                                fprintf(mergerout, "r1 + r2: %e pc\n", radius*position_unit);
+                                merge(_bin_interrupt, _bin);
                             }
                         }
                     }
@@ -681,6 +733,130 @@ public:
     /*! @param[in] _fp: FILE type file for reading
      */
     void readBinary(FILE *_fin) {
-    }    
+    }
+
+    void merge(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin) { // Stellar merger
+
+        _bin_interrupt.adr = &_bin;
+        auto* p1 = _bin.getLeftMember();
+        auto* p2 = _bin.getRightMember();
+        if (p1->Mass < p2->Mass) {
+            std::swap(p1, p2); // p1 has the larger mass (p1->Mass > p2->Mass)
+        }
+
+        fprintf(mergerout, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
+        fprintf(mergerout, "Time: %e Myr\n", _bin_interrupt.time_now*1e4);
+        fprintf(mergerout, "In center-of-mass frame...\n");
+        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p1->PID, p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+		fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->PID, p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p1->PID, p1->Mass*mass_unit);
+        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p2->PID, p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
+		fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->PID, p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p2->PID, p2->Mass*mass_unit);
+
+        _bin_interrupt.status = AR::InterruptStatus::merge;
+        Float mcm = p1->Mass + p2->Mass;
+        for (int k=0; k<3; k++) {
+            p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
+            p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
+        }
+        p1->setBinaryInterruptState(BinaryInterruptState::none);
+        p2->setBinaryInterruptState(BinaryInterruptState::none);
+        p1->dm = mcm - p1->Mass;
+        p2->dm = -p2->Mass;
+        p1->Mass = mcm;
+        p2->Mass = 0.0;
+
+        fprintf(mergerout, "-----Merger remnant properties-----\n");
+        fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+        fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
+        fprintf(mergerout, "---------------------END-OF-STELLAR-MERGER---------------------\n\n");
+        fflush(mergerout);
+    }
+
+    void TDE(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin) { // Tidal Disruption Event
+
+        _bin_interrupt.adr = &_bin;
+        auto* p1 = _bin.getLeftMember();
+        auto* p2 = _bin.getRightMember();
+        if (p1->Mass < p2->Mass) {
+            std::swap(p1, p2); // p1 has the larger mass (p1->Mass > p2->Mass)
+        }
+
+        fprintf(mergerout, "TDE happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
+        fprintf(mergerout, "Time: %e Myr\n", _bin_interrupt.time_now*1e4);
+        fprintf(mergerout, "In center-of-mass frame...\n");
+        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p1->PID, p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+		fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->PID, p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p1->PID, p1->Mass*mass_unit);
+        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p2->PID, p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
+		fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->PID, p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p2->PID, p2->Mass*mass_unit);
+
+        _bin_interrupt.status = AR::InterruptStatus::TDE;
+        Float mcm = p1->Mass + p2->Mass * 0.5; // If TDE happens, the half of the mass of star is accreted to a BH.
+        for (int k=0; k<3; k++) {
+            p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
+            p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
+        }
+        p1->setBinaryInterruptState(BinaryInterruptState::none);
+        p2->setBinaryInterruptState(BinaryInterruptState::none);
+        p1->dm = mcm - p1->Mass;
+        p2->dm = -p2->Mass;
+        p1->Mass = mcm;
+        p2->Mass = 0.0;
+
+        fprintf(mergerout, "-----Merger remnant properties-----\n");
+        fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+        fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
+        fprintf(mergerout, "---------------------END-OF-TDE---------------------\n\n");
+        fflush(mergerout);
+    }
+
+    void GWmerge(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin) { // BH + BH merger
+
+        _bin_interrupt.adr = &_bin;
+        auto* p1 = _bin.getLeftMember();
+        auto* p2 = _bin.getRightMember();
+        if (p1->Mass < p2->Mass) {
+            std::swap(p1, p2); // p1 has the larger mass (p1->Mass > p2->Mass)
+        }
+
+        fprintf(mergerout, "GW driven merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
+        fprintf(mergerout, "Time: %e Myr\n", _bin_interrupt.time_now*1e4);
+        fprintf(mergerout, "In center-of-mass frame...\n");
+        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p1->PID, p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+		fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->PID, p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p1->PID, p1->Mass*mass_unit);
+        fprintf(mergerout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", p2->PID, p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
+		fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->PID, p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p2->PID, p2->Mass*mass_unit);
+
+        _bin_interrupt.status = AR::InterruptStatus::GWmerge;
+        Float mcm = p1->Mass + p2->Mass;    // Relativistic mass loss should be considered here.
+                                            // Relativistic spin should be considered here.
+                                            // Relativistic recoil kick should be considered here.
+        for (int k=0; k<3; k++) {
+            p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
+            p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
+            p2->Position[k] = 0;
+            p2->Velocity[k] = 0;
+        }
+        p1->setBinaryInterruptState(BinaryInterruptState::none);
+        p2->setBinaryInterruptState(BinaryInterruptState::none);
+        p1->dm = mcm - p1->Mass;
+        p2->dm = -p2->Mass;
+        p1->Mass = mcm;
+        p2->Mass = 0.0;
+
+        fprintf(mergerout, "-----Merger remnant properties-----\n");
+        fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+        fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+        fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
+        fprintf(mergerout, "---------------------END-OF-GW-MERGER---------------------\n\n");
+        fflush(mergerout);
+    }
 };
 

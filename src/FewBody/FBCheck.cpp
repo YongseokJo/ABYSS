@@ -265,10 +265,12 @@ bool Group::CheckBreak() {
             fprintf(binout, "Break group: binary escape!\n\t");
             fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
             fprintf(binout, "N_member: %d\n\t", n_member);
-            fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit); 
+            fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit);
+            fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
             fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
             fprintf(binout, "ecca: %e\n\t", bin_root.ecca);
             fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+            fprintf(binout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
             fprintf(binout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
             fflush(binout);
             return true;
@@ -318,35 +320,18 @@ bool Group::CheckBreak() {
             outgoing_flag = true;
             // check distance criterion
             // if (bin_root.r > sym_int.info.r_break_crit) {
-            if (n_member == 2) {
-                if (bin_root.r > 2e-3/position_unit) {
-                    // std::cerr<<"Break group: hyperbolic escape, time: "<<CurrentTime<<" N_member: "<<n_member<<" drdv: "<<drdv<<" separation : "<<bin_root.r<<" r_crit: "<<sym_int.info.r_break_crit<<std::endl;
-                    fprintf(binout, "Break group: hyperbolic escape!\n\t");
-                    fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
-                    fprintf(binout, "N_member: %d\n\t", n_member);
-                    fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit); 
-                    fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
-                    fprintf(binout, "ecca: %e\n\t", bin_root.ecca);
-                    fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-                    fprintf(binout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
-                    fflush(binout);
-                    return true;
-                }
-            }
-            else {
-                if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 2e-3/position_unit) {
-                    // std::cerr<<"Break group: hyperbolic escape, time: "<<CurrentTime<<" N_member: "<<n_member<<" drdv: "<<drdv<<" separation : "<<bin_root.r<<" r_crit: "<<sym_int.info.r_break_crit<<std::endl;
-                    fprintf(binout, "Break group: hyperbolic escape!\n\t");
-                    fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
-                    fprintf(binout, "N_member: %d\n\t", n_member);
-                    fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit); 
-                    fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
-                    fprintf(binout, "ecca: %e\n\t", bin_root.ecca);
-                    fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-                    fprintf(binout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
-                    fflush(binout);
-                    return true;
-                }
+            if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 2e-3/position_unit) {
+                // std::cerr<<"Break group: hyperbolic escape, time: "<<CurrentTime<<" N_member: "<<n_member<<" drdv: "<<drdv<<" separation : "<<bin_root.r<<" r_crit: "<<sym_int.info.r_break_crit<<std::endl;
+                fprintf(binout, "Break group: hyperbolic escape!\n\t");
+                fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
+                fprintf(binout, "N_member: %d\n\t", n_member);
+                fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit); 
+                fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
+                fprintf(binout, "ecca: %e\n\t", bin_root.ecca);
+                fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+                fprintf(binout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
+                fflush(binout);
+                return true;
             }
 /*
             // check for next step
@@ -385,7 +370,7 @@ bool Group::CheckBreak() {
         sd.initialSlowDownReference(sd_group.getSlowDownFactorReference(),sd_group.getSlowDownFactorMax());
         sd.timescale = sd_group.timescale;
         sd.period = sd_group.period;
-
+/*
         if (n_member==2) {
             // check strong perturbed binary case 
             // calculate slowdown in a consistent way like in checknewgroup to avoid switching
@@ -396,7 +381,7 @@ bool Group::CheckBreak() {
             for (int i = 0; i < Dim; ++i) {
                 acc_cm[i] = sym_int.particles.cm.a_tot[i][0]; // a_irr or a_tot?
             }
-            Float fcm[3] = {acc_cm[0]*bin_root.Mass, acc_cm[1]*bin_root.Mass, acc_cm[2]*bin_root.Mass };
+            Float fcm[3] = {acc_cm[0]*bin_root.Mass, acc_cm[1]*bin_root.Mass, acc_cm[2]*bin_root.Mass};
             sd.pert_out= manager.interaction.calcPertFromForce(fcm, bin_root.Mass, bin_root.Mass);
             sd.calcSlowDownFactor();
             Float kappa_org = sd.getSlowDownFactorOrigin();
@@ -406,17 +391,30 @@ bool Group::CheckBreak() {
                 Float apo = bin_root.semi * (1.0 + bin_root.ecc);
                 // if (apo>sym_int.info.r_break_crit||bin_root.semi<0.0) {
                 if ((apo>sym_int.info.r_break_crit && bin_root.r > 2e-3/position_unit)||bin_root.semi<0.0) {
-// #ifdef ADJUST_GROUP_DEBUG
+*/
+        if (n_member==2) {
+            // check strong perturbed binary case 
+            // calculate slowdown in a consistent way like in checknewgroup to avoid switching
+            // fcm may not properly represent the perturbation force (perturber mass is unknown)
+            sd.pert_in = manager.interaction.calcPertFromMR(bin_root.r, bin_root.m1, bin_root.m2);
+            // Float* acc_cm = sym_int.particles.cm.acc0;
+            Float acc_cm[3];
+            for (int i = 0; i < Dim; ++i) {
+                acc_cm[i] = sym_int.particles.cm.a_tot[i][0]; // a_irr or a_tot?
+            }
+            Float fcm[3] = {acc_cm[0]*bin_root.Mass, acc_cm[1]*bin_root.Mass, acc_cm[2]*bin_root.Mass};
+            sd.pert_out= manager.interaction.calcPertFromForce(fcm, bin_root.Mass, bin_root.Mass);
+            sd.calcSlowDownFactor();
+            Float kappa_org = sd.getSlowDownFactorOrigin();
+
+            if (kappa_org<kappa_org_crit) {
+                // in binary case, only break when apo is larger than distance criterion
+                Float apo = bin_root.semi * (1.0 + bin_root.ecc);
+                // if (apo>sym_int.info.r_break_crit||bin_root.semi<0.0) {
+                if ((apo>sym_int.info.r_break_crit && bin_root.r > 2e-3/position_unit)||bin_root.semi<0.0) {
                     // std::cerr<<"Break group: strong perturbed, time: "<<CurrentTime<<" N_member: "<<n_member;
                     auto& sd_root = sym_int.info.getBinaryTreeRoot().slowdown;
-                    // std::cerr<<" pert_in: "<<sd_root.pert_in
-                    //             <<" pert_out: "<<sd_root.pert_out
-                    //             <<" kappa_org: "<<kappa_org
-                    //             <<" dr: "<<bin_root.r
-                    //             <<" semi: "<<bin_root.semi
-                    //             <<" ecc: "<<bin_root.ecc
-                    //             <<" r_break: "<<sym_int.info.r_break_crit
-                    //             <<std::endl;
+
                     fprintf(binout, "Break group: strong perturbed!\n\t");
                     fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
                     fprintf(binout, "N_member: %d\n\t", n_member);
@@ -431,7 +429,6 @@ bool Group::CheckBreak() {
                     fprintf(binout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
                     fprintf(binout, "r_break: %e pc\n", sym_int.info.r_break_crit*position_unit);
                     fflush(binout);
-// #endif
                     return true;
                 }
             }

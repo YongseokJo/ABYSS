@@ -16,10 +16,14 @@ bool UpdateComputationChain(Particle* ptcl);
 void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 
 
+	ptclCM->updateParticle();
+	ptclCM->CurrentBlockIrr += ptclCM->TimeBlockIrr;
+	ptclCM->CurrentTimeIrr   = ptclCM->CurrentBlockIrr*time_step;
+	ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr);
+
+
 	Group* ptclGroup;
 
-	// fprintf(stdout,"--------------------------------------\n");
-	// fprintf(stdout,"In FBTermination.cpp...\n\n");
 	fprintf(binout,"--------------------------------------\n");
 	fprintf(binout,"In FBTermination.cpp... (CM PID: %d)\n\n", ptclCM->PID);
 	fprintf(binout, "CurrentTimeIrr of ptclCM (Myr): %e\n", ptclCM->CurrentTimeIrr*EnzoTimeStep*1e4);
@@ -27,26 +31,27 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 	ptclGroup	= ptclCM->GroupInfo;
 
 
-	// Eunwoo: Set CurrentBlock and CurrentTime for group particles. This was originally from convertBinaryCoordinatesCartesian().
+	// Update ptclCM pos & velocity first. Then, update pos & vel of group members to the original frame.
+	for (int dim=0; dim<Dim; dim++) {
+		ptclCM->Position[dim] = ptclCM->NewPosition[dim];
+		ptclCM->Velocity[dim] = ptclCM->NewVelocity[dim];
+	}
+	ptclGroup->sym_int.particles.shiftToOriginFrame();
+	ptclGroup->sym_int.particles.template writeBackMemberAll<Particle>();
 
+	// Eunwoo: Set CurrentBlock and CurrentTime for group particles.
 	for (Particle* members : ptclGroup->Members) {
 		members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr;
 		members->CurrentBlockReg	= ptclCM->CurrentBlockReg;
 		members->CurrentTimeIrr		= ptclCM->CurrentTimeIrr;
 		members->CurrentTimeReg		= ptclCM->CurrentTimeReg;
 
-		// members->TimeStepIrr		= ptclCM->TimeStepIrr; // Eunwoo: I think this is redundant.
-		// members->TimeBlockIrr		= ptclCM->TimeBlockIrr; // Eunwoo: I think this is redundant.
-		// members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // Eunwoo: I think this is redundant.
-
-		// members->TimeStepReg		= ptclCM->TimeStepReg; // Eunwoo: I think this is redundant.
-		// members->TimeBlockReg		= ptclCM->TimeBlockReg; // Eunwoo: I think this is redundant.
-		// members->TimeLevelReg		= ptclCM->TimeLevelReg; // Eunwoo: I think this is redundant.
+		members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // Eunwoo: I think this is redundant.
+		members->TimeLevelReg		= ptclCM->TimeLevelReg; // Eunwoo: I think this is redundant.
 	}
 	// fprintf(binout, "CM Time Steps (Myr) - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr*EnzoTimeStep*1e4, ptclCM->TimeStepReg*EnzoTimeStep*1e4);
 
 	// Update particle vector: erase ptclCM and add group particles
-
 	ptclCM->isErase = true;
 	particle.erase(
 			std::remove_if(particle.begin(), particle.end(),
@@ -61,15 +66,12 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 		particle[i]->ParticleOrder = i;
 	}
 
-	// fprintf(stdout,"add the group components to particle list (to be included neighbor search)\n");
-
 	for (Particle* members : ptclGroup->Members) {
 		members->ParticleOrder = particle.size();
 		particle.push_back(members);
 	}
 
 	// Find neighbors and calculate the 0th, 1st, 2nd, 3rd derivative of accleration for group particles 
-
 	fprintf(binout,"initialize group particles \n");
 	for (Particle* members : ptclGroup->Members) {
 		InitializeFBParticle(members, particle);
@@ -105,13 +107,19 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 
 		// members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
 		members->calculateTimeStepIrr(members->a_tot, members->a_irr);
+		// while (members->CurrentBlockIrr+members->TimeBlockIrr <= global_time_irr) { //first condition guarantees that members is small than ptcl
+		// 	members->TimeLevelIrr++;
+		// 	members->TimeStepIrr  = static_cast<REAL>(pow(2, members->TimeLevelIrr));
+		// 	members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+		// }
+
 		// members->TimeLevelIrr--; // Eunwoo test
 		// members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
 		// members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
 		// if (ptclGroup->sym_int.particles.getSize() > 2) {
 		// 	members->TimeLevelIrr--;
-			// members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
-			// members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+		// 	members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
+		// 	members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
 		// }
 	}
 
@@ -129,9 +137,6 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 				ptcl->ACList.erase(ptcl->ACList.begin() + index);
 				ptcl->ACList.insert(ptcl->ACList.end(), ptclGroup->Members.begin(), ptclGroup->Members.end());
 				ptcl->NumberOfAC = ptcl->ACList.size();
-				// InitializeFBParticle(ptcl, particle); // Eunwoo added
-				// ptcl->calculateTimeStepReg(); // Eunwoo added
-				// ptcl->calculateTimeStepIrr(ptcl->a_tot, ptcl->a_irr); // Eunwoo added
 				break; // Eunwoo check
 			}
 			index++;
@@ -203,11 +208,7 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 	ptclGroup = nullptr;
 	ptclCM  = nullptr;
 
-	// fprintf(stdout,"end of Few Body Termination\n");
 	fprintf(binout,"end of Few Body Termination\n");
-
-	// fprintf(stdout,"--------------------------------------\n");
-	// fflush(stdout);
 	fprintf(binout,"--------------------------------------\n");
 	fflush(binout);
 
@@ -219,13 +220,17 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> &particle){
 
 
+	ptclCM->updateParticle();
+	ptclCM->CurrentBlockIrr += ptclCM->TimeBlockIrr;
+	ptclCM->CurrentTimeIrr   = ptclCM->CurrentBlockIrr*time_step;
+	ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr);
+
+
 	Group* ptclGroup;
 
-	// fprintf(stdout,"--------------------------------------\n");
-	// fprintf(stdout,"In FBTermination.cpp...\n\n");
 	fprintf(binout,"--------------------------------------\n");
 	fprintf(binout,"In FBTermination2.cpp... (CM PID: %d)\n\n", ptclCM->PID);
-	fprintf(binout, "CurrentTimeIrr of ptclCM (Myr): %e\n", ptclCM->CurrentTimeIrr*EnzoTimeStep*1e4);
+	fprintf(binout, "CurrentTimeIrr of interrupted group (Myr): %e\n", current_time*EnzoTimeStep*1e4);
 
 	ptclGroup	= ptclCM->GroupInfo;
 
@@ -233,10 +238,14 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 	// Set CurrentBlock and CurrentTime for group particles.
 
 	for (Particle* members : ptclGroup->Members) {
-		members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr;
+		members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr; // Block to be integrated
 		members->CurrentBlockReg	= ptclCM->CurrentBlockReg;
 		members->CurrentTimeIrr		= current_time; // This will be updated later.
 		members->CurrentTimeReg		= ptclCM->CurrentTimeReg;
+
+		members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // Eunwoo: I think this is redundant.
+
+		members->TimeLevelReg		= ptclCM->TimeLevelReg; // Eunwoo: I think this is redundant.
 	}
 	
 
@@ -286,10 +295,51 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 
 		assert(members->Mass > 0); // Zero mass particles should be removed in the above!
 
+		// fprintf(mergerout, "Here I am\n");
+
 		InitializeFBParticle(members, particle); // Find neighbors and set accelerations
+		// fprintf(mergerout, "Here I am\n");
+
+		// fprintf(mergerout,"A. PID: %d\n", members->PID);
+		// fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", members->Position[0], members->Position[1], members->Position[2]);
+		// fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->Velocity[0], members->Velocity[1], members->Velocity[2]);
+		// fprintf(mergerout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
+		// fprintf(mergerout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->a_tot[0][1], members->a_tot[1][1], members->a_tot[2][1]);
+		// fprintf(mergerout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->a_tot[0][2], members->a_tot[1][2], members->a_tot[2][2]);
+		// fprintf(mergerout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->a_tot[0][3], members->a_tot[1][3], members->a_tot[2][3]);
+		// fprintf(mergerout, "Reg Acceleration - ax:%e, ay:%e, az:%e, \n", members->a_reg[0][0], members->a_reg[1][0], members->a_reg[2][0]);
+		// fprintf(mergerout, "Reg Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->a_reg[0][1], members->a_reg[1][1], members->a_reg[2][1]);
+		// fprintf(mergerout, "Reg Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->a_reg[0][2], members->a_reg[1][2], members->a_reg[2][2]);
+		// fprintf(mergerout, "Reg Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->a_reg[0][3], members->a_reg[1][3], members->a_reg[2][3]);
+		// fprintf(mergerout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
+		// fprintf(mergerout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->a_irr[0][1], members->a_irr[1][1], members->a_irr[2][1]);
+		// fprintf(mergerout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->a_irr[0][2], members->a_irr[1][2], members->a_irr[2][2]);
+		// fprintf(mergerout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->a_irr[0][3], members->a_irr[1][3], members->a_irr[2][3]);
+
+		// fprintf(mergerout,"N. PID: %d\n", members->ACList[0]->PID);
+		// fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", members->ACList[0]->Position[0], members->ACList[0]->Position[1], members->ACList[0]->Position[2]);
+		// fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->ACList[0]->Velocity[0], members->ACList[0]->Velocity[1], members->ACList[0]->Velocity[2]);
+		// fprintf(mergerout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", members->ACList[0]->a_tot[0][0], members->ACList[0]->a_tot[1][0], members->ACList[0]->a_tot[2][0]);
+		// fprintf(mergerout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->ACList[0]->a_tot[0][1], members->ACList[0]->a_tot[1][1], members->ACList[0]->a_tot[2][1]);
+		// fprintf(mergerout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->ACList[0]->a_tot[0][2], members->ACList[0]->a_tot[1][2], members->ACList[0]->a_tot[2][2]);
+		// fprintf(mergerout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->ACList[0]->a_tot[0][3], members->ACList[0]->a_tot[1][3], members->ACList[0]->a_tot[2][3]);
+		// fprintf(mergerout, "Reg Acceleration - ax:%e, ay:%e, az:%e, \n", members->ACList[0]->a_reg[0][0], members->ACList[0]->a_reg[1][0], members->ACList[0]->a_reg[2][0]);
+		// fprintf(mergerout, "Reg Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->ACList[0]->a_reg[0][1], members->ACList[0]->a_reg[1][1], members->ACList[0]->a_reg[2][1]);
+		// fprintf(mergerout, "Reg Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->ACList[0]->a_reg[0][2], members->ACList[0]->a_reg[1][2], members->ACList[0]->a_reg[2][2]);
+		// fprintf(mergerout, "Reg Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->ACList[0]->a_reg[0][3], members->ACList[0]->a_reg[1][3], members->ACList[0]->a_reg[2][3]);
+		// fprintf(mergerout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->ACList[0]->a_irr[0][0], members->ACList[0]->a_irr[1][0], members->ACList[0]->a_irr[2][0]);
+		// fprintf(mergerout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->ACList[0]->a_irr[0][1], members->ACList[0]->a_irr[1][1], members->ACList[0]->a_irr[2][1]);
+		// fprintf(mergerout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->ACList[0]->a_irr[0][2], members->ACList[0]->a_irr[1][2], members->ACList[0]->a_irr[2][2]);
+		// fprintf(mergerout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->ACList[0]->a_irr[0][3], members->ACList[0]->a_irr[1][3], members->ACList[0]->a_irr[2][3]);
+
+		// fprintf(mergerout, "members current time: %e Myr", members->CurrentTimeIrr);
+		// fprintf(mergerout, "CM current time: %e Myr", ptclCM->CurrentTimeIrr);
+
+		// fprintf(mergerout, "a_reg_x: %e\n", members->ACList[0]->Mass/pow(dist(members->Position, members->ACList[0]->Position), 3)*(members->Position[0], members->ACList[0]->Position[0]));
 
 		members->predictParticleSecondOrderIrr(ptclCM->CurrentTimeIrr); // Integrate particle to the intended irregular time
-		members->CurrentTimeIrr = ptclCM->CurrentTimeIrr;
+		members->correctParticleFourthOrder(members->CurrentTimeIrr, ptclCM->CurrentTimeIrr, members->a_tot);
+		members->CurrentTimeIrr = members->CurrentTimeIrr;
 
 		for (int dim=0; dim<Dim; dim++) {
 			members->Position[dim] =  members->PredPosition[dim];
@@ -297,6 +347,23 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 			members->NewPosition[dim]  =  members->Position[dim];
 			members->NewVelocity[dim]  =  members->Velocity[dim];
 		}
+
+		// fprintf(mergerout,"B. PID: %d\n", members->PID);
+		// fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", members->Position[0], members->Position[1], members->Position[2]);
+		// fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->Velocity[0], members->Velocity[1], members->Velocity[2]);
+		// fprintf(mergerout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
+		// fprintf(mergerout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->a_tot[0][1], members->a_tot[1][1], members->a_tot[2][1]);
+		// fprintf(mergerout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->a_tot[0][2], members->a_tot[1][2], members->a_tot[2][2]);
+		// fprintf(mergerout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->a_tot[0][3], members->a_tot[1][3], members->a_tot[2][3]);
+		// fprintf(mergerout, "Reg Acceleration - ax:%e, ay:%e, az:%e, \n", members->a_reg[0][0], members->a_reg[1][0], members->a_reg[2][0]);
+		// fprintf(mergerout, "Reg Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->a_reg[0][1], members->a_reg[1][1], members->a_reg[2][1]);
+		// fprintf(mergerout, "Reg Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->a_reg[0][2], members->a_reg[1][2], members->a_reg[2][2]);
+		// fprintf(mergerout, "Reg Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->a_reg[0][3], members->a_reg[1][3], members->a_reg[2][3]);
+		// fprintf(mergerout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
+		// fprintf(mergerout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->a_irr[0][1], members->a_irr[1][1], members->a_irr[2][1]);
+		// fprintf(mergerout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->a_irr[0][2], members->a_irr[1][2], members->a_irr[2][2]);
+		// fprintf(mergerout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->a_irr[0][3], members->a_irr[1][3], members->a_irr[2][3]);
+
 		// members->calculateTimeStepReg2();
 		members->calculateTimeStepReg();
 		
@@ -325,7 +392,6 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 	fprintf(binout,"replacing CM particle in neighbor list to component particles \n");
 
 	int index = 0;
-	//fprintf(stderr, "neighbor of %d, ", ptclCM->PID);
 	for (Particle* ptcl: particle) {
 
 		index = 0;
@@ -388,11 +454,7 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 	ptclGroup = nullptr;
 	ptclCM  = nullptr;
 
-	// fprintf(stdout,"end of Few Body Termination\n");
 	fprintf(binout,"end of Few Body Termination2\n");
-
-	// fprintf(stdout,"--------------------------------------\n");
-	// fflush(stdout);
 	fprintf(binout,"--------------------------------------\n");
 	fflush(binout);
 }

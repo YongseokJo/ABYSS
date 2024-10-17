@@ -36,6 +36,8 @@ class Group
 		// ArtificialParticleInformation artificial;
 		// ArtificialParticleManager ap_manager; // Eunwoo: Where is clear?
 
+		bool PNon;
+
 		// Constructor
 		Group(void) 
 			: groupCM(nullptr),
@@ -44,7 +46,8 @@ class Group
 			CurrentTime(0),
 			// StartTime(0),
 			sym_int(),
-			manager()
+			manager(),
+			PNon(false)
 			// ap_manager(),
 			// artificial()
 

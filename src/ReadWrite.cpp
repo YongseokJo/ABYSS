@@ -146,6 +146,11 @@ bool createDirectory(const std::string& path) {
 
 int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outputNum) {
 
+	REAL min_timestep = particle[0]->TimeStepIrr; // Eunwoo added
+	Particle* min_timestep_ptcl = particle[0];
+	REAL min_irrtime = particle[0]->CurrentTimeIrr;
+	Particle* min_irrtime_ptcl = particle[0];
+
     std::cout << "Data is being written..." << std::endl;
     std::string directoryPath = "output";
 
@@ -193,11 +198,22 @@ int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outpu
 
     // Write particle data to the file 
 		for (Particle* ptcl:particle) {
+			if (ptcl->TimeStepIrr < min_timestep) {
+				min_timestep = ptcl->TimeStepIrr;
+				min_timestep_ptcl = ptcl;
+			}
+			if (ptcl->CurrentTimeIrr < min_irrtime) {
+				min_irrtime = ptcl->CurrentTimeIrr;
+				min_irrtime_ptcl = ptcl;
+			}
 			ptcl->predictParticleSecondOrderIrr(current_time);
 			if (ptcl->isCMptcl)  { // Eunwoo edited
+				ptcl->GroupInfo->sym_int.particles.shiftToOriginFrame();
+				ptcl->GroupInfo->sym_int.particles.template writeBackMemberAll<Particle>();
 				for (Particle* members : ptcl->GroupInfo->Members) { // Eunwoo edited
 					write_out_group(outputFile, ptcl, members); // Eunwoo edited
 				} // Eunwoo edited
+				ptcl->GroupInfo->sym_int.particles.shiftToCenterOfMassFrame();
 				// //write_neighbor(output_nn, ptcl->BinaryParticleI); // Eunwoo edited
 				// write_out(outputFile, ptcl->BinaryParticleJ); // Eunwoo edited
 				// //write_neighbor(output_nn, ptcl->BinaryParticleJ); // Eunwoo edited
@@ -209,6 +225,19 @@ int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outpu
 			//write_out(outputFile, ptcl);
 			//write_neighbor(output_nn, ptcl);
     }
+	outputFile << "min_irr_timestep_ptcl PID: " << min_timestep_ptcl->PID << "\n";
+	outputFile << "min_irr_timestep: " << min_timestep*EnzoTimeStep*1e4 << " Myr\n";
+	outputFile << "min_irr_timestep_ptcl acc_irr: " << min_timestep_ptcl->a_irr[0][0] << ", "
+													<< min_timestep_ptcl->a_irr[1][0] << ", "
+													<< min_timestep_ptcl->a_irr[2][0] << "\n";
+	outputFile << "min_irr_timestep_ptcl acc_reg: " << min_timestep_ptcl->a_reg[0][0] << ", "
+													<< min_timestep_ptcl->a_reg[1][0] << ", "
+													<< min_timestep_ptcl->a_reg[2][0] << "\n";
+	outputFile << "min_irr_time_ptcl PID: " << min_irrtime_ptcl->PID << "\n";
+	outputFile << "min_irr_time:" << min_irrtime*EnzoTimeStep*1e4 << " Myr\n";
+	outputFile << "min_irr_time_ptcl CurrentTimeReg:" << min_irrtime_ptcl->CurrentTimeReg*EnzoTimeStep*1e4 << " Myr\n";
+	outputFile << "min_irr_time_ptcl TimeStepIrr:" << min_irrtime_ptcl->TimeStepIrr*EnzoTimeStep*1e4 << " Myr\n";
+	outputFile << "min_irr_time_ptcl TimeStepReg:" << min_irrtime_ptcl->TimeStepReg*EnzoTimeStep*1e4 << " Myr\n";
 
     // Close the file
     outputFile.close();

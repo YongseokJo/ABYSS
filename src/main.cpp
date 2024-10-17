@@ -17,6 +17,8 @@ std::vector<Particle*> RegularList;
 std::vector<Group*> GroupCandidateList; // Eunwoo edited
 // std::vector<Group*> GroupList; // Eunwoo edited
 FILE* binout;
+FILE* mergerout; // Eunwoo added
+REAL min_timestep; // Eunwoo added
 
 //int NumNeighborMax = 100;
 
@@ -24,8 +26,10 @@ FILE* binout;
 
 int main(int argc, char *argv[]) {
 	cout << "Staring Nbody+ ..." << endl;
-	binout = fopen("binary_output.txt", "w");                                                                          
-	fprintf(binout, "Starting nbody - Binary OUTPUT\n"); 
+	binout = fopen("binary_output.txt", "w");                                                                         
+	fprintf(binout, "Starting nbody - Binary OUTPUT\n");
+	mergerout = fopen("merger_output.txt", "w"); // Eunwoo added
+	fprintf(mergerout, "Starting nbody - Merger OUTPUT\n"); // Eunwoo added
 	std::vector<Particle*> particle{};
 	int irank=0;
 	std::ios::sync_with_stdio(false);
