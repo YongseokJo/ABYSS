@@ -21,27 +21,26 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 		TimeLevelIrr = TimeLevelReg;
 		TimeStepIrr = static_cast<REAL>(pow(2, TimeLevelIrr));
 		TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
+		/* // Eunwoo test
+		if (this->isCMptcl) {
+			auto& bin_root = this->GroupInfo->sym_int.info.getBinaryTreeRoot();
+			if (bin_root.semi < 0) { // Only for hyperbolic case
+				while (this->TimeStepIrr*EnzoTimeStep > abs(bin_root.t_peri)) {
+					this->TimeLevelIrr--;
+					this->TimeStepIrr = static_cast<REAL>(pow(2, this->TimeLevelIrr));
+					this->TimeBlockIrr = static_cast<ULL>(pow(2, this->TimeLevelIrr-time_block));
+				}
+			}
+		}
+		*/ // Eunwoo test
 		return;
 	}
-
-	// if (std::sqrt(mag(Velocity))*velocity_unit/yr*pc/1e5 > 20) 
-	// 	getBlockTimeStep(std::min(getNewTimeStepIrr(a_tot, a_irr), getNewTimeStepIrr2(Velocity, a_tot, a_irr)), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
-	// 	// getBlockTimeStep(getNewTimeStepIrr2(Velocity, a_tot, a_irr), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
-	// else
-	// 	getBlockTimeStep(getNewTimeStepIrr(a_tot, a_irr), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
 
 	getBlockTimeStep(getNewTimeStepIrr(a_tot, a_irr), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
 	// getBlockTimeStep(getNewTimeStepIrr2(Velocity, a_tot, a_irr), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
 	// getBlockTimeStep(std::min(getNewTimeStepIrr(a_tot, a_irr), getNewTimeStepIrr3(Velocity, a_tot, a_irr)), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
 	TimeLevelTmp0 = TimeLevelTmp;
 
-	/*
-	if (PID == 965) {
-		fprintf(stderr, "stepirr=%.3e, levelirr=%d, blockirr=%llu\n", TimeStepTmp, TimeLevelTmp, TimeBlockTmp);
-		fprintf(stderr, "currentblokirr=%llu, nexttimereg=%llu \n", CurrentBlockIrr, NextRegTimeBlock);
-		fprintf(stderr, "currentblockreg=%llu, levelreg=%d, blockreg=%llu\n", CurrentBlockReg, TimeLevelReg, TimeBlockReg);
-	}
-	*/
 
 	/*
 	if (NextRegTimeBlock < TimeBlockReg && isRegular) {
@@ -49,12 +48,6 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 	}
 	*/
 
-	/*
-	if (PID == 430) {
-		std::cerr << "Before TimeLevelIrr=" << TimeLevelIrr << ", TimeLevelReg="<< TimeLevelReg << std::endl;
-		std::cerr << "       TimeLevelTmp=" << TimeLevelTmp << std::endl;
-	}
-	*/
 // /*
 	if (TimeLevelTmp > TimeLevelIrr) {
 		if (fmod(CurrentBlockIrr, 2*TimeBlockIrr)==0) {
@@ -81,13 +74,6 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 	}
 // */
 
-	/*
-	if (PID == 430) {
-		std::cerr << "Middle TimeLevelTmp=" << TimeLevelTmp << std::endl;
-		std::cerr << std::endl;
-	}
-	*/
-
 	//std::cout << "TimeStepIrrTmp=" << TimeStepIrrTmp << std::endl;
 	while (((CurrentBlockIrr < CurrentBlockReg+TimeBlockReg) && (CurrentBlockIrr+TimeBlockTmp > CurrentBlockReg+TimeBlockReg)) || (TimeLevelTmp >= TimeLevelReg)) {
 		/*
@@ -106,6 +92,7 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 		TimeLevelTmp--;
 		TimeBlockTmp *= 0.5;
 	}
+	
 
 	TimeLevelIrr = TimeLevelTmp;
 
@@ -117,6 +104,19 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 
 	TimeStepIrr = static_cast<REAL>(pow(2, TimeLevelIrr));
 	TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
+
+	/* // Eunwoo test
+	if (this->isCMptcl) {
+		auto& bin_root = this->GroupInfo->sym_int.info.getBinaryTreeRoot();
+		if (bin_root.semi < 0) { // Only for hyperbolic case
+			while (this->TimeStepIrr*EnzoTimeStep > abs(bin_root.t_peri)) {
+				this->TimeLevelIrr--;
+				this->TimeStepIrr = static_cast<REAL>(pow(2, this->TimeLevelIrr));
+				this->TimeBlockIrr = static_cast<ULL>(pow(2, this->TimeLevelIrr-time_block));
+			}
+		}
+	}
+	*/ // Eunwoo test
 
 // /* // Eunwoo added
 	while (TimeStepIrr*EnzoTimeStep*1e4 < 1e-8) {
@@ -326,13 +326,13 @@ void Particle::calculateTimeStepReg() {
 		TimeBlockReg = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
 	}
 */ // Eunwoo added
-
+// /* // IAR original
 	if (TimeStepReg*EnzoTimeStep*1e4 < 1e-7) {
 		fprintf(stderr, "PID: %d, TimeStep = %.3e, TimeStepTmp0 = %.3e\n",
 			 	PID, TimeStepReg*EnzoTimeStep*1e4, static_cast<REAL>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4); // Eunwoo add PID
 		fflush(stderr);
 	}
-
+// */ // IAR original
 	if (CurrentTimeReg+TimeStepReg > 1 && CurrentTimeReg != 1.0) {
 		TimeStepReg = 1 - CurrentTimeReg;
 		TimeBlockReg = block_max-CurrentBlockReg;

@@ -10,6 +10,30 @@ REAL Particle::getDistanceTo(Particle *particle) {
 	return std::sqrt(d);
 }
 
+// Eunwoo: Set initial spin for BH. (Geneva model, MESA model, Gaussian distribution, etc.)
+void initialBHspin(Particle *particle) {
+
+	// 1. Aligned spin with the same magnitude
+	// /*
+	for (int i=0; i<2; i++)
+		particle->a_spin[i] = 0.0;
+	particle->a_spin[2] = 0.5;
+	// */
+
+	//2. Random spin generator
+	/*
+	std::random_device rd; // Obtain a random number from hardware
+	std::mt19937 mt(rd()); // Seed the generator
+	std::uniform_real_distribution<> distr(0.0, 1.0); // Define the range (0 to 1)
+	while (1) {
+		for (int i=0; i<2; i++)
+			particle->a_spin[i] = (2 * distr(mt) - 1) * 0.8;
+		if (mag(particle->a_spin) < 0.8*0.8)
+			break;
+	}
+	*/
+}
+
 Particle::Particle(REAL *data, int PID) {
 	__initializer__();
 	this->PID          = PID;
@@ -24,8 +48,8 @@ Particle::Particle(REAL *data, int PID) {
 	// /* // Eunwoo added
 	if (this->Mass*1e9 > 8) {
 		this->ParticleType = Blackhole+SingleParticle;
-		this->radius = 6*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); 
-		// innermost stable circular orbit around a Schwartzshild BH = 3 * R_sch
+		this->radius = 6*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // innermost stable circular orbit around a Schwartzshild BH = 3 * R_sch
+		initialBHspin(this);
 	}
 	else {
 		this->ParticleType = NormalStar+SingleParticle;

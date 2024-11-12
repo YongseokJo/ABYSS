@@ -15,13 +15,6 @@ bool UpdateComputationChain(Particle* ptcl);
 
 void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 
-
-	ptclCM->updateParticle();
-	ptclCM->CurrentBlockIrr += ptclCM->TimeBlockIrr;
-	ptclCM->CurrentTimeIrr   = ptclCM->CurrentBlockIrr*time_step;
-	ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr);
-
-
 	Group* ptclGroup;
 
 	fprintf(binout,"--------------------------------------\n");
@@ -30,15 +23,15 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 
 	ptclGroup	= ptclCM->GroupInfo;
 
-
 	// Update ptclCM pos & velocity first. Then, update pos & vel of group members to the original frame.
-	for (int dim=0; dim<Dim; dim++) {
-		ptclCM->Position[dim] = ptclCM->NewPosition[dim];
-		ptclCM->Velocity[dim] = ptclCM->NewVelocity[dim];
-	}
+	if (ptclCM->NumberOfAC != 0)
+		ptclCM->updateParticle();
 	ptclGroup->sym_int.particles.shiftToOriginFrame();
 	ptclGroup->sym_int.particles.template writeBackMemberAll<Particle>();
-
+	ptclCM->CurrentBlockIrr += ptclCM->TimeBlockIrr;
+	ptclCM->CurrentTimeIrr   = ptclCM->CurrentBlockIrr*time_step;
+	ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr);
+	
 	// Eunwoo: Set CurrentBlock and CurrentTime for group particles.
 	for (Particle* members : ptclGroup->Members) {
 		members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr;
@@ -116,11 +109,11 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 		// members->TimeLevelIrr--; // Eunwoo test
 		// members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
 		// members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
-		// if (ptclGroup->sym_int.particles.getSize() > 2) {
-		// 	members->TimeLevelIrr--;
-		// 	members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
-		// 	members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
-		// }
+		if (ptclGroup->sym_int.particles.getSize() > 2) {
+			members->TimeLevelIrr--;
+			members->TimeStepIrr = static_cast<REAL>(pow(2, members->TimeLevelIrr));
+			members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+		}
 	}
 
 
@@ -219,13 +212,6 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 // next_time: intended time to integrate
 void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> &particle){
 
-
-	ptclCM->updateParticle();
-	ptclCM->CurrentBlockIrr += ptclCM->TimeBlockIrr;
-	ptclCM->CurrentTimeIrr   = ptclCM->CurrentBlockIrr*time_step;
-	ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr);
-
-
 	Group* ptclGroup;
 
 	fprintf(binout,"--------------------------------------\n");
@@ -234,6 +220,9 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 
 	ptclGroup	= ptclCM->GroupInfo;
 
+	ptclCM->CurrentBlockIrr += ptclCM->TimeBlockIrr;
+	ptclCM->CurrentTimeIrr   = ptclCM->CurrentBlockIrr*time_step;
+	ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr);
 
 	// Set CurrentBlock and CurrentTime for group particles.
 

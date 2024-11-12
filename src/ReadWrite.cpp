@@ -13,6 +13,9 @@ void write_neighbor(std::ofstream& outputFile, const Particle* ptcl);
 const int NUM_COLUMNS = 7; // Define the number of columns
 const int width = 18;
 
+// REAL getNewTimeStepIrr(REAL f[3][4], REAL df[3][4]); // Eunwoo added
+// REAL getNewTimeStepReg(REAL v[3], REAL df[3][4]); // Eunwoo added
+
 int readData(std::vector<Particle*> &particle) {
 
 	fprintf(stdout, "Opening %s ...\n", fname);
@@ -146,10 +149,10 @@ bool createDirectory(const std::string& path) {
 
 int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outputNum) {
 
-	REAL min_timestep = particle[0]->TimeStepIrr; // Eunwoo added
-	Particle* min_timestep_ptcl = particle[0];
-	REAL min_irrtime = particle[0]->CurrentTimeIrr;
-	Particle* min_irrtime_ptcl = particle[0];
+	// REAL min_timestep = particle[0]->TimeStepIrr; // Eunwoo added
+	// Particle* min_timestep_ptcl = particle[0];
+	// REAL min_irrtime = particle[0]->CurrentTimeIrr;
+	// Particle* min_irrtime_ptcl = particle[0];
 
     std::cout << "Data is being written..." << std::endl;
     std::string directoryPath = "output";
@@ -198,14 +201,14 @@ int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outpu
 
     // Write particle data to the file 
 		for (Particle* ptcl:particle) {
-			if (ptcl->TimeStepIrr < min_timestep) {
-				min_timestep = ptcl->TimeStepIrr;
-				min_timestep_ptcl = ptcl;
-			}
-			if (ptcl->CurrentTimeIrr < min_irrtime) {
-				min_irrtime = ptcl->CurrentTimeIrr;
-				min_irrtime_ptcl = ptcl;
-			}
+			// if (ptcl->TimeStepIrr < min_timestep) {
+			// 	min_timestep = ptcl->TimeStepIrr;
+			// 	min_timestep_ptcl = ptcl;
+			// }
+			// if (ptcl->CurrentTimeIrr < min_irrtime) {
+			// 	min_irrtime = ptcl->CurrentTimeIrr;
+			// 	min_irrtime_ptcl = ptcl;
+			// }
 			ptcl->predictParticleSecondOrderIrr(current_time);
 			if (ptcl->isCMptcl)  { // Eunwoo edited
 				ptcl->GroupInfo->sym_int.particles.shiftToOriginFrame();
@@ -225,19 +228,16 @@ int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outpu
 			//write_out(outputFile, ptcl);
 			//write_neighbor(output_nn, ptcl);
     }
-	outputFile << "min_irr_timestep_ptcl PID: " << min_timestep_ptcl->PID << "\n";
-	outputFile << "min_irr_timestep: " << min_timestep*EnzoTimeStep*1e4 << " Myr\n";
-	outputFile << "min_irr_timestep_ptcl acc_irr: " << min_timestep_ptcl->a_irr[0][0] << ", "
-													<< min_timestep_ptcl->a_irr[1][0] << ", "
-													<< min_timestep_ptcl->a_irr[2][0] << "\n";
-	outputFile << "min_irr_timestep_ptcl acc_reg: " << min_timestep_ptcl->a_reg[0][0] << ", "
-													<< min_timestep_ptcl->a_reg[1][0] << ", "
-													<< min_timestep_ptcl->a_reg[2][0] << "\n";
-	outputFile << "min_irr_time_ptcl PID: " << min_irrtime_ptcl->PID << "\n";
-	outputFile << "min_irr_time:" << min_irrtime*EnzoTimeStep*1e4 << " Myr\n";
-	outputFile << "min_irr_time_ptcl CurrentTimeReg:" << min_irrtime_ptcl->CurrentTimeReg*EnzoTimeStep*1e4 << " Myr\n";
-	outputFile << "min_irr_time_ptcl TimeStepIrr:" << min_irrtime_ptcl->TimeStepIrr*EnzoTimeStep*1e4 << " Myr\n";
-	outputFile << "min_irr_time_ptcl TimeStepReg:" << min_irrtime_ptcl->TimeStepReg*EnzoTimeStep*1e4 << " Myr\n";
+	// outputFile << "min_irr_timestep_ptcl PID: " << min_timestep_ptcl->PID << "\n";
+	// outputFile << "min_irr_timestep: " << min_timestep*EnzoTimeStep*1e4 << " Myr\n";
+	// outputFile << "estimated_irr_timestep: " << getNewTimeStepIrr(min_timestep_ptcl->a_tot, min_timestep_ptcl->a_irr)*1e4 << " Myr\n";
+	// outputFile << "min_reg_timestep: " << min_timestep_ptcl->TimeStepReg*EnzoTimeStep*1e4 << " Myr\n";
+	// outputFile << "estimated_reg_timestep: " << getNewTimeStepReg(min_timestep_ptcl->Velocity, min_timestep_ptcl->a_reg)*1e4 << " Myr\n";
+	// outputFile << "min_irr_time_ptcl PID: " << min_irrtime_ptcl->PID << "\n";
+	// outputFile << "min_irr_time:" << min_irrtime*EnzoTimeStep*1e4 << " Myr\n";
+	// outputFile << "min_irr_time_ptcl CurrentTimeReg:" << min_irrtime_ptcl->CurrentTimeReg*EnzoTimeStep*1e4 << " Myr\n";
+	// outputFile << "min_irr_time_ptcl TimeStepIrr:" << min_irrtime_ptcl->TimeStepIrr*EnzoTimeStep*1e4 << " Myr\n";
+	// outputFile << "min_irr_time_ptcl TimeStepReg:" << min_irrtime_ptcl->TimeStepReg*EnzoTimeStep*1e4 << " Myr\n";
 
     // Close the file
     outputFile.close();
@@ -251,7 +251,8 @@ int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outpu
 
 
 void write_out(std::ofstream& outputFile, const Particle* ptcl) {
-        outputFile  << std::left
+        // outputFile  << std::left
+		outputFile  << std::left << std::fixed << std::setprecision(10) // Eunwoo test
 										<< std::setw(width) << ptcl->PID
 										<< std::setw(width) << ptcl->Mass*mass_unit
                     << std::setw(width) << ptcl->PredPosition[0]*position_unit
@@ -264,7 +265,8 @@ void write_out(std::ofstream& outputFile, const Particle* ptcl) {
 
 // This function is for group members cause group members have pos, vel in original frame, not predicted values.
 void write_out_group(std::ofstream& outputFile, const Particle* ptclCM, const Particle* ptcl) {
-        outputFile  << std::left
+        // outputFile  << std::left
+		outputFile  << std::left << std::fixed << std::setprecision(10) // Eunwoo test
 										<< std::setw(width) << ptcl->PID
 										<< std::setw(width) << ptcl->Mass*mass_unit
                     << std::setw(width) << (ptclCM->PredPosition[0] - ptclCM->Position[0] + ptcl->Position[0])*position_unit

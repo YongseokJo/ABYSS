@@ -9,7 +9,7 @@
 
 REAL getNewTimeStepReg(REAL v[3], REAL df[3][4]) {
 
-	REAL v2, F2, Fdot2, F2dot2, F3dot2, TimeStep, DivergentPrevent;
+	REAL v2, F2, Fdot2, F2dot2, F3dot2;
 
 	F2     = df[0][0]*df[0][0] + df[1][0]*df[1][0] + df[2][0]*df[2][0];
 	Fdot2  = df[0][1]*df[0][1] + df[1][1]*df[1][1] + df[2][1]*df[2][1];
@@ -19,14 +19,14 @@ REAL getNewTimeStepReg(REAL v[3], REAL df[3][4]) {
 
 
 	REAL dta;
-  dta  = (std::sqrt(F2*F2dot2)+Fdot2)/(std::sqrt(Fdot2*F3dot2)+F2dot2);
+	dta  = (std::sqrt(F2*F2dot2)+Fdot2)/(std::sqrt(Fdot2*F3dot2)+F2dot2);
 	dta  = std::sqrt(eta*dta);
 	return dta; //dta;
 }
 
 REAL getNewTimeStepReg2(REAL v[3], REAL df[3][4]) {
 
-	REAL v2, F2, Fdot2, F2dot2, F3dot2, TimeStep, DivergentPrevent;
+	REAL v2, F2, Fdot2, F2dot2, F3dot2;
 
 	F2     = df[0][0]*df[0][0] + df[1][0]*df[1][0] + df[2][0]*df[2][0];
 	Fdot2  = df[0][1]*df[0][1] + df[1][1]*df[1][1] + df[2][1]*df[2][1];
@@ -63,7 +63,8 @@ REAL getNewTimeStepReg3(REAL v[3], REAL df[3][4]) {
 
 REAL getNewTimeStepIrr(REAL f[3][4], REAL df[3][4]) {
 
-	REAL F2, Fdot2, F2dot2, F3dot2, TimeStep, DivergentPrevent;
+	// REAL F2, Fdot2, F2dot2, F3dot2, TimeStep, DivergentPrevent;
+	REAL F2, Fdot2, F2dot2, F3dot2, TimeStep;
 
 	F2     =   f[0][0]*f[0][0] +  f[1][0]*f[1][0]  + f[2][0]*f[2][0];
 	Fdot2  = df[0][1]*df[0][1] + df[1][1]*df[1][1] + df[2][1]*df[2][1];
@@ -89,8 +90,8 @@ REAL getNewTimeStepIrr(REAL f[3][4], REAL df[3][4]) {
 	}
 	*/
 
-  TimeStep  = (std::sqrt(F2*F2dot2)+Fdot2)/(std::sqrt(Fdot2*F3dot2)+F2dot2);
-  //TimeStep  = F2/Fdot2;
+	TimeStep  = (std::sqrt(F2*F2dot2)+Fdot2)/(std::sqrt(Fdot2*F3dot2)+F2dot2);
+	//TimeStep  = F2/Fdot2;
 	//TimeStep  = std::sqrt(DivergentPrevent*eta*TimeStep);
 	TimeStep  = std::sqrt(eta*TimeStep);
 	//std::cout<< TimeStep << " ";
@@ -180,8 +181,8 @@ REAL getNewTimeStep(REAL f[3][4], REAL df[3][4]) {
 	}
 	*/
 
-  TimeStep  = (std::sqrt(F2*F2dot2)+Fdot2)/(std::sqrt(Fdot2*F3dot2)+F2dot2);
-  //TimeStep  = F2/Fdot2;
+	TimeStep  = (std::sqrt(F2*F2dot2)+Fdot2)/(std::sqrt(Fdot2*F3dot2)+F2dot2);
+	//TimeStep  = F2/Fdot2;
 	//TimeStep  = std::sqrt(DivergentPrevent*eta*TimeStep);
 	TimeStep  = std::sqrt(eta*TimeStep);
 	//std::cout<< TimeStep << " ";

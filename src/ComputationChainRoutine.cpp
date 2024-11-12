@@ -87,7 +87,8 @@ bool UpdateComputationChain(Particle* ptcl) {
 
 
 	// this paticle's reached NextRegTime and this particle will be removed from computationlist
-	if ((ThisParticle->NumberOfAC == 0) || (ThisParticleNextIrrBlock > NextRegTimeBlock)) { 
+	// if ((ThisParticle->NumberOfAC == 0) || (ThisParticleNextIrrBlock > NextRegTimeBlock)) { // IAR original
+	if (ThisParticleNextIrrBlock > NextRegTimeBlock) { // IAR modified
 		ThisParticle->NextParticleForComputation = nullptr;
 		return true;
 	}
@@ -161,7 +162,8 @@ bool CreateComputationChain(std::vector<Particle*> &particle) {
 		//NextIrrBlock = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr;
 		ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 		//std::cerr << NextIrrBlock << "(" << ptcl->PID << ","<< ptcl->NumberOfAC << ")" <<  " ";
-		if ((ptcl->NumberOfAC != 0) && (ptcl->NextBlockIrr <= NextRegTimeBlock)) {
+		// if ((ptcl->NumberOfAC != 0) && (ptcl->NextBlockIrr <= NextRegTimeBlock)) { // IAR original
+		if (ptcl->NextBlockIrr <= NextRegTimeBlock) { // IAR modified
 			index.push_back(i);
 			time.push_back(ptcl->NextBlockIrr);
 		}

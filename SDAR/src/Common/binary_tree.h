@@ -253,6 +253,9 @@ namespace COMM{
           @param[in] _ecc: eccentricity
           \return eccentric anomaly
         */
+        // Eunwoo modified. reference: matlab function (https://www.mathworks.com/matlabcentral/fileexchange/39031-kepler-s-equation?s_tid=FX_rc1_behav)
+        // Mikkola's initial guess (https://articles.adsabs.harvard.edu//full/1987CeMec..40..329M/0000329.000.html)
+        // Danby's method (https://articles.adsabs.harvard.edu/pdf/1983CeMec..31...95D)
         static Float calcEccAnomaly(const Float _mean_anomaly,
                                     const Float _ecc){
             // a: semi-major axis
@@ -260,9 +263,11 @@ namespace COMM{
             // e: eccentricity
             // u: eccentric anomaly
             // n: mean mortion
+            /* // original SDAR code
             Float u0 = _mean_anomaly;
             Float u1;
             int loop = 0;
+            fprintf(stderr, "mean_anomaly: %e\n", _mean_anomaly);
             while(1){
                 loop++;
                 Float su0 = sin(u0);
@@ -277,6 +282,127 @@ namespace COMM{
                     abort();
                 }
             }
+            */ // original SDAR code
+
+            // /* //Eunwoo modified
+            Float pi2 = 2*COMM::PI;
+
+            if (_ecc == 0)
+                return _mean_anomaly;
+
+            Float den = 1 / (4*_ecc + 0.5);
+            Float xma;
+            Float alpha;
+            Float beta;
+            Float z;
+            Float s;
+            Float ds;
+            Float ecca;
+            Float root; // Eunwoo added
+
+            if (_ecc < 1) {
+                // _mean_anomaly += pi2;
+                if (_mean_anomaly < 0) {
+                    Float manom = _mean_anomaly + pi2;
+                    xma = manom - pi2 * trunc(manom/pi2);
+                }
+                else
+                    xma = _mean_anomaly - pi2 * trunc(_mean_anomaly/pi2);
+                alpha = (1 - _ecc) * den;
+            }
+            else {
+                xma = _mean_anomaly;
+                // fprintf(stderr, "xma: %e\n", xma);
+                alpha = (_ecc - 1) * den;
+                // fprintf(stderr, "alpha: %e\n", alpha);
+            }
+            // fprintf(stderr, "xma: %e, alpha: %e\n", xma, alpha);
+
+            beta = 0.5 * xma * den;
+            if (beta > 0)
+                root = beta + sqrt(alpha * alpha * alpha + beta * beta);
+            else    
+                root = beta - sqrt(alpha * alpha * alpha + beta * beta);
+
+            if (root > 0)
+                z = pow(root, 1./3);
+            else
+                z = - pow(-root, 1./3);
+
+            // z = pow(sqrt((alpha * alpha * alpha + beta * beta) + beta), 1./3); // initial matlab function
+            // s = 2 * beta / (z * z + alpha + alpha * alpha / (z * z)); // initial matlab function
+            s = z - alpha / z;
+            // fprintf(stderr, "beta: %e, z: %e, s: %e\n", beta, z, s);
+
+            if (_ecc > 1)
+                ds = 0.071 * pow(s, 5.) / (_ecc * (1 + 0.45 * pow(s, 2.)) * (1 + 4 * pow(s, 2.)));
+            else 
+                ds = -0.078 * pow(s, 5.) / (1 + _ecc);
+            
+            s += ds;
+
+            // fprintf(stderr, "ds: %e, s: %e\n", ds, s);
+
+            if (_ecc > 1)
+                ecca = 3 * log(s + sqrt(1 + s*s));
+            else
+                ecca = xma + _ecc * (3 * s - 4 * s * s * s);
+
+            // fprintf(stderr, "ecca: %e\n", ecca);
+
+            int loop = 0;
+            Float ss;
+            Float cc;
+            Float f;
+            Float fp;
+            Float fpp;
+            Float fppp;
+            Float delta;
+            Float deltastar;
+            Float deltak;
+            while(1) {
+                if (_ecc < 1) {
+                    ss = _ecc * sin(ecca);
+                    cc = _ecc * cos(ecca);
+
+                    f = ecca - ss - xma;
+                    fp = 1 - cc;
+                    fpp = ss;
+                    fppp = cc;
+                }
+                else { 
+                    ss = _ecc * sinh(ecca);
+                    cc = _ecc * cosh(ecca);
+
+                    f = ss - ecca - xma;
+                    fp = cc - 1;
+                    fpp = ss;
+                    fppp = cc;
+                }
+                // if (loop == 0) {
+                    // fprintf(stderr, "ecc: %e, f: %e, fp: %e, fpp: %e, fppp: %e\n", _ecc, f, fp, fpp, fppp);
+                    // fprintf(stderr, "ss: %e, cc: %e, sin(ecca): %e, cos(ecca): %e, ecca: %e\n", ss, cc, sin(ecca), cos(ecca), ecca);
+                // }
+                loop++;
+                if (fabs(f) < 1e-15)
+                    return ecca;
+                else if (loop>1e2) {
+                    if (fabs(f) < 1e10)
+                        return ecca;
+                    else {
+                        fprintf(stderr, "f = %e\n", f);
+                        std::cerr<<"Error: kepler solver cannot converge to find correct eccentricity anomaly!\n";
+                        abort();
+                    }
+                }
+                else {
+                    delta = -f / fp;
+                    deltastar = -f / (fp + 0.5 * delta * fpp);
+                    deltak = -f / (fp + 0.5 * deltastar * fpp + deltastar * deltastar * fppp / 6);
+                    ecca += deltak;
+                }
+            }
+            // */ //Eunwoo modified
         }
 
         //! solve kepler orbit after dt
@@ -286,9 +412,25 @@ namespace COMM{
         */
         static void solveKepler(Binary& _bin,
                                 const Float _dt) {
-            Float freq = sqrt( (_bin.m1+_bin.m2) / (_bin.semi*_bin.semi*_bin.semi) );
-            Float mean_anomaly_old = _bin.ecca - _bin.ecc * sin(_bin.ecca);
+            // Float freq = sqrt( (_bin.m1+_bin.m2) / (_bin.semi*_bin.semi*_bin.semi) ); // original
+            Float freq = sqrt( (_bin.m1+_bin.m2) / abs(_bin.semi*_bin.semi*_bin.semi) ); // Eunwoo modified for hyperbola
+            /* // original
+            Float mean_anomaly_old = _bin.ecca - _bin.ecc * sin(_bin.ecca); // original
             Float dt_tmp = _dt - to_int(_dt/_bin.period)*_bin.period;
+            Float mean_anomaly_new = freq * dt_tmp + mean_anomaly_old; // mean anomaly
+            */ // original
+            // /* // Eunwoo modified for hyperbola
+            Float mean_anomaly_old;
+            Float dt_tmp;
+            if (_bin.semi > 0) {
+                mean_anomaly_old = _bin.ecca - _bin.ecc * sin(_bin.ecca); // M = E - e sin E
+                dt_tmp = _dt - to_int(_dt/_bin.period)*_bin.period;
+            }
+            else {
+                mean_anomaly_old = _bin.ecc * sinh(_bin.ecca) - _bin.ecca; // M = e sinh F - F
+                dt_tmp = _dt;
+            }
+            // */ // Eunwoo modified for hyperbola
             Float mean_anomaly_new = freq * dt_tmp + mean_anomaly_old; // mean anomaly
             _bin.ecca = calcEccAnomaly(mean_anomaly_new, _bin.ecc); // eccentric anomaly
         }

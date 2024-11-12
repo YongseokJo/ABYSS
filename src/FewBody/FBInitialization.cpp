@@ -148,7 +148,7 @@ void Group::initialManager() {
 	manager.slowdown_pert_ratio_ref = 1e-6; // slowdown perturbation ratio reference
 	// 1e-6 in ar.cxx
 	// 1e-4 in PeTar
-	manager.step_count_max = 100000; // number of maximum (integrate/output) step for AR integration // set symplectic order
+	manager.step_count_max = 1000000; // number of maximum (integrate/output) step for AR integration // set symplectic order
 	// 1000000 in PeTar & ar.cxx
 	manager.step.initialSymplecticCofficients(-6); // Symplectic integrator order, should be even number
 	// -6 in PeTar & ar.cxx
@@ -341,11 +341,9 @@ void NewFBInitialization(Group* group, std::vector<Particle*> &particle) {
     }
 
 	ptclGroup->groupCM		= ptclCM;
-	// ptclGroup->StartTime	= ptclCM->CurrentTimeIrr;
 	ptclGroup->CurrentTime	= ptclCM->CurrentTimeIrr;
 
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
-	// ptclGroup->sym_int.initialIntegration(0);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
 
 	// Erase group particles from particle vector because now they should be replaced with CM particle
@@ -478,23 +476,37 @@ void NewFBInitialization(Group* group, std::vector<Particle*> &particle) {
 	}
 // */
 
+/* // Eunwoo test
+	if (ptclGroup->sym_int.info.getBinaryTreeRoot().semi < 0) { // Only for hyperbolic case
+		while (ptclCM->TimeStepIrr*EnzoTimeStep > abs(ptclGroup->sym_int.info.getBinaryTreeRoot().t_peri)) {
+			ptclCM->TimeLevelIrr -= 1;
+			ptclCM->TimeStepIrr = static_cast<REAL>(pow(2, ptclCM->TimeLevelIrr));
+			ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
+		}
+	}
+*/ // Eunwoo test
+
 // /* // Eunwoo test
 	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();
 	if (bin_root.semi>0.0) {
 		ptclGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, ptclCM->RadiusOfAC);
 		fprintf(binout, "Bound. separation: %e pc\n\t", bin_root.r*position_unit);
-		// fprintf(binout, "kappa: %e\n\t", bin_root.slowdown.getSlowDownFactor());
 		fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
 		fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
 		fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
 		fprintf(binout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
+		fprintf(binout, "period: %e Myr\n\t", bin_root.period*1e4);
+		fprintf(binout, "t_peri: %e Myr\n\t", abs(bin_root.t_peri*1e4));
 		fprintf(binout, "r_break_crit: %e pc\n", ptclGroup->sym_int.info.r_break_crit*position_unit);
 	}
 	else {
 		ptclGroup->sym_int.info.r_break_crit = 2*bin_root.semi*(1-bin_root.ecc); // r_break_crit = 2*peri
 		fprintf(binout, "Unbound. separation: %e pc\n\t", bin_root.r*position_unit);
 		fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
+		fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
 		fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+		fprintf(binout, "period: %e Myr\n\t", bin_root.period*1e4);
+		fprintf(binout, "t_peri: %e Myr\n\t", abs(bin_root.t_peri*1e4));
 		fprintf(binout, "r_break_crit: %e pc\n", ptclGroup->sym_int.info.r_break_crit*position_unit);
 	}
 // */ // Eunwoo test
@@ -815,6 +827,16 @@ void NewFBInitialization2(Group* group, std::vector<Particle*> &particle) {
 	}
 // */
 
+/* // Eunwoo test
+	if (ptclGroup->sym_int.info.getBinaryTreeRoot().semi < 0) { // Only for hyperbolic case
+		while (ptclCM->TimeStepIrr*EnzoTimeStep > abs(ptclGroup->sym_int.info.getBinaryTreeRoot().t_peri)) {
+			ptclCM->TimeLevelIrr -= 1;
+			ptclCM->TimeStepIrr = static_cast<REAL>(pow(2, ptclCM->TimeLevelIrr));
+			ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
+		}
+	}
+*/ // Eunwoo test
+
 // /* // Eunwoo test
 	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();
 	if (bin_root.semi>0.0) {
@@ -824,16 +846,18 @@ void NewFBInitialization2(Group* group, std::vector<Particle*> &particle) {
 		fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
 		fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
 		fprintf(binout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
+		fprintf(binout, "period: %e Myr\n\t", bin_root.period*1e4);
+		fprintf(binout, "t_peri: %e Myr\n\t", abs(bin_root.t_peri*1e4));
 		fprintf(binout, "r_break_crit: %e pc\n", ptclGroup->sym_int.info.r_break_crit*position_unit);
 	}
 	else {
-		if (ptclGroup->Members.size() == 2)
-			ptclGroup->sym_int.info.r_break_crit = 2e-3/position_unit;
-		else
-			ptclGroup->sym_int.info.r_break_crit = 2*bin_root.semi*(1-bin_root.ecc); // r_break_crit = 2*peri
+		ptclGroup->sym_int.info.r_break_crit = 2*bin_root.semi*(1-bin_root.ecc); // r_break_crit = 2*peri
 		fprintf(binout, "Unbound. separation: %e pc\n\t", bin_root.r*position_unit);
 		fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
+		fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
 		fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+		fprintf(binout, "period: %e Myr\n\t", bin_root.period*1e4);
+		fprintf(binout, "t_peri: %e Myr\n\t", abs(bin_root.t_peri*1e4));
 		fprintf(binout, "r_break_crit: %e pc\n", ptclGroup->sym_int.info.r_break_crit*position_unit);
 	}
 // */ // Eunwoo test
@@ -912,150 +936,3 @@ void NewFBInitialization2(Group* group, std::vector<Particle*> &particle) {
 	fprintf(binout, "---------------------END-OF-NEW-GROUP---------------------\n\n");
 	fflush(binout);
 }
-
-
-// // Use this function when GWmerge or TDE happens.
-// Group* NewFBInitialization3(std::vector<Particle*> &NewMembers, std::vector<Particle*> &particle) {
-
-// 	Particle *ptclCM;
-// 	Group *ptclGroup;
-
-// 	std::cout <<"\n\n\nStarting Routine NewFBInitialization3" << std::endl;
-
-// 	// Set ptclGroup members first; this will be very useful
-
-// 	ptclGroup = new Group();
-// 	ptclGroup->Members = NewMembers;
-	
-
-// 	// Find member particle with the biggest CurrentTimeIrr
-// 	Particle* ptcl = NewMembers[0];
-// 	fprintf(binout, "Starting time CurrentTimeIrr (Myr): %e\n", ptcl->CurrentTimeIrr*EnzoTimeStep*1e4);
-
-// 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
-
-// 	ptclGroup->initialManager();
-// 	ptclGroup->initialIntegrator(); // Binary tree is made and CM particle is made automatically.
-
-// 	ptclCM = &ptclGroup->sym_int.particles.cm;
-// 	ptclCM = group->groupCM; // Copy every data from former groupCM
-
-// 	// Set ptcl information like time, PID, etc.
-
-// 	ptclCM->CurrentTimeIrr  = ptcl->CurrentTimeIrr;
-// 	ptclCM->GroupInfo		= ptclGroup;
-
-// 	fprintf(binout, "The ID of CM is %d.\n", ptclCM->PID);
-
-// 	for (int dim=0; dim<Dim; dim++) {
-// 		ptclCM->PredPosition[dim] = ptclCM->Position[dim];
-// 		ptclCM->PredVelocity[dim] = ptclCM->Velocity[dim];
-// 	}
-
-// 	fprintf(binout, "------------------NEW-GROUP-MEMBER-INFORMATION------------------\n");
-// 	for (Particle* members: ptclGroup->Members) {
-// 		fprintf(binout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
-// 		fprintf(binout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
-// 		fprintf(binout, "PID: %d. Mass (Msol) - %e, \n", members->PID, members->Mass*mass_unit);
-//         fprintf(binout, "PID: %d. Total Acceleration - ax:%e, ay:%e, az:%e \n", members->PID, members->a_tot[0][0], members->a_tot[1][0], members->a_tot[2][0]);
-//         fprintf(binout, "PID: %d. Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->PID, members->a_tot[0][1], members->a_tot[1][1], members->a_tot[2][1]);
-// 		fprintf(binout, "PID: %d. Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->PID, members->a_tot[0][2], members->a_tot[1][2], members->a_tot[2][2]);
-// 		fprintf(binout, "PID: %d. Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->PID, members->a_tot[0][3], members->a_tot[1][3], members->a_tot[2][3]);
-// 		fprintf(binout, "PID: %d. Reg Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_reg[0][0], members->a_reg[1][0], members->a_reg[2][0]);
-// 		fprintf(binout, "PID: %d. Reg Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->PID, members->a_reg[0][1], members->a_reg[1][1], members->a_reg[2][1]);
-// 		fprintf(binout, "PID: %d. Reg Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->PID, members->a_reg[0][2], members->a_reg[1][2], members->a_reg[2][2]);
-// 		fprintf(binout, "PID: %d. Reg Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->PID, members->a_reg[0][3], members->a_reg[1][3], members->a_reg[2][3]);
-// 		fprintf(binout, "PID: %d. Irr Acceleration - ax:%e, ay:%e, az:%e, \n", members->PID, members->a_irr[0][0], members->a_irr[1][0], members->a_irr[2][0]);
-// 		fprintf(binout, "PID: %d. Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", members->PID, members->a_irr[0][1], members->a_irr[1][1], members->a_irr[2][1]);
-// 		fprintf(binout, "PID: %d. Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", members->PID, members->a_irr[0][2], members->a_irr[1][2], members->a_irr[2][2]);
-// 		fprintf(binout, "PID: %d. Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", members->PID, members->a_irr[0][3], members->a_irr[1][3], members->a_irr[2][3]);
-// 		fprintf(binout, "PID: %d. Time Steps (Myr) - irregular:%e, regular:%e \n", members->PID, members->TimeStepIrr*EnzoTimeStep*1e4, members->TimeStepReg*EnzoTimeStep*1e4);
-// 		fprintf(binout, "PID: %d. Time Blocks - irregular:%llu, regular:%llu \n", members->PID, members->TimeBlockIrr, members->TimeBlockReg);
-// 		fprintf(binout, "PID: %d. Current Blocks - irregular: %llu, regular:%llu \n", members->PID, members->CurrentBlockIrr, members->CurrentBlockReg);
-//     }
-
-// 	ptclGroup->groupCM		= ptclCM;
-// 	ptclGroup->CurrentTime	= ptclCM->CurrentTimeIrr;
-
-// 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
-//     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
-
-// 	// Erase group particles from particle vector because now they should be replaced with CM particle
-
-// 	group->groupCM->isErase = true;
-
-// 	particle.erase(
-// 			std::remove_if(particle.begin(), particle.end(),
-// 				[](Particle* p) {
-// 				bool to_remove = p->isErase;
-// 				return to_remove;
-// 				}),
-// 			particle.end());
-
-// 	// Update particle order and put CM particle into the last of particle vector
-// 	for (int i=0; i<particle.size(); i++) {
-// 		particle[i]->ParticleOrder = i;
-// 	}
-// 	ptclCM->ParticleOrder = particle.size();
-// 	particle.push_back(ptclCM);
-
-// // /* // Eunwoo test
-// 	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();
-// 	if (bin_root.semi>0.0) {
-// 		ptclGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, ptclCM->RadiusOfAC);
-// 		fprintf(binout, "Bound. separation: %e pc\n\t", bin_root.r*position_unit);
-// 		fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
-// 		fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
-// 		fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-// 		fprintf(binout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
-// 		fprintf(binout, "r_break_crit: %e pc\n", ptclGroup->sym_int.info.r_break_crit*position_unit);
-// 	}
-// 	else {
-// 		if (ptclGroup->Members.size() == 2)
-// 			ptclGroup->sym_int.info.r_break_crit = 2e-3/position_unit;
-// 		else
-// 			ptclGroup->sym_int.info.r_break_crit = 2*bin_root.semi*(1-bin_root.ecc); // r_break_crit = 2*peri
-// 		fprintf(binout, "Unbound. separation: %e pc\n\t", bin_root.r*position_unit);
-// 		fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
-// 		fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-// 		fprintf(binout, "r_break_crit: %e pc\n", ptclGroup->sym_int.info.r_break_crit*position_unit);
-// 	}
-// // */ // Eunwoo test
-
-
-
-// 	UpdateNextRegTime(particle);
-// //	CreateComputationChain(particle);
-// // 	CreateComputationList(FirstComputation);
-
-// 	// // Add the binary to binary integration list
-// 	// GroupList.push_back(ptclGroup);
-
-// 	fprintf(binout, "\nFBInitialization.cpp: result of CM particle value calculation from function NewFBInitialization3\n");
-
-// 	fprintf(binout, "Position (pc) - x:%e, y:%e, z:%e, \n", ptclCM->Position[0]*position_unit, ptclCM->Position[1]*position_unit, ptclCM->Position[2]*position_unit);
-// 	fprintf(binout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", ptclCM->Velocity[0]*velocity_unit/yr*pc/1e5, ptclCM->Velocity[1]*velocity_unit/yr*pc/1e5, ptclCM->Velocity[2]*velocity_unit/yr*pc/1e5);
-// 	fprintf(binout, "Mass (Msol) - %e, \n", ptclCM->Mass*mass_unit);
-// 	fprintf(binout, "Total Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_tot[0][0], ptclCM->a_tot[1][0], ptclCM->a_tot[2][0]);
-// 	fprintf(binout, "Total Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_tot[0][1], ptclCM->a_tot[1][1], ptclCM->a_tot[2][1]);
-// 	fprintf(binout, "Total Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_tot[0][2], ptclCM->a_tot[1][2], ptclCM->a_tot[2][2]);
-// 	fprintf(binout, "Total Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_tot[0][3], ptclCM->a_tot[1][3], ptclCM->a_tot[2][3]);
-// 	fprintf(binout, "Reg Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_reg[0][0], ptclCM->a_reg[1][0], ptclCM->a_reg[2][0]);
-// 	fprintf(binout, "Reg Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_reg[0][1], ptclCM->a_reg[1][1], ptclCM->a_reg[2][1]);
-// 	fprintf(binout, "Reg Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_reg[0][2], ptclCM->a_reg[1][2], ptclCM->a_reg[2][2]);
-// 	fprintf(binout, "Reg Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_reg[0][3], ptclCM->a_reg[1][3], ptclCM->a_reg[2][3]);
-// 	fprintf(binout, "Irr Acceleration - ax:%e, ay:%e, az:%e, \n", ptclCM->a_irr[0][0], ptclCM->a_irr[1][0], ptclCM->a_irr[2][0]);
-// 	fprintf(binout, "Irr Acceleration - axdot:%e, aydot:%e, azdot:%e, \n", ptclCM->a_irr[0][1], ptclCM->a_irr[1][1], ptclCM->a_irr[2][1]);
-// 	fprintf(binout, "Irr Acceleration - ax2dot:%e, ay2dot:%e, az2dot:%e, \n", ptclCM->a_irr[0][2], ptclCM->a_irr[1][2], ptclCM->a_irr[2][2]);
-// 	fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_irr[0][3], ptclCM->a_irr[1][3], ptclCM->a_irr[2][3]);
-// 	fprintf(binout, "Time Steps (Myr) - irregular:%e, regular:%e \n", ptclCM->TimeStepIrr*EnzoTimeStep*1e4, ptclCM->TimeStepReg*EnzoTimeStep*1e4);
-// 	fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", ptclCM->TimeBlockIrr, ptclCM->TimeBlockReg);
-// 	fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", ptclCM->CurrentBlockIrr, ptclCM->CurrentBlockReg);
-
-// 	delete group;
-
-// 	fprintf(binout, "---------------------END-OF-NEW-GROUP---------------------\n\n");
-// 	fflush(binout);
-
-// 	return ptclGroup;
-// }

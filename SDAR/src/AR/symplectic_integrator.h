@@ -344,7 +344,8 @@ namespace AR {
             binary_slowdown = _sym.binary_slowdown;
 #endif
             particles = _sym.particles;
-            info = _sym.binarytree;
+            // info = _sym.binarytree; // original
+            info = _sym.info; // Eunwoo modified
             profile = _sym.profile;
 
             return *this;
@@ -1846,6 +1847,27 @@ namespace AR {
 #endif
                 // drift
                 Float dt = ds/gt_inv;
+                // if (ISNAN(dt))  { // Eunwoo debug
+                //     auto& bin = info.binarytree[0];
+                //     bin.calcOrbit(REAL(1.0));
+                //     std::cerr<<"  Binary["<<0<<"]: "
+                //                 <<"  i1="<<bin.getMemberIndex(0)
+                //                 <<"  i2="<<bin.getMemberIndex(1)
+                //                 <<"  m1="<<bin.m1*mass_unit
+                //                 <<"  m2="<<bin.m2*mass_unit
+                //                 <<"  sep="<<bin.r*position_unit
+                //                 <<"  semi= "<<bin.semi*position_unit
+                //                 <<"  ecc= "<<bin.ecc
+                //                 <<"  period= "<<bin.period*1e4
+                //                 <<"  stab= "<<bin.stab
+                //                 <<"  SD= "<<bin.slowdown.getSlowDownFactor()
+                //                 <<"  SD_org= "<<bin.slowdown.getSlowDownFactorOrigin()
+                //                 <<"  Tscale= "<<bin.slowdown.timescale
+                //                 <<"  pert_in= "<<bin.slowdown.pert_in
+                //                 <<"  pert_out= "<<bin.slowdown.pert_out;
+                //     std::cerr<<std::endl;
+                // }
+                //     fprintf(stderr, "gt_inv: %e\n", gt_inv);
                 ASSERT(!ISNAN(dt));
                 
                 // drift time 
@@ -2151,7 +2173,7 @@ namespace AR {
             updateSlowDownAndCorrectEnergy(true, true);
 #endif
 
-            Float time_step = 0; // Eunwoo added for orbit_shrinking_GR
+            // Float time_step = 0; // Eunwoo added for orbit_shrinking_GR
 
 
             // reset binary stab_check_time
@@ -2176,7 +2198,8 @@ namespace AR {
                         //for (int i=0; i<n_particle; i++) {
                         //    epert += force_[i].pot_pert*particles[i].Mass;
                         //}
-                        manager->interaction.modifyAndInterruptIter(bin_interrupt, bin_root, time_step); // Eunwoo added for orbit_shrinking_GR
+                        manager->interaction.modifyAndInterruptIter(bin_interrupt, bin_root);
+                        // manager->interaction.modifyAndInterruptIter(bin_interrupt, bin_root, time_step); // Eunwoo added for orbit_shrinking_GR
                         //InterruptBinary<Tparticle>* bin_intr_ptr = &bin_interrupt;
                         //bin_intr_ptr = bin_root.processRootIter(bin_intr_ptr, Tmethod::modifyAndInterruptIter);
                         ASSERT(bin_interrupt.checkParams());
@@ -2466,7 +2489,7 @@ namespace AR {
                 // real step size
                 dt =  time_ - dt;
             //    ASSERT(dt>0.0);
-                time_step = dt; // Eunwoo added for orbit_shrinking_GR
+                // time_step = dt; // Eunwoo added for orbit_shrinking_GR
                 // fprintf(stderr, "time_step: %e\n", time_step); // Eunwoo debug
                 // fprintf(stderr, "dt: %e\n", dt); // Eunwoo debug
                 
@@ -2653,7 +2676,7 @@ namespace AR {
                 for (int i=0; i<cd_pair_size; i++) std::cerr<<" "<<time_table[manager->step.getSortCumSumCKIndex(i)];
                 std::cerr<<std::endl;
 #endif
-                if (ISNAN(integration_error_rel_abs)) fprintf(stderr, "H: %e, H_bk: %e\n", H, H_bk); // Eunwoo debug
+                // if (ISNAN(integration_error_rel_abs)) fprintf(stderr, "H: %e, H_bk: %e\n", H, H_bk); // Eunwoo debug
                 ASSERT(!ISNAN(integration_error_rel_abs));
 
                 // modify step if energy error is large
@@ -2907,7 +2930,8 @@ namespace AR {
             profile.step_count_sum += step_count;
             profile.step_count_tsyn_sum += step_count_tsyn;
 
-            return bin_interrupt_return;
+            // return bin_interrupt_return; // original
+            return bin_interrupt; // Eunwoo edited because bin_interrupt.time_now was the value of the time before integration
         }
 
         //! correct CM drift

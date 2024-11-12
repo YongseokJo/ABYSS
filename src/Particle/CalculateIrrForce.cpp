@@ -37,7 +37,7 @@ void Particle::calculateIrrForce() {
 
 	if (this->NumberOfAC == 0) {
 		//CurrentTimeIrr += TimeStepIrr;
-		std::cout << "Error: No neighbor in Irregular force!!" << std::endl;
+		// std::cout << "Error: No neighbor in Irregular force!!" << std::endl; // IAR original
 		return;
 	}
 

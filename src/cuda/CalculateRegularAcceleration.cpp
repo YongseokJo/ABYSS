@@ -11,6 +11,8 @@ void UpdateNextRegTime(std::vector<Particle*> &particle);
 void SendAllParticlesToGPU(CUDA_REAL time, std::vector <Particle*> &particle);
 void CalculateSingleAcceleration(Particle *ptcl1, Particle *ptcl2, CUDA_REAL (&a)[3], CUDA_REAL (&adot)[3], int sign);
 
+// void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle);
+// bool AddNewGroupsToList2(std::vector<Particle*> &members, std::vector<Particle*> &particle);
 
 /*
  *  Purporse: calculate acceleration and neighbors of regular particles by sending them to GPU
@@ -331,6 +333,31 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 	//for (Particle* ptcl: RegularList) {
 	for (int i=0; i<ListSize; i++) {
 		ptcl = RegularList[i];  // regular particle in particle list
+/* // Eunwoo test
+		if (ptcl->isCMptcl && ptcl->NumberOfAC == 0) {
+			if (ptcl->GroupInfo->ARIntegration(NextRegTimeBlock*time_step, particle)){ // true: integrated normally
+				if (ptcl->GroupInfo->CheckBreak()) {
+					if (ptcl->GroupInfo->Members.size() > 2) {
+						std::vector<Particle*> members = ptcl->GroupInfo->Members;
+						FBTermination(ptcl, particle);
+						AddNewGroupsToList2(members, particle);
+						members.clear();
+						bin_termination = true;
+						continue;
+					}
+					else {
+						FBTermination(ptcl, particle);
+						bin_termination = true;
+						continue; // Do not UpdateComputationChain!
+					}
+				}
+			}
+			else { // false: terminated by stellar merger, TDE, GW merger, etc.
+				bin_termination = true;
+				continue; // Do not UpdateComputationChain!
+			}	
+		}
+*/ // Eunwoo test
 		ptcl->CurrentBlockReg = NextRegTimeBlock;
 		ptcl->CurrentTimeReg  = NextRegTimeBlock*time_step;
 		ptcl->calculateTimeStepReg();
@@ -350,10 +377,12 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 		ptcl->updateParticle();
 		//ptcl->calculateTimeStepReg();
 		//ptcl->calculateTimeStepIrr(ptcl->a_tot,ptcl->a_irr);
+		/* // IAR original
 		if (ptcl->NumberOfAC == 0) {
 			ptcl->CurrentBlockIrr = NextRegTimeBlock;
 			ptcl->CurrentTimeIrr = NextRegTimeBlock*time_step;
 		}
+		*/ // IAR original
 		if (ptcl->Position[0] !=  ptcl->Position[0] || ptcl->Velocity[0] !=  ptcl->Velocity[0]) {
 			fprintf(stdout, "after, myself = %d\n", ptcl->PID);
 			fprintf(stdout, "x[0]=%e, a[0]=%e\n", ptcl->Position[0], ptcl->a_tot[0][0]);

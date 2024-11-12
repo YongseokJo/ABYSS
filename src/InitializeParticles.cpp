@@ -16,6 +16,8 @@ void direct_sum(REAL *x, REAL *v, REAL r2, REAL vx,
 int InitializeTimeStep(Particle* particle, int size);
 int InitializeTimeStep(std::vector<Particle*> &particle);
 
+void FindPrimordialBinaries(std::vector<Particle*> &particle); // Eunwoo added for primordial binaries
+
 /*
  *  Purporse: Initialize particles
  *
@@ -64,7 +66,7 @@ void InitializeParticle(std::vector<Particle*> &particle) {
 	}
 #endif
 
-
+	FindPrimordialBinaries(particle); // Eunwoo added for primordial binaries
 
 	std::cout << "Timestep initializing..." << std::endl;
 	InitializeTimeStep(particle);

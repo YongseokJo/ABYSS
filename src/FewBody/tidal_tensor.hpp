@@ -504,4 +504,3 @@ public:
              <<std::endl;
     }
 };
-

@@ -13,8 +13,6 @@
 #include "AR/information.h"
 #include "ar_interaction.hpp"
 #include "ar_perturber.hpp"
-// #include "artificial_particles.hpp"
-// #include "ArtificialParticleInformation.h"
 
 class Particle;
 class Group
@@ -28,13 +26,10 @@ class Group
 		bool isTerminate; // For later use: I will use this when Binary Interrupt State is being used
 		bool isErase;
 
-		// REAL StartTime; // group integration starting time
 		REAL CurrentTime;  // this show how much the binary system has evolved
 
 		AR::TimeTransformedSymplecticIntegrator<Particle, Particle, Perturber, Interaction, AR::Information<Particle,Particle>> sym_int;
 		AR::TimeTransformedSymplecticManager<Interaction> manager;
-		// ArtificialParticleInformation artificial;
-		// ArtificialParticleManager ap_manager; // Eunwoo: Where is clear?
 
 		bool PNon;
 
@@ -44,12 +39,9 @@ class Group
 			isTerminate(false),
 			isErase(false),
 			CurrentTime(0),
-			// StartTime(0),
 			sym_int(),
 			manager(),
 			PNon(false)
-			// ap_manager(),
-			// artificial()
 
 		{
 			Members.clear();

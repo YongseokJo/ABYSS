@@ -51,6 +51,9 @@ class TimeTracer {
 		TimeEntity irr_force;
 		TimeEntity irr_sort;
 		TimeEntity irr_bin_search;
+		TimeEntity irr_bin_int;
+		// TimeEntity irr_bin_ter;
+		// TimeEntity irr_calctime;
 
 	void output() {
 
@@ -121,6 +124,9 @@ class TimeTracer {
 			<< std::setw(width) << "Force Calculation" \
 			<< std::setw(width) << "Particle Sort" \
 			<< std::setw(width) << "Binary Searching" \
+			<< std::setw(width) << "Binary Integration" \
+			// << std::setw(width) << "Binary Termination"
+			// << std::setw(width) << "CalcTimeStepIrr"
 		 	<< '\n';
 
 		outputFile  << std::left
@@ -128,6 +134,9 @@ class TimeTracer {
 			<< std::setw(width) << irr_force.duration.count() \
 			<< std::setw(width) << irr_sort.duration.count() \
 			<< std::setw(width) << irr_bin_search.duration.count() \
+			<< std::setw(width) << irr_bin_int.duration.count() \
+			// << std::setw(width) << irr_bin_ter.duration.count()
+			// << std::setw(width) << irr_calctime.duration.count()
 			<< '\n';
 
 		outputFile << "----------------------------------------------------\n" ;

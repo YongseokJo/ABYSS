@@ -25,10 +25,6 @@ class Particle
 {
 	private:
 
-	// Variables for KS Regularization (117p in GNS by Aarseth, will be added)	
-	//
-	//
-
 	public:
 		int ParticleOrder;
 		int PID;
@@ -79,6 +75,7 @@ class Particle
 		REAL time_check; // time to check next interrupt
 		long long int binary_state; // contain two parts, low bits (first BINARY_STATE_ID_SHIFT bits) is binary interrupt state and high bits are pair ID
 		Group* GroupInfo;
+		REAL a_spin[3]; // dimensionless spin parameter a
 
 		// Constructor
 		Particle(void) {__initializer__();};
@@ -135,7 +132,8 @@ class Particle
 			time_check		= NUMERIC_FLOAT_MAX;
 			isGroup			= false;
 			GroupInfo		= nullptr;
-
+			for (int i=0; i<3; i++)
+				a_spin[i]	= 0.;
 
 		};
 
@@ -260,14 +258,6 @@ class Particle
 			GroupInfo					= nullptr;
 			// fprintf(stderr, "deleting particle, pid=%d\n", PID); // Eunwoo deleted for debug
 		};
-
-
-
-		
-
-
-
-
 };
 
 

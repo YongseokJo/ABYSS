@@ -134,13 +134,22 @@ void Particle::updateParticle() {
 		Position[dim] = NewPosition[dim];
 		Velocity[dim] = NewVelocity[dim];
 	}
-/* // Eunwoo added
+	// if ((PID==921 || PID==195) && CurrentTimeIrr*EnzoTimeStep*1e4 > 4.689882e+01 && CurrentTimeIrr*EnzoTimeStep*1e4 < 4.7e+01) {
+	// if ((PID==921 || PID==195) && CurrentTimeIrr*EnzoTimeStep*1e4 >= 4.694844e+01 && CurrentTimeIrr*EnzoTimeStep*1e4 <= 4.694852e+01) {
+	// 	fprintf(mergerout, "PID: %d, CurrentTimeIrr: %e\n", PID, CurrentTimeIrr*EnzoTimeStep*1e4);
+	// 	fprintf(mergerout, "NumOfAC: %d\n", NumberOfAC);
+	// 	fprintf(mergerout, "Time Steps (Myr) - irregular:%e, regular:%e \n", TimeStepIrr*EnzoTimeStep*1e4, TimeStepReg*EnzoTimeStep*1e4);
+	// 	fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", Position[0]*position_unit, Position[1]*position_unit, Position[2]*position_unit);
+	// 	fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", Velocity[0]*velocity_unit/yr*pc/1e5, Velocity[1]*velocity_unit/yr*pc/1e5, Velocity[2]*velocity_unit/yr*pc/1e5);
+	// 	fflush(mergerout);
+	// }
+// /* // Eunwoo added
 	if (isCMptcl) {
 		GroupInfo->sym_int.particles.shiftToOriginFrame();
 		GroupInfo->sym_int.particles.template writeBackMemberAll<Particle>();
 		GroupInfo->sym_int.particles.shiftToCenterOfMassFrame();
 	}
-*/ // Eunwoo added
+// */ // Eunwoo added
 }
 
 /*
@@ -163,7 +172,7 @@ void Particle::updateParticle(REAL current_time, REAL next_time, REAL a[3][4]) {
 void Particle::UpdateRadius() {
 
 	if (LocalDensity == 0) {
-		RadiusOfAC = 0.11; // 0.03 // 0.11
+		RadiusOfAC = 0.02; // 0.03 // 0.11
 		//RadiusOfAC = InitialRadiusOfAC;
 		//RadiusOfAC = 1.00;
 		LocalDensity = 10;
