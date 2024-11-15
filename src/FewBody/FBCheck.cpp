@@ -61,7 +61,7 @@ void Particle::checkNewGroup() {
         //     r_min = dr; // Eunwoo test
 
         // distance criterion
-        Float r_crit = 1e-3/position_unit;
+        Float r_crit = rbin/position_unit;
         // Float r_crit_sq = r_crit*r_crit;
         
         if (dr < r_crit) {
@@ -78,7 +78,8 @@ void Particle::checkNewGroup() {
             Float drdv = calcDrDv(*this, *ptcl);
             // only inwards
             if(drdv<0.0) {
-                //Float mcm = pi.mass + pj->mass;
+
+// /* // test_1e4_2
                 Float fcm[3] = {this->Mass*this->a_irr[0][0] + ptcl->Mass*ptcl->a_irr[0][0], 
                                 this->Mass*this->a_irr[1][0] + ptcl->Mass*ptcl->a_irr[1][0], 
                                 this->Mass*this->a_irr[2][0] + ptcl->Mass*ptcl->a_irr[2][0]};
@@ -99,6 +100,7 @@ void Particle::checkNewGroup() {
                 // avoid strong perturbed case, estimate perturbation
                 // if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
                 if(kappa_org<kappa_org_crit) continue;
+// */ // test_1e4_2
 
 #ifdef ADJUST_GROUP_DEBUG
                 if (j<index_offset_group_) {
@@ -123,7 +125,6 @@ void Particle::checkNewGroup() {
                                 <<std::setw(16)<<bin_root.semi*(1.0+bin_root.ecc);
                     std::cerr<<std::endl;
                 }
-// #endif
                 fprintf(binout, "Find new group!\n\t");
                 fprintf(binout, " separation: %e pc\n\t", dr);
                 fprintf(binout, " kappa_org: %e \n\t", kappa_org);
@@ -183,7 +184,7 @@ void Particle::checkNewGroup2() {
 
 
         // distance criterion
-        Float r_crit = 1e-3/position_unit;
+        Float r_crit = rbin/position_unit;
         
         if (dr < r_crit && energy < 0)
             groupParticles.push_back(ptcl);
@@ -222,7 +223,7 @@ bool Group::CheckBreak() {
     // check whether periapsis distance >  2e-3 pc
     // Periapsis is too far and binary is not close enough to use regularized technique.
     // if (bin_root.semi*(1-bin_root.ecc) > 2e-3/position_unit){ // test7
-    if (bin_root.semi*(1-bin_root.ecc) > 1e-3/position_unit && bin_root.r > 2e-3/position_unit){ // test8 // fiducial
+    if (bin_root.semi*(1-bin_root.ecc) > rbin/position_unit && bin_root.r > 2 * rbin/position_unit){ // test8 // fiducial
     // if (bin_root.semi*(1-bin_root.ecc) > 1.2e-3/position_unit){ // test12
         fprintf(binout, "Break group: too far periapsis!\n\t");
         fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
@@ -244,7 +245,7 @@ bool Group::CheckBreak() {
         outgoing_flag = true;
         // check whether separation is larger than distance criterion. 
         // /*
-        if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 2e-3/position_unit) { // test8 // fiducial
+        if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 2 * rbin/position_unit) { // test8 // fiducial
         // if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 1.2e-3/position_unit) { // test12
             fprintf(binout, "Break group: binary escape!\n\t");
             fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
@@ -338,7 +339,7 @@ bool Group::CheckBreak() {
         if (drdv>0.0) {
             outgoing_flag = true;
             // check distance criterion
-            if (bin_root.r > 2e-3/position_unit) { // test8 // seems good! // fiducial
+            if (bin_root.r > 2 * rbin/position_unit) { // test8 // seems good! // fiducial
             // if (bin_root.r > 1.2e-3/position_unit) { // test12
                 fprintf(binout, "Break group: hyperbolic escape!\n\t");
                 fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
@@ -410,45 +411,20 @@ bool Group::CheckBreak() {
 
     }
     // return false;
-// /*
-    // check perturbation
-    // only check further if it is outgoing case
-    // if (outgoing_flag) { // original
-    if (outgoing_flag && bin_root.semi > 0.0 && n_member == 2) { // test
+// /* // test_1e4_2
+    // check strong perturbed binary case (only check further if it is outgoing case)
+    // calculate slowdown in a consistent way like in checknewgroup to avoid switching
+    // fcm may not properly represent the perturbation force (perturber mass is unknown)
+    if (outgoing_flag && bin_root.semi > 0.0 && n_member == 2) {
 
         AR::SlowDown sd;
         auto& sd_group = sym_int.info.getBinaryTreeRoot().slowdown;
         sd.initialSlowDownReference(sd_group.getSlowDownFactorReference(),sd_group.getSlowDownFactorMax());
         sd.timescale = sd_group.timescale;
         sd.period = sd_group.period;
-/*
-        if (n_member==2) {
-            // check strong perturbed binary case 
-            // calculate slowdown in a consistent way like in checknewgroup to avoid switching
-            // fcm may not properly represent the perturbation force (perturber mass is unknown)
-            sd.pert_in = manager.interaction.calcPertFromBinary(bin_root);
-            // Float* acc_cm = sym_int.particles.cm.acc0;
-            Float acc_cm[3];
-            for (int i = 0; i < Dim; ++i) {
-                acc_cm[i] = sym_int.particles.cm.a_tot[i][0]; // a_irr or a_tot?
-            }
-            Float fcm[3] = {acc_cm[0]*bin_root.Mass, acc_cm[1]*bin_root.Mass, acc_cm[2]*bin_root.Mass};
-            sd.pert_out= manager.interaction.calcPertFromForce(fcm, bin_root.Mass, bin_root.Mass);
-            sd.calcSlowDownFactor();
-            Float kappa_org = sd.getSlowDownFactorOrigin();
 
-            if (kappa_org<kappa_org_crit) {
-                // in binary case, only break when apo is larger than distance criterion
-                Float apo = bin_root.semi * (1.0 + bin_root.ecc);
-                // if (apo>sym_int.info.r_break_crit||bin_root.semi<0.0) {
-                if ((apo>sym_int.info.r_break_crit && bin_root.r > 2e-3/position_unit)||bin_root.semi<0.0) {
-*/
-        // if (n_member==2) {
-        // check strong perturbed binary case 
-        // calculate slowdown in a consistent way like in checknewgroup to avoid switching
-        // fcm may not properly represent the perturbation force (perturber mass is unknown)
+        // sd.pert_in = manager.interaction.calcPertFromBinary(bin_root); // original
         sd.pert_in = manager.interaction.calcPertFromMR(bin_root.r, bin_root.m1, bin_root.m2);
-        // Float* acc_cm = sym_int.particles.cm.acc0;
         Float acc_cm[3];
         for (int i = 0; i < Dim; ++i) {
             acc_cm[i] = sym_int.particles.cm.a_irr[i][0]; // a_irr or a_tot?
@@ -462,7 +438,7 @@ bool Group::CheckBreak() {
             // in binary case, only break when apo is larger than distance criterion
             Float apo = bin_root.semi * (1.0 + bin_root.ecc);
             // if (apo>sym_int.info.r_break_crit||bin_root.semi<0.0) {
-            if ((apo>sym_int.info.r_break_crit && bin_root.r > 2e-3/position_unit)||bin_root.semi<0.0) { // test8
+            if (apo>sym_int.info.r_break_crit && bin_root.r > 2 * rbin/position_unit) { // test8 // fiducial
             // if ((apo>sym_int.info.r_break_crit && bin_root.r > 1.2e-3/position_unit)||bin_root.semi<0.0) { // test12
                 auto& sd_root = sym_int.info.getBinaryTreeRoot().slowdown;
 
@@ -483,9 +459,8 @@ bool Group::CheckBreak() {
                 return true;
             }
         }
-        // }
     }
-// */
+// */ // test_1e4_2
     return false;
 
 }

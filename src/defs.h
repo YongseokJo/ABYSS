@@ -4,7 +4,7 @@
 #endif
 
 #define FixNumNeighbor 50 // 50
-#define NumNeighborMax 1000
+#define NumNeighborMax 200
 #define HERMITE_ORDER 4
 #define Dim 3
 
@@ -49,14 +49,8 @@
 #define G_cgs 6.67430e-8
 #define G // pc, yr, Msun
 
-// KS regularlization related variables
-
-#define stumpffN 12 // the order of approximation for stumpff functions
-#define KSDistance 0.000002  // the distance of binary particles from each other
-//#define KSDistance 1e-10  // the distance of binary particles from each other
-#define KSTime 2e-7  // short timestep criteria for binary search
-//#define KSTime 1e-10  // short timestep criteria for binary search
-#define PerturberDistance 0.01  // the distance of binary perturbers from the pair
+// Few-body group detecting radius
+#define rbin 0.25e-3 // pc
 
 // Physical units in cgs
 #define pc 3.08567758149137e18

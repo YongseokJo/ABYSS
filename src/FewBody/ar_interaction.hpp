@@ -573,8 +573,7 @@ public:
 
             if(_bin.getMemberN()==2) {
 
-                // Float radius = 0;
-                Float radius = mergerRadius(p1, p2);
+                Float radius = mergerRadius(p1, p2); // p1->radius + p2->radius;
 
                 if (p1->getBinaryInterruptState()== BinaryInterruptState::collision && 
                     p2->getBinaryInterruptState()== BinaryInterruptState::collision &&
@@ -584,39 +583,26 @@ public:
                         merge(_bin_interrupt, _bin);
                     }
                 else {
-                    // Float radius = p1->radius + p2->radius;
-                    // slowdown case
-                    if (_bin.slowdown.getSlowDownFactor()>1.0) {
-                        Float semi, ecc, dr, drdv;
-                        _bin.particleToSemiEcc(semi, ecc, dr, drdv, *_bin.getLeftMember(), *_bin.getRightMember(), gravitational_constant);
-                        Float peri = semi*(1 - ecc);
+                    Float semi, ecc, dr, drdv;
+                    _bin.particleToSemiEcc(semi, ecc, dr, drdv, *_bin.getLeftMember(), *_bin.getRightMember(), gravitational_constant);
+                    Float peri = semi*(1 - ecc);
 
-                        if (peri<radius && p1->getBinaryPairID()!=p2->PID&&p2->getBinaryPairID()!=p1->PID) {
-                            Float ecc_anomaly  = _bin.calcEccAnomaly(dr);
-                            Float mean_anomaly = _bin.calcMeanAnomaly(ecc_anomaly, ecc);
-                            Float mean_motion  = sqrt(gravitational_constant*_bin.Mass/(fabs(_bin.semi*_bin.semi*_bin.semi))); 
-                            Float t_peri = mean_anomaly/mean_motion;
-                            if (drdv<0 && t_peri<_bin_interrupt.time_end-_bin_interrupt.time_now)
-                                merge(_bin_interrupt, _bin);
-                            
-                            else if (semi>0||(semi<0&&drdv<0)) {
-                                p1->setBinaryPairID(p2->PID);
-                                p2->setBinaryPairID(p1->PID);
-                                p1->setBinaryInterruptState(BinaryInterruptState::collision);
-                                p2->setBinaryInterruptState(BinaryInterruptState::collision);
-                                p1->time_check = std::min(p1->time_check, _bin_interrupt.time_now + (drdv<0 ? t_peri : (_bin.period - t_peri)));
-                                p2->time_check = std::min(p1->time_check, p2->time_check);
-                            }
-                        }
-                    }
-                    else { // no slowdown case, check separation directly
-                        Float dr[3] = {p1->Position[0] - p2->Position[0], 
-                                       p1->Position[1] - p2->Position[1], 
-                                       p1->Position[2] - p2->Position[2]};
-                        Float dr2  = dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2];
-
-                        if (dr2 < radius*radius)
+                    if (peri<radius && p1->getBinaryPairID()!=p2->PID&&p2->getBinaryPairID()!=p1->PID) {
+                        Float ecc_anomaly  = _bin.calcEccAnomaly(dr);
+                        Float mean_anomaly = _bin.calcMeanAnomaly(ecc_anomaly, ecc);
+                        Float mean_motion  = sqrt(gravitational_constant*_bin.Mass/(fabs(_bin.semi*_bin.semi*_bin.semi))); 
+                        Float t_peri = mean_anomaly/mean_motion;
+                        if (drdv<0 && t_peri<_bin_interrupt.time_end-_bin_interrupt.time_now)
                             merge(_bin_interrupt, _bin);
+                        
+                        else if (semi>0||(semi<0&&drdv<0)) {
+                            p1->setBinaryPairID(p2->PID);
+                            p2->setBinaryPairID(p1->PID);
+                            p1->setBinaryInterruptState(BinaryInterruptState::collision);
+                            p2->setBinaryInterruptState(BinaryInterruptState::collision);
+                            p1->time_check = std::min(p1->time_check, _bin_interrupt.time_now + (drdv<0 ? t_peri : (_bin.period - t_peri)));
+                            p2->time_check = std::min(p1->time_check, p2->time_check);
+                        }
                     }
                 }
             }
@@ -649,14 +635,13 @@ public:
             Float semi, ecc, dr, drdv;
             _bin.particleToSemiEcc(semi, ecc, dr, drdv, *_bin.getLeftMember(), *_bin.getRightMember(), gravitational_constant);
             Float peri = semi*(1 - ecc);
-            Float ecc_anomaly  = _bin.calcEccAnomaly(dr);
-            Float mean_anomaly = _bin.calcMeanAnomaly(ecc_anomaly, ecc);
+            Float ecc_anomaly  = _bin.calcEccAnomaly(dr); // 0 ~ pi
+            Float mean_anomaly = _bin.calcMeanAnomaly(ecc_anomaly, ecc); // 0 ~ pi
             Float mean_motion  = sqrt(gravitational_constant*_bin.Mass/(fabs(_bin.semi*_bin.semi*_bin.semi))); 
-            Float t_peri = abs(mean_anomaly/mean_motion);
+            Float t_peri = abs(mean_anomaly/mean_motion); // always smaller than period / 2
             Float period = 2*M_PI/mean_motion;
 
-            if (peri < radius && (_dt > period || t_peri > period/2)) {
-                _bin_interrupt.time_now = _bin_interrupt.time_now - (period - t_peri); // Eunwoo: this is not correct for _dt > period case.
+            if (peri < radius && _dt > t_peri) {
                 merge(_bin_interrupt, _bin);
             }
         }
