@@ -1,6 +1,6 @@
+#include <iostream>
 #include "../particle.h"
 #include "../global.h"
-#include <iostream>
 
 void CalculateAcceleration01(Particle* ptcl);
 void CalculateAcceleration23(Particle* ptcl);
@@ -186,10 +186,6 @@ void CalculateAcceleration23(Particle* ptcl1) {
  *  Initialize Time Steps 
  *******************************************************/
 
-
-int time_block = -30;
-ULL block_max = static_cast<ULL>(pow(2, -time_block));
-double time_step = std::pow(2,time_block);
 
 double getNewTimeStep(double f[3][4], double df[3][4]);
 void getBlockTimeStep(double dt, int& TimeLevel, ULL &TimeBlock, double &TimeStep);

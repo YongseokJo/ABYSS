@@ -1,6 +1,8 @@
+#define FAIL    -1
+#define SUCCESS  1
 
 
-#define NumberOfTaskTypes 10
+#define NumberOfTask 10
 #define MaxNumberOfParticle 100000
 #define MaxNumberOfNeighbor 1000
 

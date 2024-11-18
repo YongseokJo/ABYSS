@@ -2,22 +2,26 @@
 #include "particle.h"
 #include <mpi.h>
 
-extern int TaskType[NumberOfTaskTypes];
 extern Particle *particles;
-
 
 /* Communicators */
 extern MPI_Win win;
 extern int MyRank;
+extern int NumberOfProcessor;
+extern int NumberOfWorker;
+const int ROOT = 0;
+
+
+
 extern int NumberOfParticle;
 
 // Task
-const int ROOT = 0;
 const int TASK_TAG = 1;
 const int PTCL_TAG = 2;
 const int TIME_TAG = 3;
 const int ANY_TAG = 100;
 const int TERMINATE_TAG = 666;
+extern int Task[NumberOfTask];
 
 // Time
 extern double global_time;
@@ -35,8 +39,19 @@ extern ULL binary_block;
 // Enzo to Nbody
 extern Particle* FirstEnzoParticle;
 extern double EnzoLength, EnzoMass, EnzoVelocity, EnzoTime, EnzoForce, EnzoAcceleration;
-extern double EnzoTime;
 extern double EnzoTimeStep;
 
+
+
+// i/o
+extern char* fname;
+extern double inputTime;
+extern double endTime;
+extern bool restart;
+extern char* foutput;
+extern bool IsOutput;
+extern double outputTime;
+extern int outNum;
+extern double outputTimeStep;
 
 

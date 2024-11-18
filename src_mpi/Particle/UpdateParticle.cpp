@@ -65,7 +65,7 @@ void Particle::updateParticle() {
 		Position[dim] = NewPosition[dim];
 		Velocity[dim] = NewVelocity[dim];
 	}
-	updateTimeStep();
+	//updateTimeStep();
 }
 
 

@@ -17,19 +17,19 @@ void WorkerRoutines() {
 	while (true) {
 		MPI_Recv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &status);
 		//if (status.MPI_TAG == TERMINATE_TAG) break;
-		std::cout << "Processor " << rank << " received task " << task << std::endl;
+		std::cout << "Processor " << MyRank << " received task " << task << std::endl;
 
 		switch (task) {
 			case 0: // Acceleration
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
-				ComputeAcceleration(ptcl_id, next_time);
+				//ComputeAcceleration(ptcl_id, next_time);
 				break;
 
 			case 1: // Update Particle
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
-			  particles[ptcl_id].update(next_time);
+			  //particles[ptcl_id].update(next_time);
 				break;
 
 
@@ -59,9 +59,9 @@ void ComputeAcceleration(int ptcl_id, double next_time) {
 	Particle *neighbor;
 	double neighbor_pos[Dim], neighbor_vel[Dim];
 	for (int i=0; i<ptcl->NumberOfNeighbor; i++) {
-		neighbor = &particles[ptcl->neighbors[i]];
-		neighbor->predictParticle(next_time, neighbor_pos, neighbor_vel);
-		ptcl->getAcceleration(neighbor_pos, neighbor_vel);
+		neighbor = &particles[ptcl->Neighbors[i]];
+		//neighbor->predictParticle(next_time, neighbor_pos, neighbor_vel);
+		//ptcl->getAcceleration(neighbor_pos, neighbor_vel);
 	}
 }
 

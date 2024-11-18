@@ -66,14 +66,46 @@ struct Particle {
 		}
 	}
 
+	/*
 	Particle(double x, double y, double z, double vx, double vy, double vz, double m, double q)
 		: Mass(m) {
 			Position[0] = x; Position[1] = y; Position[2] = z;
 			Velocity[0] = vx; Velocity[1] = vy; Velocity[2] = vz;
 		}
+		*/
+
+	void initialize(double *data, int PID) {
+		this->PID          = PID;
+		this->Position[0]  = data[0];
+		this->Position[1]  = data[1];
+		this->Position[2]  = data[2];
+		this->Velocity[0]  = data[3];
+		this->Velocity[1]  = data[4];
+		this->Velocity[2]  = data[5];
+		this->Mass         = data[6];
+		this->ParticleType = 0; //NormalStar+SingleParticle;
+		//this->NextParticleInEnzo = NextParticleInEnzo;
+		this->CurrentTimeReg             = 0;
+		this->CurrentTimeIrr             = 0;
+	}
+
+	void normalizeParticle() {
+		// pc to computing unit, km/s to computing unit
+		this->Mass *= 1e9;
+		this->Mass /= mass_unit;
+		for (int dim=0; dim<Dim; dim++) {
+			this->Position[dim] *= 1000; // kpc to pc
+			this->Position[dim] /= position_unit;
+			this->Velocity[dim] *= 1e5*yr/pc; // km/s to pc/yr
+			this->Velocity[dim] /= velocity_unit;
+		}
+	}
+
+
 
 	void updateParticle(); 
 
+	/*
 	void getAcceleration(const double pos[], const double vel[]) {
 		double dx[Dim], dr2;
 		for (int dim=0; dim<Dim; dim++) {
@@ -82,20 +114,23 @@ struct Particle {
 		}
 
 		for (int dim=0; dim<Dim; dim++) {
-			a_[dim] += dx[dim]/dr2/sqrt(dr2);
+			a_reg[dim] += dx[dim]/dr2/sqrt(dr2);
 		}
 	}
+	*/
 
-	void predictParticleSecondOrder(double dt, double pos[], double vel[]);
-	void correctParticleFourthOrder(double dt, double next_time, double pos[], double vel[], double a[3][4]);
+	void predictParticleSecondOrder(double current_time, double next_time, double pos[], double vel[]);
+	void correctParticleFourthOrder(double current_time, double next_time, double pos[], double vel[], double a[3][4]);
 
 
+	/*
 	void update_timestep() {
 		double acc = mag(acceleration);
 		double vel = mag(Velocity);
 
 		time_step = eta*sqrt(std::abs(vel/acc));
 	}
+	*/
 
 	void updateRadius();
 
