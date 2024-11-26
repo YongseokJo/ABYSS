@@ -21,7 +21,7 @@ bool AddNewGroupsToList(std::vector<Particle*> &particle) {
 		// ptcl->isFBCandidate();
 
         // Eunwoo test
-        if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > 1e-5)
+        if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > tbin)
             continue;
         // Eunwoo test
         
@@ -149,6 +149,7 @@ void MergeGroups(std::vector<Group*> &groups) {
                 if (g == nullptr) return true; // If marked for deletion
                 if (g->Members.empty()) {
                     delete g; // Deallocate memory for empty groups
+					g = nullptr;
                     return true;
                 }
                 return false;
@@ -352,6 +353,7 @@ void NewPrimordialBinaries(Group* group, std::vector<Particle*> &particle) {
 	// fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_irr[0][3], ptclCM->a_irr[1][3], ptclCM->a_irr[2][3]);
 
 	delete group;
+	group = nullptr;
 
 	fprintf(binout, "------------------END-OF-NEW-PRIMORDIAL-BINARIES------------------\n\n");
 	fflush(binout);

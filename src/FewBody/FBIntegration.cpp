@@ -151,7 +151,8 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
     }
 
 // /* PN corrections
-    if (PNon && bin_interrupt.status == AR::InterruptStatus::none) {
+    // if (PNon && bin_interrupt.status == AR::InterruptStatus::none) { // Only particles with BH
+    if (bin_interrupt.status == AR::InterruptStatus::none) { // Every bound orbit
         
         auto& bin_root = sym_int.info.getBinaryTreeRoot();
         // if (groupCM->PID == -1025) {

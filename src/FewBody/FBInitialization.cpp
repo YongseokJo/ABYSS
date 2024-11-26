@@ -13,121 +13,7 @@ void UpdateNextRegTime(std::vector<Particle*> &particle);
 bool CreateComputationList(Particle* ptcl);
 bool CreateComputationChain(std::vector<Particle*> &particle);
 void InitializeFBParticle(Particle* FBParticle, std::vector<Particle*> &particle);
-void CalculateAcceleration01(Particle* ptcl1, std::vector<Particle*> &particle);
-void CalculateAcceleration23(Particle* ptcl1, std::vector<Particle*> &particle);
 void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle);
-
-// bool isNeighborInsideGroup(Particle* member, const std::vector<Particle*>& groupMembers) {
-//     // Check if every neighbor of 'member' is also inside groupMembers
-//     for (Particle* neighbor : member->ACList) {
-//         if (std::find(groupMembers.begin(), groupMembers.end(), neighbor) == groupMembers.end()) {
-//             // Found a neighbor that is not in groupMembers
-//             return false;
-//         }
-//     }
-//     return true; // All neighbors are inside groupMembers
-// }
-
-
-//        ///////////////////        //
-//        ///////////////////        //
-//           ISFBCANDIDATE           //
-//        ///////////////////        //
-//        ///////////////////        //
-
-
-
-// made 2024.08.08 by Eunwoo Chung
-
-// from particles with shortest time steps...
-// Group detection - by distance for the simplest case
-// reference - not yet but PeTar/search_group_candidate.hpp might be refered laler
-
-void Particle::isFBCandidate() {
-
-	REAL x[Dim];
-	REAL v[Dim];
-	REAL xv[Dim];
-	REAL current_time;
-
-	REAL r2;
-	REAL v2;
-	REAL energy; // specific orbital energy
-	REAL semi; // semi-major axis
-
-	REAL r_group = 1e-3/position_unit; // group detecting radius: 1e-3 pc (tentative) for FewBody physics
-
-	std::vector<Particle*> groupParticles; // Vector to store pointers of particles in the detected group candidate
-
-	// fprintf(binout, "Function isFBCandidate started\n"); // Eunwoo debug
-
-	for (Particle* ptcl: ACList) {
-
-		// if (ptcl->isCMptcl) continue; // Eunwoo test
-
-		r2 = 0.0;
-		v2 = 0.0;
-		energy = 0.0;
-
-		// find out what the paired particle is
-		current_time = this->CurrentTimeIrr > ptcl->CurrentTimeIrr ? \
-									 this->CurrentTimeIrr : ptcl->CurrentTimeIrr;
-		this->predictParticleSecondOrderIrr(current_time);
-		ptcl->predictParticleSecondOrderIrr(current_time);
-
-		for (int dim=0; dim<Dim; dim++) {
-			// calculate position and velocity differences
-			x[dim] = ptcl->PredPosition[dim] - this->PredPosition[dim];
-			v[dim] = ptcl->PredVelocity[dim] - this->PredVelocity[dim];
-			xv[dim] = x[dim]*v[dim];
-
-			// calculate the square of relative position and velocity
-			r2 += x[dim]*x[dim];
-			v2 += v[dim]*v[dim];
-		}
-
-		if (xv[0] + xv[1] + xv[2] > 0) continue; // Only consider approaching case.
-
-		// determine they are bound or not
-		energy = v2/2 - (this->Mass + ptcl->Mass)/std::sqrt(r2);
-		semi = - (this->Mass + ptcl->Mass)/2/energy; // semi-major axis
-		REAL p = 1.0 - sqrt(r2)/semi;
-		REAL ecc = sqrt(p*p + (xv[0]*xv[0]+xv[1]*xv[1]+xv[2]*xv[2])/semi/(this->Mass + ptcl->Mass));
-
-		if (energy < 0) { // bound object
-
-			assert(semi > 0);
-
-			if ((r2 < r_group*r_group) || (semi < r_group)) { // distant binary near periapsis OR close binary
-				groupParticles.push_back(ptcl);
-				fprintf(binout, "Bound group member added!\n"); // Eunwoo debug
-				// fprintf(binout, "PID: %d, periapsis dist: %e pc\n", ptcl->PID, semi*(1-ecc)*position_unit);
-				fprintf(binout, "PID: %d, semi-major axis: %e pc\n", ptcl->PID, semi*position_unit);
-				// this->r_crit = fmin(2*semi, this->RadiusOfAC);
-			}
-
-		}
-		else if (r2 < r_group*r_group) { // close fly-by
-			groupParticles.push_back(ptcl);
-			fprintf(binout, "Unbound group member added!\n"); // Eunwoo debug
-			fprintf(binout, "PID: %d, periapsis dist: %e pc\n", ptcl->PID, semi*(1-ecc)*position_unit);
-		} // Eunwoo didn't consider distant fly-by because it can be captured later irregular time step!
-	}
-
-	if (!groupParticles.empty()) {
-
-		Group *groupCandidate;
-		groupCandidate = new Group();
-
-		groupParticles.push_back(this);
-		this->isGroup = true; // Assuming isGroup is a member of Particle to mark group status
-		for (Particle* ptcl : groupParticles) {
-			ptcl->isGroup = true;
-		}
-		groupCandidate->Members = groupParticles;
-		GroupCandidateList.push_back(groupCandidate);
-	}
-}
 
 
 void Group::initialManager() {
@@ -459,7 +345,7 @@ void NewFBInitialization(Group* group, std::vector<Particle*> &particle) {
 	ptclCM->TimeStepReg  = static_cast<REAL>(pow(2, ptclCM->TimeLevelReg));
 	ptclCM->TimeBlockReg = static_cast<ULL>(pow(2, ptclCM->TimeLevelReg-time_block));
 
-	ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr);
+	ptclCM->calculateTimeStepIrr2(ptclCM->a_tot, ptclCM->a_irr);
 	while (ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr <= global_time_irr 
 			&& ptclCM->TimeLevelIrr <= ptcl->TimeLevelIrr) { //first condition guarantees that ptclcm is small than ptcl
 		ptclCM->TimeLevelIrr++;
@@ -582,6 +468,7 @@ void NewFBInitialization(Group* group, std::vector<Particle*> &particle) {
 	// fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", ptclCM->CurrentBlockIrr, ptclCM->CurrentBlockReg);
 
 	delete group;
+	group = nullptr;
 
 	fprintf(binout, "---------------------END-OF-NEW-GROUP---------------------\n\n");
 	fflush(binout);
@@ -932,6 +819,7 @@ void NewFBInitialization2(Group* group, std::vector<Particle*> &particle) {
 	// fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", ptclCM->CurrentBlockIrr, ptclCM->CurrentBlockReg);
 
 	delete group;
+	group = nullptr;
 
 	fprintf(binout, "---------------------END-OF-NEW-GROUP---------------------\n\n");
 	fflush(binout);

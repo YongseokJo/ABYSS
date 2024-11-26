@@ -42,10 +42,8 @@ void Particle::checkNewGroup() {
     // single case
     for (Particle* ptcl: ACList) {
 
-        // Eunwoo test
-        if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > 1e-5)
+        if (ptcl->TimeStepIrr > this->TimeStepIrr)
             continue;
-        // Eunwoo test
 
         REAL current_time;
 

@@ -46,11 +46,12 @@
 #define MIN_LEVEL_BUFFER 30
 
 // Physical constants
-#define G_cgs 6.67430e-8
-#define G // pc, yr, Msun
+// #define G_cgs 6.67430e-8
+// #define G // pc, yr, Msun
 
 // Few-body group detecting radius
 #define rbin 0.25e-3 // pc
+#define tbin 1e-6 // Myr
 
 // Physical units in cgs
 #define pc 3.08567758149137e18
