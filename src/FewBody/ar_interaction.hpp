@@ -989,7 +989,7 @@ public:
             vkick[i] = (vm + vper*cos(ksi)) * e_per1[i] + vper*sin(ksi) * e_per2[i] + vpar * e_par[i];
 
         fprintf(mergerout, "GW recoil kick: (%e, %e, %e) km/s\n", vkick[0], vkick[1], vkick[2]);
-        fprintf(mergerout, "\t magnitude: %e km/s\n", sqrt((vm + vper*cos(ksi)) * (vm + vper*cos(ksi)) + (vper*sin(ksi)) * (vper*sin(ksi)) + vpar * vpar));
+        fprintf(mergerout, "\t magnitude: %e km/s\n", sqrt(mag(vkick)));
 
         for (int i=0; i<3; i++)
             p1->Velocity[i] += vkick[i]/(velocity_unit/yr*pc/1e5); // km/s to code unit
