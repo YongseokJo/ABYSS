@@ -15,6 +15,13 @@ extern FILE* mergerout;
 
 #define ASSERT(x) assert(x)
 
+// #define SEVN
+#ifdef SEVN
+extern FILE* SEVNout;
+// extern IO* sevnio;
+void UpdateEvolution(Particle* ptcl);
+void Mix(Star* star1, Star* star2);
+#endif
 
 
 //! AR interaction clas
@@ -661,8 +668,21 @@ public:
 
     Float mergerRadius(Particle *p1, Particle *p2) {
 
-        Float radius = 0;
-
+        Float radius = 0.0;
+#ifdef SEVN
+        if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
+            radius = (p1->radius > p2->radius) ? 3*p1->radius : 3*p2->radius; // r_ISCO == 3 * Schwartzschild raiuds
+        }
+        else if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+            radius = 1.3*pow((p1->Mass + p2->Mass)/p2->Mass, 1./3)*p2->radius; // TDE radius
+        }
+        else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
+            radius = 1.3*pow((p1->Mass + p2->Mass)/p1->Mass, 1./3)*p1->radius; // TDE radius
+        }
+        else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+            radius = p1->radius + p2->radius; // Sum of two stellar radius
+        }
+#else
         if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
             radius = (p1->radius > p2->radius) ? p1->radius : p2->radius; // r_ISCO == 3 * Schwartzschild raiuds
         }
@@ -672,7 +692,7 @@ public:
         else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
             radius = p1->radius + p2->radius; // Sum of two stellar radius
         }
-
+#endif
         return radius;
     }
 
@@ -681,11 +701,8 @@ public:
         _bin_interrupt.adr = &_bin;
         auto* p1 = _bin.getLeftMember();
         auto* p2 = _bin.getRightMember();
-        if (p1->Mass < p2->Mass)
-            std::swap(p1, p2); // p1 has the larger mass (p1->Mass > p2->Mass)
 
         Float radius = mergerRadius(p1, p2);
-
 
         if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
             // radius = (p1->radius > p2->radius) ? p1->radius : p2->radius; // r_ISCO == 3 * Schwartzschild raiuds
@@ -711,8 +728,8 @@ public:
             for (int k=0; k<3; k++) {
                 p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
                 p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
-                p2->Position[k] = 0;
-                p2->Velocity[k] = 0;
+                p2->Position[k] = 0.0;
+                p2->Velocity[k] = 0.0;
             }
             recoilKick(_bin, p1, p2);
             remnantSpinMass(_bin, p1, p2);
@@ -723,10 +740,21 @@ public:
             // p2->dm = -p2->Mass;
             // p1->Mass = mcm;
             p2->Mass = 0.0;
+            fprintf(mergerout, "---------------Merger remnant properties---------------\n");
+            fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+            fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+            fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
+            fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
         }
-        else if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+        else if ((p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) ||
+                (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle))) {
             // radius = 1.3*pow((p1->Mass + p2->Mass)/p2->Mass, 1./3)*p2->radius; // TDE radius
+
+            if (p2->ParticleType == (Blackhole+SingleParticle)) 
+                std::swap(p1, p2); // p1 should be BH
+
             fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
+            fprintf(mergerout, "peri: %e pc\n", _bin.semi*(1 - _bin.ecc)*position_unit);
             fprintf(mergerout, "r_TDE: %e pc\n", radius*position_unit);
 
             fprintf(mergerout, "TDE happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
@@ -747,14 +775,20 @@ public:
             }
             p1->setBinaryInterruptState(BinaryInterruptState::none);
             p2->setBinaryInterruptState(BinaryInterruptState::none);
-            p1->dm = mcm - p1->Mass;
-            p2->dm = -p2->Mass;
+            // p1->dm = mcm - p1->Mass;
+            p1->dm += 0.5 * p2->Mass;
             p1->Mass = mcm;
             p2->Mass = 0.0;
+            fprintf(mergerout, "---------------Merger remnant properties---------------\n");
+            fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+            fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+            fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
+            fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
         }
         else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
             // radius = p1->radius + p2->radius; // Sum of two stellar radius
             fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
+            fprintf(mergerout, "peri: %e pc\n", _bin.semi*(1 - _bin.ecc)*position_unit);
             fprintf(mergerout, "r1 + r2: %e pc\n", radius*position_unit);
 
             fprintf(mergerout, "Stellar merger happens!!! (PID: %d, PID: %d)\n", p1->PID, p2->PID);
@@ -772,20 +806,147 @@ public:
             for (int k=0; k<3; k++) {
                 p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
                 p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
+                p2->Position[k] = p1->Position[k];
+                p2->Velocity[k] = p1->Velocity[k];
+                
             }
             p1->setBinaryInterruptState(BinaryInterruptState::none);
             p2->setBinaryInterruptState(BinaryInterruptState::none);
+#ifdef SEVN
+            if (p1->star == nullptr && p2->star == nullptr) {
+
+                // p1->dm = mcm - p1->Mass;
+                // p2->dm = -p2->Mass;
+                p1->Mass = mcm;
+                p2->Mass = 0.0;
+
+                if (mcm*mass_unit > 2.2 && mcm*mass_unit < 600) {
+
+                    std::vector<std::string> args = {"empty", // Not used
+                                                    // "-myself", "/data/vinicius/NbodyPlus/SEVN",
+                                                    "-tables", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_parsec_ov04_AGB", 
+                                                    //  "-tables", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_MIST_AGB",
+                                                    // "-tables_HE", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_parsec_pureHe36",
+                                                    // "-turn_WR_to_pureHe", "false",
+                                                    "-snmode", "delayed",
+                                                    "-Z", "0.0002",
+                                                    "-spin", "0.0",
+                                                    "-tini", "zams", 
+                                                    "-tf", "end",
+                                                    // "-tf", "0.000122",
+                                                    "-dtout", "events",
+                                                    "-xspinmode", "geneva"};
+                    std::vector<char*> c_args;
+                    for (auto& arg : args) {
+                        c_args.push_back(&arg[0]);
+                    }
+
+                    IO* sevnio; // Eunwoo: global variable -> We can initialize Star and Binstar class anywhere.
+                    sevnio = new IO;
+                    sevnio->load(c_args.size(), c_args.data());
+
+                    std::vector<std::string> init_params{std::to_string(double(p1->Mass*mass_unit)), "0.0002", "0.0", "delayed", "zams", "end", "events"};
+                    size_t id = p1->PID;
+                    p1->star = new Star(sevnio, init_params, id, false);
+                    p1->EvolutionTime = _bin_interrupt.time_now*1e4;
+                    p1->radius = p1->star->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit;
+                    fprintf(SEVNout, "New Star class made!\n");
+                    fprintf(SEVNout, "PID: %d. Mass: %e Msol, Radius: %e pc\n", p1->PID, p1->Mass*mass_unit, p1->radius*position_unit);
+                }
+                fprintf(mergerout, "---------------Merger remnant properties---------------\n");
+                fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+                fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+                fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
+                fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+            }
+            else if (p1->star != nullptr && p2->star != nullptr) {
+
+                Mix(p1->star, p2->star);
+                UpdateEvolution(p2);
+                fprintf(SEVNout, "Mix done!\n");
+
+                if (p1->star->amiempty() && !p2->star->amiempty()) {
+                    // p1->dm -= p1->Mass; // Eunwoo: dm should be 0 after it distributes its mass to the nearby gas cells.
+                    p1->Mass = 0.0;
+                    fprintf(mergerout, "---------------Merger remnant properties---------------\n");
+                    fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
+                    fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
+                    fprintf(mergerout, "Mass (Msol) - %e, \n", p2->Mass*mass_unit);
+                    fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+                }
+                else if (!p1->star->amiempty() && p2->star->amiempty()) {
+                    // p2->dm -= p2->Mass; // Eunwoo: dm should be 0 after it distributes its mass to the nearby gas cells.
+                    p2->Mass = 0.0;
+                    fprintf(mergerout, "---------------Merger remnant properties---------------\n");
+                    fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+                    fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+                    fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
+                    fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+                }
+                else if (p1->star->amiempty() && p2->star->amiempty()) { // Type Ia supernova
+                    p1->dm += p1->Mass; // Eunwoo: dm should be 0 after it distributes its mass to the nearby gas cells.
+                    p1->Mass = 0.0;
+                    p2->dm += p2->Mass;
+                    p2->Mass = 0.0;
+                    fprintf(mergerout, "---------------Merger remnant properties---------------\n");
+                    fprintf(mergerout, "Type Ia Supernova event! Both of the stars becomes empty!\n");
+                    fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+                }
+                else
+                    throw std::runtime_error("None of stars are empty: Something wrong in stellar merger!");
+            }
+            else if (p1->star == nullptr && p2->star != nullptr) {
+
+                p2->star->update_from_binary(Mass::ID, p1->Mass*mass_unit);
+                p2->star->update_from_binary(dMcumul_binary::ID, p1->Mass*mass_unit);
+                if (p2->star->aminakedhelium())
+                    p2->star->jump_to_normal_tracks();
+                else
+                    p2->star->find_new_track_after_merger();
+                UpdateEvolution(p2);
+                p1->Mass = 0.0;
+
+                fprintf(SEVNout, "Mix with no done!\n");
+                fprintf(mergerout, "---------------Merger remnant properties---------------\n");
+                fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
+                fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
+                fprintf(mergerout, "Mass (Msol) - %e, \n", p2->Mass*mass_unit);
+                fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+            }
+            else if (p1->star != nullptr && p2->star == nullptr) {
+
+                p1->star->update_from_binary(Mass::ID, p2->Mass*mass_unit);
+                p1->star->update_from_binary(dMcumul_binary::ID, p2->Mass*mass_unit);
+                if (p1->star->aminakedhelium())
+                    p1->star->jump_to_normal_tracks();
+                else
+                    p1->star->find_new_track_after_merger();
+                UpdateEvolution(p1);
+                p2->Mass = 0.0;
+
+                fprintf(SEVNout, "Mix with no done!\n");
+                fprintf(mergerout, "---------------Merger remnant properties---------------\n");
+                fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
+                fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
+                fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
+                fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
+            }
+        }
+        fflush(mergerout);
+        fflush(SEVNout);
+#else
             p1->dm = mcm - p1->Mass;
             p2->dm = -p2->Mass;
             p1->Mass = mcm;
             p2->Mass = 0.0;
         }
-        fprintf(mergerout, "-----Merger remnant properties-----\n");
+        fprintf(mergerout, "---------------Merger remnant properties---------------\n");
         fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
         fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
         fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
         fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
         fflush(mergerout);   
+#endif
     }
 
     // Reference for remnant spin: Hofmann et al. (2016) (https://iopscience.iop.org/article/10.3847/2041-8205/825/2/L19/pdf)
@@ -899,7 +1060,7 @@ public:
         fflush(mergerout);
     }
 
-    // Following Arca Sedda et al. (2020) (https://iopscience.iop.org/article/10.3847/1538-4357/ab88b2/pdf)
+    // Reference: Arca Sedda et al. (2020) (https://iopscience.iop.org/article/10.3847/1538-4357/ab88b2/pdf)
     void recoilKick(AR::BinaryTree<Particle>& _bin, Particle* p1, Particle* p2) {
         
         REAL A      = 1.2e4; // km/s
@@ -989,7 +1150,7 @@ public:
             vkick[i] = (vm + vper*cos(ksi)) * e_per1[i] + vper*sin(ksi) * e_per2[i] + vpar * e_par[i];
 
         fprintf(mergerout, "GW recoil kick: (%e, %e, %e) km/s\n", vkick[0], vkick[1], vkick[2]);
-        fprintf(mergerout, "\t magnitude: %e km/s\n", sqrt((vm + vper*cos(ksi)) * (vm + vper*cos(ksi)) + (vper*sin(ksi)) * (vper*sin(ksi)) + vpar * vpar));
+        fprintf(mergerout, "\t magnitude: %e km/s\n", sqrt(mag(vkick)));
 
         for (int i=0; i<3; i++)
             p1->Velocity[i] += vkick[i]/(velocity_unit/yr*pc/1e5); // km/s to code unit

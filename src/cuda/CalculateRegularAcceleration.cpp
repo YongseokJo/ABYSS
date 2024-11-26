@@ -433,14 +433,23 @@ void CalculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vect
 	//delete[] PotSend;
 
 	delete[] NumNeighborReceive;
+	NumNeighborReceive = nullptr; // Eunwoo added
 	delete[] AccRegReceive;
+	AccRegReceive = nullptr; // Eunwoo added
 	delete[] AccRegDotReceive;
+	AccRegDotReceive = nullptr; // Eunwoo added
 	delete[] AccIrr;
+	AccIrr = nullptr; // Eunwoo added
 	delete[] AccIrrDot;
+	AccIrrDot = nullptr; // Eunwoo added
 	// for (int i=0; i<ListSize; i++) {
 	//	delete[] ACListReceive[i];
 	// }
 	delete[] ACListReceive;
+	ACListReceive = nullptr; // Eunwoo added
+
+	delete[] IndexList; // Eunwoo added
+	IndexList = nullptr; // Eunwoo added
 
 
 #ifdef time_trace

@@ -42,10 +42,9 @@ void Particle::checkNewGroup() {
     // single case
     for (Particle* ptcl: ACList) {
 
-        // Eunwoo test
-        if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > 1e-5)
+        // if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > tbin) // fiducial: 1e-5 but for rbin = 0.00025 pc, 1e-6 Myr seems good
+        if (ptcl->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
             continue;
-        // Eunwoo test
 
         REAL current_time;
 

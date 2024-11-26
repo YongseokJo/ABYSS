@@ -1,5 +1,6 @@
 #include "../global.h"
 #include <cmath>
+// #define SEVN
 
 void generate_Matrix(REAL a[3], REAL (&A)[3][4]);
 
@@ -44,8 +45,10 @@ Particle::Particle(REAL *data, int PID) {
 	this->Velocity[1]  = data[4];
 	this->Velocity[2]  = data[5];
 	this->Mass         = data[6];
-	// this->ParticleType = NormalStar+SingleParticle;
 	// /* // Eunwoo added
+#ifdef SEVN
+	this->ParticleType = NormalStar+SingleParticle;
+#else
 	if (this->Mass*1e9 > 8) {
 		this->ParticleType = Blackhole+SingleParticle;
 		this->radius = 6*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // innermost stable circular orbit around a Schwartzshild BH = 3 * R_sch
@@ -53,8 +56,9 @@ Particle::Particle(REAL *data, int PID) {
 	}
 	else {
 		this->ParticleType = NormalStar+SingleParticle;
-		this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 0.8); // stellar radius in code unit
+		this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // stellar radius in code unit
 	}
+#endif
 	// */ // Eunwoo added
 	//this->NextParticleInEnzo = NextParticleInEnzo;
 	this->CurrentTimeReg             = 0;

@@ -4,7 +4,10 @@
 #include <algorithm>
 #include "global.h"
 #include "defs.h"
-
+// #define SEVN
+// #ifdef SEVN
+// void UpdateEvolution(Particle* ptcl);
+// #endif
 
 
 void FindNeighbor(Particle* ptcl1, std::vector<Particle*> &particle);
@@ -66,7 +69,114 @@ void InitializeParticle(std::vector<Particle*> &particle) {
 	}
 #endif
 
+#ifdef SEVN
+	// /*
+#ifdef time_trace
+	_time.sevn.markStart();
+#endif
+    std::vector<std::string> args = {"empty", // Not used
+									// "-myself", "/data/vinicius/NbodyPlus/SEVN",
+									"-tables", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_parsec_ov04_AGB", 
+									//  "-tables", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_MIST_AGB",
+									// "-tables_HE", "/data/vinicius/NbodyPlus/SEVN/tables/SEVNtracks_parsec_pureHe36",
+									// "-turn_WR_to_pureHe", "false",
+									"-snmode", "delayed",
+									"-Z", "0.0002",
+									"-spin", "0.0",
+									"-tini", "zams", 
+									"-tf", "end",
+									// "-tf", "0.000122",
+									"-dtout", "events",
+									"-xspinmode", "geneva"};
+    std::vector<char*> c_args;
+    for (auto& arg : args) {
+        c_args.push_back(&arg[0]);
+    }
+
+	IO* sevnio; // Eunwoo: global variable -> We can initialize Star and Binstar class anywhere.
+	sevnio = new IO;
+    sevnio->load(c_args.size(), c_args.data());
+
+	// std::cout<<sevnio->svpar;
+	std::ostringstream oss;
+	oss << sevnio->svpar;
+	fprintf(SEVNout, "%s\n\n\n\n\n", oss.str().c_str());
+	fflush(SEVNout);
+    // sevnio->print_params();
+	// fflush(stdout);
+
+	for (Particle* ptcl: particle) {
+
+		if (ptcl->Mass*mass_unit < 2.2) {
+			ptcl->radius = 2.25461e-8/position_unit*pow(ptcl->Mass*mass_unit, 1/3); // stellar radius in code unit
+			// fprintf(SEVNout, "PID: %d. Mass: %e Msol, Radius: %e pc\n", ptcl->PID, ptcl->Mass*mass_unit, ptcl->radius*position_unit);
+			continue;
+		}
+
+		// Mass, metallicity, spin, sn model, tini, tf, dtout, random seed(optional)
+		std::vector<std::string> init_params{std::to_string(double(ptcl->Mass*mass_unit)), "0.0002", "0.0", "delayed", "zams", "end", "events"};
+
+		size_t id = ptcl->PID;
+		// fprintf(SEVNout, "PID: %d. Let's initialize!\n", ptcl->PID);
+		// fflush(SEVNout);
+		ptcl->star = new Star(sevnio, init_params, id, false);
+		ptcl->EvolutionTime = 0.0;
+		ptcl->radius = ptcl->star->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit;
+		// fprintf(SEVNout, "PID: %d. Mass: %e Msol, Radius: %e pc\n", ptcl->PID, ptcl->Mass*mass_unit, ptcl->radius*position_unit);
+		// fprintf(SEVNout, "\tPID: %d. Mass: %e Msol, SEVN_worldtime: %e Myr, dt: %e Myr\n", ptcl->PID, ptcl->star->getp(Mass::ID), ptcl->star->getp(Worldtime::ID), ptcl->star->getp(Timestep::ID));
+		// ptcl->star->evolve(); // Initial stellar evolution. But not update to particle information yet!
+		// ptcl->EvolutionTime = ptcl->star->getp(Worldtime::ID); // Myr
+
+		// fprintf(SEVNout, "PID: %d, Mass: %e Msol\n", ptcl->PID, ptcl->Mass*mass_unit);
+	}
+	// */
+#ifdef time_trace
+	_time.sevn.markEnd();
+	_time.sevn.getDuration();
+#endif
+#endif
+
 	FindPrimordialBinaries(particle); // Eunwoo added for primordial binaries
+/*
+	for (Particle* ptcl: particle) {
+		if (ptcl->star == nullptr)
+			continue;
+
+		while(!ptcl->star->breaktrigger()){
+			ptcl->star->evolve();
+			fprintf(SEVNout, "\tPID: %d. Mass: %e Msol, Radius: %e pc, SEVN_worldtime: %e Myr, dt: %e Myr\n", ptcl->PID, ptcl->star->getp(Mass::ID), ptcl->star->getp(Radius::ID)/(utilities::parsec_to_Rsun), ptcl->star->getp(Worldtime::ID), ptcl->star->getp(Timestep::ID));
+			fflush(SEVNout);
+		}
+		if (ptcl->star->amiBH()) {
+			UpdateEvolution(ptcl);
+			// fprintf(SEVNout, "BH! Mass: %e Msol\n", ptcl->star->getp(Mass::ID));
+			// fprintf(SEVNout, "0: %e, 1: %e, 2: %e, 3: %e\n", ptcl->star->vkick[0], ptcl->star->vkick[1], ptcl->star->vkick[2], ptcl->star->vkick[3]);
+			fprintf(SEVNout, "\n");
+			fflush(SEVNout);
+		}
+		else if (ptcl->star->amiNS()) {
+			UpdateEvolution(ptcl);
+			// fprintf(SEVNout, "NS! Mass: %e Msol\n", ptcl->star->getp(Mass::ID));
+			// fprintf(SEVNout, "0: %e, 1: %e, 2: %e, 3: %e\n", ptcl->star->vkick[0], ptcl->star->vkick[1], ptcl->star->vkick[2], ptcl->star->vkick[3]);
+			fprintf(SEVNout, "\n");
+			fflush(SEVNout);
+		}
+		else if (ptcl->star->amiWD()) {
+			UpdateEvolution(ptcl);
+			// fprintf(SEVNout, "WD! Mass: %e Msol\n", ptcl->star->getp(Mass::ID));
+			// fprintf(SEVNout, "0: %e, 1: %e, 2: %e, 3: %e\n", ptcl->star->vkick[0], ptcl->star->vkick[1], ptcl->star->vkick[2], ptcl->star->vkick[3]);
+			fprintf(SEVNout, "\n");
+			fflush(SEVNout);
+		}
+		else if (ptcl->star->amiempty()) {
+			UpdateEvolution(ptcl);
+			// fprintf(SEVNout, "Empty! Mass: %e\n", ptcl->star->getp(Mass::ID));
+			// fprintf(SEVNout, "0: %e, 1: %e, 2: %e, 3: %e\n", ptcl->star->vkick[0], ptcl->star->vkick[1], ptcl->star->vkick[2], ptcl->star->vkick[3]);
+			fprintf(SEVNout, "\n");
+			fflush(SEVNout);
+		}
+	}
+*/
 
 	std::cout << "Timestep initializing..." << std::endl;
 	InitializeTimeStep(particle);

@@ -13,6 +13,7 @@
 #include "AR/information.h"
 #include "ar_interaction.hpp"
 #include "ar_perturber.hpp"
+// #define SEVN
 
 class Particle;
 class Group
@@ -33,7 +34,29 @@ class Group
 
 		bool PNon;
 
+#ifdef SEVN
+		bool useSEVN;		// true if one of the group members has Star class as its member.
+		REAL EvolutionTime; // Myr
+		REAL EvolutionTimeStep; // Myr
+#endif
+
 		// Constructor
+#ifdef SEVN
+		Group(void) 
+			: groupCM(nullptr),
+			isTerminate(false),
+			isErase(false),
+			CurrentTime(0),
+			sym_int(),
+			manager(),
+			PNon(false),
+			useSEVN(false),
+			EvolutionTime(0.0),
+			EvolutionTimeStep(0.0)
+		{
+			Members.clear();
+		}
+#else
 		Group(void) 
 			: groupCM(nullptr),
 			isTerminate(false),
@@ -42,10 +65,10 @@ class Group
 			sym_int(),
 			manager(),
 			PNon(false)
-
 		{
 			Members.clear();
 		}
+#endif
 
 		bool ARIntegration(REAL next_time, std::vector<Particle*> &particle);
 		bool CheckBreak();
@@ -53,13 +76,14 @@ class Group
 		void initialIntegrator();
 
 		~Group() {
-            groupCM = nullptr;
             Members.clear();
             Members.shrink_to_fit();
 
 			sym_int.clear(); // Delocate memory
 			sym_int.particles.clear(); // Delocate memory
 			manager.step.clear(); // Delocate memory
+			// delete groupCM;
+			groupCM = nullptr;
         };
 
 };

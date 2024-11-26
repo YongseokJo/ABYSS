@@ -9,12 +9,15 @@
 
 #pragma once
 
-
 #include <vector>
 #include <iostream>
 #include "../defs.h"
 #include <iomanip> // Eunwoo
 #include "Common/Float.h" // Eunwoo
+// #define SEVN
+#ifdef SEVN
+#include "star.h" // Eunwoo added for SEVN
+#endif SEVN
 
 enum class BinaryInterruptState:int {none = 0, form = 1, exchange = 2, collision = 3}; // Eunwoo
 #define BINARY_STATE_ID_SHIFT 4 // Eunwoo
@@ -71,11 +74,17 @@ class Particle
 
 		bool isGroup; // Eunwoo, check whether this is a member of the group
 		REAL radius;
-		REAL dm;
+		REAL dm; // Stellar mass which will be distributed to nearby gas cells
 		REAL time_check; // time to check next interrupt
 		long long int binary_state; // contain two parts, low bits (first BINARY_STATE_ID_SHIFT bits) is binary interrupt state and high bits are pair ID
 		Group* GroupInfo;
 		REAL a_spin[3]; // dimensionless spin parameter a
+
+		// Eunwoo added for SEVN
+#ifdef SEVN
+		Star* star;
+		REAL EvolutionTime; // [Myr] // Eunwoo: FormationTime(global_time) + star->getp(Worldtime::ID) = EvolutionTime
+#endif
 
 		// Constructor
 		Particle(void) {__initializer__();};
@@ -104,7 +113,6 @@ class Particle
 			TimeBlockReg    = 0;
 			LocalDensity    = 0;
 			isStarEvolution = true;
-			// isBinary        = false; // Eunwoo deleted
 			isCMptcl        = false;
 			isErase         = false;
 			for (int i=0; i<Dim; i++) {
@@ -135,6 +143,11 @@ class Particle
 			for (int i=0; i<3; i++)
 				a_spin[i]	= 0.;
 
+			// Eunwoo added for SEVN
+#ifdef SEVN
+			star = nullptr;
+			EvolutionTime = 0.0; // Myr
+#endif
 		};
 
 		void updateParticle(REAL mass, REAL *vel, REAL pos[], int particletype) {
@@ -179,8 +192,6 @@ class Particle
 		void updateEvolveParticle(std::vector<Particle*> &particle);
 		void updateParticle();
 		REAL evolveStarMass(REAL t1, REAL t2);
-		// void isKSCandidate(); // Eunwoo deleted
-		// void convertBinaryCoordinatesToCartesian(); // Eunwoo deleted
 		void polynomialPrediction(REAL current_time);
 		void UpdateRadius();
 		void UpdateNeighbor(std::vector<Particle*> &particle);
@@ -257,6 +268,12 @@ class Particle
 			NextParticleForComputation = nullptr;
 			GroupInfo					= nullptr;
 			// fprintf(stderr, "deleting particle, pid=%d\n", PID); // Eunwoo deleted for debug
+#ifdef SEVN
+			// if (star != nullptr) {
+			// 	delete star;
+			// 	star = nullptr;
+			// }
+#endif
 		};
 };
 

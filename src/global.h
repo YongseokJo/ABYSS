@@ -72,6 +72,12 @@ extern int outNum;
 
 extern FILE* binout;
 extern FILE* mergerout;
+// #define SEVN
+#ifdef SEVN
+extern FILE* SEVNout;
+// extern IO* sevnio;
+extern std::vector<Particle*> MasslessList;
+#endif
 
 typedef std::vector<int> Ivector;
 typedef std::vector<ULL> Uvector;

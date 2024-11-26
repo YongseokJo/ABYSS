@@ -1,5 +1,9 @@
 #include <iostream>
 //#include "defs.h"
+// #define SEVN
+#ifdef SEVN
+#include "sevn.h"
+#endif
 #include "global.h"
 #include "nbody.h"
 #include "cuda/cuda_functions.h"
@@ -18,6 +22,10 @@ std::vector<Group*> GroupCandidateList; // Eunwoo edited
 // std::vector<Group*> GroupList; // Eunwoo edited
 FILE* binout;
 FILE* mergerout; // Eunwoo added
+#ifdef SEVN
+FILE* SEVNout; // Eunwoo added
+std::vector<Particle*> MasslessList; // Eunwoo added
+#endif
 REAL min_timestep; // Eunwoo added
 
 //int NumNeighborMax = 100;
@@ -30,6 +38,10 @@ int main(int argc, char *argv[]) {
 	fprintf(binout, "Starting nbody - Binary OUTPUT\n");
 	mergerout = fopen("merger_output.txt", "w"); // Eunwoo added
 	fprintf(mergerout, "Starting nbody - Merger OUTPUT\n"); // Eunwoo added
+#ifdef SEVN
+	SEVNout = fopen("SEVN_output.txt", "w");
+	fprintf(SEVNout, "Starting nbody - Stellar evolution(SEVN) OUTPUT\n");
+#endif
 	std::vector<Particle*> particle{};
 	int irank=0;
 	std::ios::sync_with_stdio(false);

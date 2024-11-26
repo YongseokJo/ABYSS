@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <iomanip>
 #include "global.h"
+// #define SEVN
 
 int getLineNumber();
 void write_out(std::ofstream& outputFile, const Particle* ptcl);
@@ -195,8 +196,14 @@ int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outpu
 			<< std::setw(width) << "Y (pc)"
 			<< std::setw(width) << "Z (pc)"
 			<< std::setw(width) << "Vx (km/s)"
-		 	<< std::setw(width) << "Vy (km/s)" 
+		 	<< std::setw(width) << "Vy (km/s)"
+#ifdef SEVN
+			<< std::setw(width) << "Vz (km/s)"
+			<< std::setw(width) << "Type" << "\n";
+#else
 			<< std::setw(width) << "Vz (km/s)" << "\n";
+#endif 
+			
 
 
     // Write particle data to the file 
@@ -252,29 +259,49 @@ int writeParticle(std::vector<Particle*> &particle, REAL current_time, int outpu
 
 void write_out(std::ofstream& outputFile, const Particle* ptcl) {
         // outputFile  << std::left
-		outputFile  << std::left << std::fixed << std::setprecision(10) // Eunwoo test
-										<< std::setw(width) << ptcl->PID
-										<< std::setw(width) << ptcl->Mass*mass_unit
+		outputFile  << std::left << std::fixed << std::setprecision(8) // Eunwoo test
+					<< std::setw(width) << ptcl->PID
+					<< std::setw(width) << ptcl->Mass*mass_unit
                     << std::setw(width) << ptcl->PredPosition[0]*position_unit
                     << std::setw(width) << ptcl->PredPosition[1]*position_unit
                     << std::setw(width) << ptcl->PredPosition[2]*position_unit
                     << std::setw(width) << ptcl->PredVelocity[0]*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << ptcl->PredVelocity[1]*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << ptcl->PredVelocity[2]*velocity_unit/yr*pc/1e5 << '\n';
+                    << std::setw(width) << ptcl->PredVelocity[1]*velocity_unit/yr*pc/1e5;
+#ifdef SEVN
+		outputFile << std::setw(width) << ptcl->PredVelocity[2]*velocity_unit/yr*pc/1e5;
+		if (ptcl->star == nullptr)
+			outputFile << std::setw(width) << "1" << '\n';
+		else if (!ptcl->star->amiremnant())
+			outputFile << std::setw(width) << int(ptcl->star->getp(Phase::ID)) << '\n';
+		else
+			outputFile << std::setw(width) << 8+int(ptcl->star->getp(RemnantType::ID)) << '\n';
+#else
+		outputFile << std::setw(width) << ptcl->PredVelocity[2]*velocity_unit/yr*pc/1e5 << '\n';
+#endif
 }
 
 // This function is for group members cause group members have pos, vel in original frame, not predicted values.
 void write_out_group(std::ofstream& outputFile, const Particle* ptclCM, const Particle* ptcl) {
         // outputFile  << std::left
-		outputFile  << std::left << std::fixed << std::setprecision(10) // Eunwoo test
-										<< std::setw(width) << ptcl->PID
-										<< std::setw(width) << ptcl->Mass*mass_unit
+		outputFile  << std::left << std::fixed << std::setprecision(8) // Eunwoo test
+					<< std::setw(width) << ptcl->PID
+					<< std::setw(width) << ptcl->Mass*mass_unit
                     << std::setw(width) << (ptclCM->PredPosition[0] - ptclCM->Position[0] + ptcl->Position[0])*position_unit
                     << std::setw(width) << (ptclCM->PredPosition[1] - ptclCM->Position[1] + ptcl->Position[1])*position_unit
                     << std::setw(width) << (ptclCM->PredPosition[2] - ptclCM->Position[2] + ptcl->Position[2])*position_unit
                     << std::setw(width) << (ptclCM->PredVelocity[0] - ptclCM->Velocity[0] + ptcl->Velocity[0])*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << (ptclCM->PredVelocity[1] - ptclCM->Velocity[1] + ptcl->Velocity[1])*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << (ptclCM->PredVelocity[2] - ptclCM->Velocity[2] + ptcl->Velocity[2])*velocity_unit/yr*pc/1e5 << '\n';
+                    << std::setw(width) << (ptclCM->PredVelocity[1] - ptclCM->Velocity[1] + ptcl->Velocity[1])*velocity_unit/yr*pc/1e5;
+#ifdef SEVN
+		outputFile << std::setw(width) << (ptclCM->PredVelocity[2] - ptclCM->Velocity[2] + ptcl->Velocity[2])*velocity_unit/yr*pc/1e5;
+		if (ptcl->star == nullptr)
+			outputFile << std::setw(width) << "1" << '\n';
+		else if (!ptcl->star->amiremnant())
+			outputFile << std::setw(width) << int(ptcl->star->getp(Phase::ID)) << '\n';
+		else
+			outputFile << std::setw(width) << 8+int(ptcl->star->getp(RemnantType::ID)) << '\n';
+#else
+		outputFile << std::setw(width) << (ptclCM->PredVelocity[2] - ptclCM->Velocity[2] + ptcl->Velocity[2])*velocity_unit/yr*pc/1e5 << '\n';
+#endif
 }
 
 void write_neighbor(std::ofstream& outputFile, const Particle* ptcl) {

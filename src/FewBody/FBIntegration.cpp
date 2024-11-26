@@ -28,6 +28,10 @@
 #include "ar_perturber.hpp"
 #include "GR_energy_loss.hpp"
 
+// #define SEVN
+#ifdef SEVN
+void UpdateEvolution(Particle* ptcl);
+#endif
 
 void GR_energy_loss(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin, REAL current_time, REAL next_time);
 void GR_energy_loss_iter(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin, REAL current_time, REAL next_time);
@@ -151,7 +155,8 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
     }
 
 // /* PN corrections
-    if (PNon && bin_interrupt.status == AR::InterruptStatus::none) {
+    // if (PNon && bin_interrupt.status == AR::InterruptStatus::none) { // Only particles with BH
+    if (bin_interrupt.status == AR::InterruptStatus::none) { // Every bound orbit
         
         auto& bin_root = sym_int.info.getBinaryTreeRoot();
         // if (groupCM->PID == -1025) {
@@ -215,17 +220,36 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
                     newGroup->Members.push_back(Members[i]);
             }
 
+#ifdef SEVN
             Members.erase(
                 std::remove_if(
                     Members.begin(), Members.end(),
                     [](Particle* p) {
                         bool to_remove = p->isErase;
-                        if (to_remove) delete p; // Delete the memory of zero mass particles.
+                        if (to_remove) {
+                            MasslessList.push_back(p);
+                        }
                         return to_remove;
                     }
                 ),
                 Members.end()
             );
+#else
+            Members.erase(
+                std::remove_if(
+                    Members.begin(), Members.end(),
+                    [](Particle* p) {
+                        bool to_remove = p->isErase;
+                        if (to_remove){
+                            delete p; // Delete the memory of zero mass particles.
+                            p = nullptr;
+                        }
+                        return to_remove;
+                    }
+                ),
+                Members.end()
+            );
+#endif
 
             newGroup->initialManager();
             newGroup->initialIntegrator();
@@ -248,6 +272,65 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
             return true;
         }
     }
+#ifdef SEVN
+
+    if (useSEVN) {
+
+        bool breakEvolution = false;
+        while (EvolutionTime + EvolutionTimeStep < next_time*EnzoTimeStep*1e4) {
+
+            EvolutionTime += EvolutionTimeStep;
+
+            REAL dt_evolve_next = NUMERIC_FLOAT_MAX; // Myr
+
+            for (int i=0; i < sym_int.particles.getSize(); i++) {
+                Particle* members = &sym_int.particles[i];
+                if (members->star == nullptr || members->star->amiremnant())
+                    continue;
+                members->star->sync_with(EvolutionTimeStep);
+                members->EvolutionTime += members->star->getp(Timestep::ID);
+                // fprintf(SEVNout, "INT. PID: %d. GT: %e, ET: %e\n", members->PID, CurrentTime*EnzoTimeStep*1e4, members->EvolutionTime);
+                // fflush(SEVNout);
+                members->star->evolve();
+                // fprintf(SEVNout, "INT. After. PID: %d, ET: %e, WT: %e\n", members->PID, members->EvolutionTime, members->star->getp(Worldtime::ID));
+                // fflush(SEVNout);
+                UpdateEvolution(members);
+                // fprintf(SEVNout, "Int. PID: %d, Mass: %e, Radius: %e, EvolutionTime: %e\n", members->PID, members->Mass*mass_unit, members->radius*position_unit, members->EvolutionTime);
+                // fflush(SEVNout);
+                if (members->star->amiempty() || members->star->vkick[3] > 0.0) {
+                    breakEvolution = true;
+                    break;
+                }
+                if (members->star->amiBH())
+                    PNon = true;
+                if (!members->star->amiremnant() && members->star->getp(Timestep::ID) < dt_evolve_next)
+                    dt_evolve_next = members->star->getp(Timestep::ID);
+            }
+            EvolutionTimeStep = dt_evolve_next;
+            // fprintf(SEVNout, "INT. EvolutionTimeStep: %e\n", EvolutionTimeStep);
+            // fflush(SEVNout);
+        }
+
+        useSEVN = false;
+        for (int i=0; i < sym_int.particles.getSize(); i++) {
+            Particle* members = &sym_int.particles[i];
+            if (members->star != nullptr && !members->star->amiremnant()) {
+                useSEVN = true;
+                break;
+            }
+        }
+        if (breakEvolution) { // break SDAR
+            sym_int.particles.shiftToOriginFrame();
+            sym_int.particles.template writeBackMemberAll<Particle>();
+
+            FBTermination2(groupCM, next_time, particle);
+            return false;
+        }
+
+    }
+    
+#endif
+
     CurrentTime = next_time;
     return true; 
 }

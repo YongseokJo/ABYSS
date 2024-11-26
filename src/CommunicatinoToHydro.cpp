@@ -88,11 +88,16 @@ int InitialCommunication(std::vector<Particle*> &particle) {
 		std::cout << "NBODY+    : "  << NNB << " particles loaded!" << std::endl;
 
 		delete [] PID;
+		PID = nulltr;
 		delete [] Mass;
+		Mass = nullptr;
 		for (int dim=0; dim<Dim; dim++) {
 			delete[] Position[dim];
+			Position[dim] = nullptr;
 			delete[] Velocity[dim];
+			Velocity[dim] = nullptr;
 			delete[] BackgroundAcceleration[dim];
+			BackgroundAcceleration[dim] = nullptr;
 		}
 	}
 	return true;
@@ -230,17 +235,24 @@ int ReceiveFromEzno(std::vector<Particle*> &particle) {
 
 	if (NNB != 0) {
 		delete[] PID;
+		PID = nullptr;
 		for (int dim=0; dim<Dim; dim++) {
 			delete[] BackgroundAcceleration[dim];
+			BackgroundAcceleration[dim] = nullptr;
 		}
 	}
 	if (newNNB != 0) {
 		delete[] newPID;
+		newPID = nullptr;
 		delete[] newMass;
+		newMass = nullptr;
 		for (int dim=0; dim<Dim; dim++) {
 			delete[] newBackgroundAcceleration[dim];
+			newBackgroundAcceleration[dim] = nullptr;
 			delete[] newPosition[dim];
+			newPosition[dim] = nullptr;
 			delete[] newVelocity[dim];
+			newVelocity[dim] = nullptr;
 		}
 	}
 	NNB += newNNB;
@@ -338,11 +350,15 @@ int SendToEzno(std::vector<Particle*> &particle) {
 	for (int dim = 0; dim < Dim; dim++)
 	{
 		delete[] Position[dim];
+		Position[dim] = nullptr;
 		delete[] Velocity[dim];
+		Velocity[dim] = nullptr;
 		if (newNNB > 0)
 		{
 			delete[] newPosition[dim];
+			newPosition[dim] = nullptr;
 			delete[] newVelocity[dim];
+			newVelocity[dim] = nullptr;
 		}
 	}
 	std::cout << "NBODY+: Sending data finished." << std::endl;

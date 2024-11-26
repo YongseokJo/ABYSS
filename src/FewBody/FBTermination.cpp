@@ -6,6 +6,8 @@
 #include "../global.h"
 #include "../defs.h"
 
+// #define SEVN
+
 bool CreateComputationList(Particle* ptcl);
 bool CreateComputationChain(std::vector<Particle*> &particle);
 void generate_Matrix(REAL a[3], REAL (&A)[3][4]);
@@ -22,6 +24,7 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 	fprintf(binout, "CurrentTimeIrr of ptclCM (Myr): %e\n", ptclCM->CurrentTimeIrr*EnzoTimeStep*1e4);
 
 	ptclGroup	= ptclCM->GroupInfo;
+
 
 	// Update ptclCM pos & velocity first. Then, update pos & vel of group members to the original frame.
 	if (ptclCM->NumberOfAC != 0)
@@ -197,9 +200,9 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 	// 		GroupList.end());
 
 	delete ptclGroup;
-	// delete ptclCM; // It is deleted automatically when delete ptclGroup!!!
 	ptclGroup = nullptr;
-	ptclCM  = nullptr;
+	// delete ptclCM; // It is deleted automatically when delete ptclGroup!!!
+	// ptclCM  = nullptr;
 
 	fprintf(binout,"end of Few Body Termination\n");
 	fprintf(binout,"--------------------------------------\n");
@@ -266,19 +269,36 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 	}
 
 	// Erase zero mass particles from the ptclGroup->Members!
-
+#ifdef SEVN
 	ptclGroup->Members.erase(
 		std::remove_if(
 			ptclGroup->Members.begin(), ptclGroup->Members.end(),
 			[](Particle* p) {
 				bool to_remove = p->isErase;
-				if (to_remove) delete p; // Delete the memory of zero mass particles.
+				if (to_remove) {
+					MasslessList.push_back(p);
+				}
 				return to_remove;
 			}
 		),
 		ptclGroup->Members.end()
 	);
-
+#else
+	ptclGroup->Members.erase(
+		std::remove_if(
+			ptclGroup->Members.begin(), ptclGroup->Members.end(),
+			[](Particle* p) {
+				bool to_remove = p->isErase;
+				if (to_remove) {
+					delete p; // Delete the memory of zero mass particles.
+					p = nullptr;
+				}
+				return to_remove;
+			}
+		),
+		ptclGroup->Members.end()
+	);
+#endif
 
 	for (Particle* members : ptclGroup->Members) {
 
@@ -439,9 +459,9 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 	}
 
 	delete ptclGroup;
-	// delete ptclCM; // It is deleted automatically when delete ptclGroup!!!
 	ptclGroup = nullptr;
-	ptclCM  = nullptr;
+	// delete ptclCM; // It is deleted automatically when delete ptclGroup!!!
+	// ptclCM  = nullptr;
 
 	fprintf(binout,"end of Few Body Termination2\n");
 	fprintf(binout,"--------------------------------------\n");

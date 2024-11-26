@@ -214,7 +214,7 @@ inline void GR_energy_loss(AR::InterruptBinary<Particle>& _bin_interrupt, AR::Bi
     // Check for invalid state
     if (!(_bin.ecc > 0) || !(_bin.semi > 0)) {
         fprintf(mergerout, "GW driven Merger happened! (a < da)\n");
-        fprintf(mergerout, "ecc: %e, semi: %e pc\n", _bin.ecc, _bin.semi*position_unit);
+        fprintf(mergerout, "ecc: %e, semi: %e pc, dsemi: %e pc, timestep: %e Myr\n", _bin.ecc, _bin.semi*position_unit, (k1_dsemi + 2 * k2_dsemi + 2 * k3_dsemi + k4_dsemi) / 6.0*position_unit, dt*1e4);
         fflush(mergerout);
         Interaction interaction;
         // _bin_interrupt.time_now = current_time * EnzoTimeStep + dt * num;

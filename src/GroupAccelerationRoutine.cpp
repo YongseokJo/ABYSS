@@ -2,6 +2,7 @@
 #include "global.h"
 #include "defs.h"
 #include <cassert> // Eunwoo debug
+// #define SEVN
 
 // Eunwoo edited
 
@@ -21,7 +22,7 @@ bool AddNewGroupsToList(std::vector<Particle*> &particle) {
 		// ptcl->isFBCandidate();
 
         // Eunwoo test
-        if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > 1e-5)
+        if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > tbin) // fiducial: 1e-5 but for rbin = 0.00025 pc, 1e-6 Myr seems good
             continue;
         // Eunwoo test
         
@@ -149,6 +150,7 @@ void MergeGroups(std::vector<Group*> &groups) {
                 if (g == nullptr) return true; // If marked for deletion
                 if (g->Members.empty()) {
                     delete g; // Deallocate memory for empty groups
+					g = nullptr;
                     return true;
                 }
                 return false;
@@ -184,6 +186,27 @@ void NewPrimordialBinaries(Group* group, std::vector<Particle*> &particle) {
 	ptclGroup = new Group();
 	for (Particle* members : group->Members) 
         ptclGroup->Members.push_back(members);
+
+#ifdef SEVN
+	ptclGroup->useSEVN = false;
+	REAL dt_evolve_next = NUMERIC_FLOAT_MAX; // Myr
+	for (Particle* members : group->Members) {
+		if (members->star == nullptr || members->star->amiremnant())
+			continue;
+		else {
+			ptclGroup->useSEVN = true;
+			assert(members->EvolutionTime == 0.0);
+			if (members->star->getp(Timestep::ID) < dt_evolve_next)
+				dt_evolve_next = members->star->getp(Timestep::ID);
+		}
+	}
+	if (ptclGroup->useSEVN) {
+		ptclGroup->EvolutionTime = 0.0;
+		ptclGroup->EvolutionTimeStep = dt_evolve_next;
+		// fprintf(binout, "EvolutionTimeStep: %e Myr\n", ptclGroup->EvolutionTimeStep);
+		// fflush(binout);
+	}
+#endif
 
 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
 
@@ -352,6 +375,7 @@ void NewPrimordialBinaries(Group* group, std::vector<Particle*> &particle) {
 	// fprintf(binout, "Irr Acceleration - ax3dot:%e, ay3dot:%e, az3dot:%e, \n", ptclCM->a_irr[0][3], ptclCM->a_irr[1][3], ptclCM->a_irr[2][3]);
 
 	delete group;
+	group = nullptr;
 
 	fprintf(binout, "------------------END-OF-NEW-PRIMORDIAL-BINARIES------------------\n\n");
 	fflush(binout);

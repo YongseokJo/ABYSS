@@ -156,14 +156,21 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 
 	// free all temporary variables
 	delete[] MassSend;
+	MassSend = nullptr;
 	delete[] PositionSend;
+	PositionSend = nullptr;
 	delete[] VelocitySend;
+	VelocitySend = nullptr;
 
 	delete[] r2OfACSend;
+	r2OfACSend = nullptr;
 	delete[] TimeStepRegSend;
+	TimeStepRegSend = nullptr;
 
 	delete[] AccSend;
+	AccSend = nullptr;
 	delete[] AccDotSend;
+	AccDotSend = nullptr;
 
 	// close GPU
 	//
@@ -316,16 +323,25 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 
 	// free all temporary variables
 	delete[] MassSend;
+	MassSend = nullptr;
 	delete[] PositionSend;
+	PositionSend = nullptr;
 	delete[] VelocitySend;
+	VelocitySend = nullptr;
 
 	delete[] r2OfACSend;
+	r2OfACSend = nullptr;
 	delete[] TimeStepRegSend;
+	TimeStepRegSend = nullptr;
 
 	delete[] AccSend;
+	AccSend = nullptr;
 	delete[] AccDotSend;
+	AccDotSend = nullptr;
 	delete[] PotSend;
+	PotSend = nullptr;
 	delete[] AClistGpu;
+	AClistGpu = nullptr;
 
 } // calculate 0th, 1st derivative of force + neighbors on GPU ends
 
@@ -371,9 +387,13 @@ void SendAllParticlesToGPU(std::vector <Particle*> &particle) {
 
 	// free the temporary variables
 	delete[] Mass;
+	Mass = nullptr;
 	delete[] Mdot;
+	Mdot = nullptr;
 	delete[] Position;
+	Position = nullptr;
 	delete[] Velocity;
+	Velocity = nullptr;
 }
 
 
@@ -420,9 +440,14 @@ void SendAllParticlesToGPU(CUDA_REAL time, std::vector <Particle*> &particle) {
 	fflush(stdout);
 	// free the temporary variables
 	delete[] Mass;
+	Mass = nullptr;
 	delete[] Mdot;
+	Mdot = nullptr;
 	delete[] Radius2;
+	Radius2 = nullptr;
 	delete[] Position;
+	Position = nullptr;
 	delete[] Velocity;
+	Velocity = nullptr;
 }
 

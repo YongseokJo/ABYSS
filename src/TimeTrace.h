@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <sys/stat.h>
 #include <sstream>
+// #define SEVN
 
 extern REAL global_time, EnzoTimeStep;
 
@@ -54,6 +55,9 @@ class TimeTracer {
 		TimeEntity irr_bin_int;
 		// TimeEntity irr_bin_ter;
 		// TimeEntity irr_calctime;
+#ifdef SEVN
+		TimeEntity sevn;
+#endif
 
 	void output() {
 
@@ -140,19 +144,32 @@ class TimeTracer {
 			<< '\n';
 
 		outputFile << "----------------------------------------------------\n" ;
+#ifdef SEVN
+		outputFile << "----------------------------------------------------\n" ;
+		outputFile << std::left\
+			<< std::setw(width) << "| SEVN Routine = " << sevn.duration.count() << " |\n";
+
+		outputFile << "----------------------------------------------------\n" ;
+#endif
 
 		outputFile << std::left\
 			<< std::setw(width) << "\nComputational Efficiency (Simulation time in Myr/physical time in second)\n";
 
 		outputFile << std::left\
 			<< std::setw(width) << "Regular Force" \
-			<< std::setw(width) << "Irregular Force" \
-		 	<< '\n';
+			<< std::setw(width) << "Irregular Force";
+#ifdef SEVN
+		outputFile << std::setw(width) << "SEVN";
+#endif
+		outputFile << '\n';
 
 		outputFile  << std::left
 			<< std::setw(width) << current_time/reg.duration.count() \
-			<< std::setw(width) << current_time/irr.duration.count() \
-			<< '\n';
+			<< std::setw(width) << current_time/irr.duration.count();
+#ifdef SEVN
+		outputFile << std::setw(width) << current_time/sevn.duration.count();
+#endif
+		outputFile << '\n';
 		// Close the file
     outputFile.close();
 
