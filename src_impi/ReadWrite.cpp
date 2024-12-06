@@ -20,7 +20,7 @@ int readData() {
 
 	if (!inputFile) {
 		std::cerr << "Error: Could not open the file." << std::endl;
-		return FAIL;
+		return _FAIL;
 	}
 
 	NumberOfParticle = getLineNumber();
@@ -93,7 +93,7 @@ int readData() {
 	delete[] data;
 
 
-	return SUCCESS;
+	return _SUCCESS;
 }
 
 
@@ -120,7 +120,7 @@ int getLineNumber() {
 
 
 int WriteData() {
-	return SUCCESS;
+	return _SUCCESS;
 }
 
 

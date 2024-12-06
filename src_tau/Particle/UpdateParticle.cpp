@@ -13,22 +13,13 @@ void Particle::predictParticleSecondOrder(double dt, double pos[], double vel[])
 	// Doubling check
 	// temporary variables for calculation
 
-	// only predict the positions if necessary
-	// how about using polynomial correction here?
-	
 	dt = dt*EnzoTimeStep;
 
-	if (dt == 0) {
-		for (int dim=0; dim<Dim; dim++) {
-			pos[dim] = Position[dim];
-			vel[dim] = Velocity[dim];
-		}
-	}
-	else {
-		for (int dim=0; dim<Dim; dim++) {
-			pos[dim] = ((a_tot[dim][1]*dt/3 + a_tot[dim][0])*dt/2 + Velocity[dim])*dt + Position[dim];
-			vel[dim] =  (a_tot[dim][1]*dt/2 + a_tot[dim][0])*dt   + Velocity[dim];
-		}
+	// only predict the positions if necessary
+	// how about using polynomial correction here?
+	for (int dim=0; dim<Dim; dim++) {
+		pos[dim] = ((a_tot[dim][1]*dt/3 + a_tot[dim][0])*dt/2 + Velocity[dim])*dt + Position[dim];
+		vel[dim] =  (a_tot[dim][1]*dt/2 + a_tot[dim][0])*dt   + Velocity[dim];
 	}
 	return;
 }
@@ -127,8 +118,8 @@ void Particle::calculateTimeStepIrr() {
 
 	if (this->NumberOfNeighbor == 0) {
 		TimeLevelIrr = TimeLevelReg;
-		TimeStepIrr = static_cast<double>(pow(2, TimeLevelReg));
-		TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
+		TimeStepIrr = static_cast<double>(pow(2, TimeLevelIrr));
+		TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
 		return;
 	}
 

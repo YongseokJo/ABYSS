@@ -14,7 +14,7 @@ void CalculateAcceleration23(Particle* ptcl1);
 
 void WorkerRoutines() {
 
-	//std::cout << "Processor " << MyRank << " is ready." << std::endl;
+	std::cout << "Processor " << MyRank << " is ready." << std::endl;
 
 	int task=-1;
 	MPI_Status status;
@@ -23,14 +23,15 @@ void WorkerRoutines() {
 	double next_time;
 
 	while (true) {
-		//MPI_Recv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &status);
-		MPI_Irecv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &request);
-		MPI_Wait(&request, &status);
+		MPI_Recv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &status);
+		//MPI_Irecv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &request);
+		//MPI_Wait(&request, &status);
 		//if (status.MPI_TAG == TERMINATE_TAG) break;
 		//std::cerr << "Processor " << MyRank << " received task " << task << std::endl;
 
 		switch (task) {
 			case 0: // Irregular Acceleration
+				std::cout << "Acc Irr starts" << std::endl;
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
 				particles[ptcl_id].computeAccelerationIrr();
@@ -77,7 +78,6 @@ void WorkerRoutines() {
 				particles[ptcl_id].CurrentBlockReg += particles[ptcl_id].TimeBlockReg;
 				particles[ptcl_id].CurrentTimeReg   = particles[ptcl_id].CurrentBlockReg*time_step;
 			  particles[ptcl_id].calculateTimeStepReg();
-				particles[ptcl_id].NewCurrentBlockIrr = particles[ptcl_id].CurrentBlockReg;
 			  particles[ptcl_id].calculateTimeStepIrr();
 			  particles[ptcl_id].updateRadius();
 				if (particles[ptcl_id].NumberOfNeighbor == 0) {
@@ -103,8 +103,8 @@ void WorkerRoutines() {
 				broadcastFromRoot(time_block);
 				broadcastFromRoot(block_max);
 				broadcastFromRoot(time_step);
-				MPI_Win_sync(win);  // Synchronize memory
-				MPI_Barrier(shared_comm);
+				//MPI_Win_sync(win);  // Synchronize memory
+				//MPI_Barrier(shared_comm);
 				//MPI_Win_fence(0, win);
 				//fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
 				//fflush(stderr);
@@ -112,8 +112,8 @@ void WorkerRoutines() {
 
 
 			case 100: // Synchronize
-				MPI_Win_sync(win);  // Synchronize memory
-				MPI_Barrier(shared_comm);
+				//MPI_Win_sync(win);  // Synchronize memory
+				//MPI_Barrier(shared_comm);
 				break;
 
 			case -100: // Simualtion ends

@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 	readParameterFile();
 
 	// Write Particles
-	if (MyRank == ROOT && readData() == FAIL)
+	if (MyRank == ROOT && readData() == _FAIL)
 		fprintf(stderr, "Read Data Failed!\n");
 
 	broadcastFromRoot(NumberOfParticle);

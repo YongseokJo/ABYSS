@@ -130,7 +130,7 @@ void broadcastFromRoot(ULL &data) {
 }
 
 void ParticleSynchronization() {
-		//std::cout << "Particle synchronization." << std::endl;
+		std::cout << "Particle synchronization." << std::endl;
 		MPI_Request requests[NumberOfProcessor];  // Pointer to the request handle
 		MPI_Status statuses[NumberOfProcessor];    // Pointer to the status object
 		int task=100;
@@ -138,8 +138,10 @@ void ParticleSynchronization() {
 		//int ptcl_id=104;
 		InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
 		//std::cerr << "before, Rank=" << MyRank <<" pid=" << ptcl_id << ", current_time=" << particles[ptcl_id].CurrentTimeIrr << std::endl;
-		MPI_Win_sync(win);  // Synchronize memory
-		MPI_Barrier(shared_comm);
+		//MPI_Win_sync(win);  // Synchronize memory
+		//MPI_Win_sync(win);  // Synchronize memory
+		//MPI_Win_fence(0, win);
+		//MPI_Barrier(shared_comm);
 		//std::cerr << "after, Rank=" << MyRank <<" pid=" << ptcl_id << ", current_time=" << particles[ptcl_id].CurrentTimeIrr << std::endl;
 		for (int i=0; i<NumberOfWorker; i++) {
 

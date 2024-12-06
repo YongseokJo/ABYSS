@@ -130,7 +130,7 @@ void broadcastFromRoot(ULL &data) {
 }
 
 void ParticleSynchronization() {
-		//std::cout << "Particle synchronization." << std::endl;
+		std::cout << "Particle synchronization." << std::endl;
 		MPI_Request requests[NumberOfProcessor];  // Pointer to the request handle
 		MPI_Status statuses[NumberOfProcessor];    // Pointer to the status object
 		int task=100;

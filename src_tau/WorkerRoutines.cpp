@@ -14,7 +14,7 @@ void CalculateAcceleration23(Particle* ptcl1);
 
 void WorkerRoutines() {
 
-	//std::cout << "Processor " << MyRank << " is ready." << std::endl;
+	std::cout << "Processor " << MyRank << " is ready." << std::endl;
 
 	int task=-1;
 	MPI_Status status;
@@ -77,7 +77,6 @@ void WorkerRoutines() {
 				particles[ptcl_id].CurrentBlockReg += particles[ptcl_id].TimeBlockReg;
 				particles[ptcl_id].CurrentTimeReg   = particles[ptcl_id].CurrentBlockReg*time_step;
 			  particles[ptcl_id].calculateTimeStepReg();
-				particles[ptcl_id].NewCurrentBlockIrr = particles[ptcl_id].CurrentBlockReg;
 			  particles[ptcl_id].calculateTimeStepIrr();
 			  particles[ptcl_id].updateRadius();
 				if (particles[ptcl_id].NumberOfNeighbor == 0) {

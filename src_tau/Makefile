@@ -1,11 +1,19 @@
 # Compiler
 #CXX = icc
-CXX = mpic++
+#CXX = mpic++
+#CXX = /mnt/home/yjo10/packages/tau-2.34/build/x86_64/bin/tau_cxx.sh
+CXX = /mnt/home/yjo10/packages/tau-2.34/build/x86_64/bin/tau_cc.sh
 #CXX = g++
 NVCC = nvcc
 
+#exprot TAU_MAKEFILE=/mnt/home/yjo10/packages/tau-2.34/build/x86_64/lib/Makefile.tau-mpi
+#TAU_MAKEFILE_INCLUDE =  /mnt/home/yjo10/packages/tau-2.34/build/include
+#TAU_MAKEFILE_LIBS =  /mnt/home/yjo10/packages/tau-2.34/build/x86_64/lib
+
 # Compiler flags
-CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g  #-fopenmp  -fsanitize=thread
+#CXXFLAGS  = -O1 -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g  #-fopenmp  -fsanitize=thread
+CXXFLAGS =  -O1 -I./Particle -I./ -g  -W -export-dynamic
+#CXXFLAGS = -O2 
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -qopenmp  #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O2 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  #-fsanitize=thread
@@ -15,7 +23,7 @@ NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
 
 # Libraries
 #LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas -lnvToolsExt #-ltbb
-LDFLAGS = -lm
+LDFLAGS = -lm 
 #add -lnvToolsExt for <nvToolsExt.h>
 #LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
 
@@ -32,7 +40,7 @@ CXX_SRCS = main.cpp DefaultGlobal.cpp MPIRoutines.cpp readParameterFile.cpp Work
 OBJS = $(CXX_SRCS:.cpp=.o)
 
 # Executable name
-EXEC = abyss_mpi.exe
+EXEC = abyss_mpi_tau.exe
 
 # Main target
 all: $(EXEC)

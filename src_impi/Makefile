@@ -1,11 +1,12 @@
 # Compiler
 #CXX = icc
-CXX = mpic++
+#CXX = mpiicpc
+CXX = icpx
 #CXX = g++
 NVCC = nvcc
 
 # Compiler flags
-CXXFLAGS  = -O2 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g  #-fopenmp  -fsanitize=thread
+CXXFLAGS  = -O2 -v -march=native -ftree-vectorize -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -lstdc++ #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -qopenmp  #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O2 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  #-fsanitize=thread
@@ -15,7 +16,7 @@ NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
 
 # Libraries
 #LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas -lnvToolsExt #-ltbb
-LDFLAGS = -lm
+LDFLAGS = -lm -lmpi
 #add -lnvToolsExt for <nvToolsExt.h>
 #LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
 
@@ -32,7 +33,7 @@ CXX_SRCS = main.cpp DefaultGlobal.cpp MPIRoutines.cpp readParameterFile.cpp Work
 OBJS = $(CXX_SRCS:.cpp=.o)
 
 # Executable name
-EXEC = abyss_mpi.exe
+EXEC = abyss_intel_mpi.exe
 
 # Main target
 all: $(EXEC)

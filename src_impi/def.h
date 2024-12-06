@@ -1,5 +1,6 @@
-#define FAIL    -1
-#define SUCCESS  1
+#define _FAIL    -1
+#define _SUCCESS 1
+
 
 
 #define NumberOfTask 20
@@ -8,9 +9,11 @@
 
 #define FixNumNeighbor 500
 #define NumNeighborMax 5000
-
+#define InitialRadius 0.3
 
 #define MIN_LEVEL_BUFFER 30
+
+#define ParticleLoadBalance 100
 
 #define Dim 3
 #define eta 0.01

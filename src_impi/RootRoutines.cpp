@@ -88,8 +88,8 @@ void RootRoutines() {
 			completed_rank = status.MPI_SOURCE;
 			if (remaining_tasks > 0) {
 				ptcl_id = NumberOfWorker + completed_tasks;
-				MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-				MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+				MPI_Ssend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+				MPI_Ssend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
 				//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
 				//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
 				remaining_tasks--;
@@ -119,8 +119,8 @@ void RootRoutines() {
 			completed_rank = status.MPI_SOURCE;
 			if (remaining_tasks > 0) {
 				ptcl_id = NumberOfWorker + completed_tasks;
-				MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-				MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+				MPI_Ssend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+				MPI_Ssend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
 				//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
 				//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
 				remaining_tasks--;
@@ -131,83 +131,9 @@ void RootRoutines() {
 		}
 	}
 
-
-
-	/* synchronization */
-	//ParticleSynchronization();
-
-
-	/* timestep correction */
-	{
-		std::cout << "Time Step correction." << std::endl;
-		for (int i=0; i<NumberOfParticle; i++) {
-			ptcl = &particles[i];
-
-			if (ptcl->NumberOfNeighbor != 0) {
-				while (ptcl->TimeLevelIrr >= ptcl->TimeLevelReg) {
-					ptcl->TimeStepIrr *= 0.5;
-					ptcl->TimeBlockIrr *= 0.5;
-					ptcl->TimeLevelIrr--;
-				}
-			}
-			if (ptcl->TimeLevelIrr < min_time_level) {
-				min_time_level = ptcl->TimeLevelIrr;
-			}
-		}
-
-		// resetting time_block based on the system
-		time_block = std::max(-60, min_time_level-MIN_LEVEL_BUFFER);
-		block_max = static_cast<ULL>(pow(2, -time_block));
-		time_step = pow(2,time_block);
-
-		for (int i=0; i<NumberOfParticle; i++) {
-			ptcl = &particles[i];
-			ptcl->TimeBlockIrr = static_cast<ULL>(pow(2, ptcl->TimeLevelIrr-time_block));
-			ptcl->TimeBlockReg = static_cast<ULL>(pow(2, ptcl->TimeLevelReg-time_block));
-#ifdef IRR_TEST
-			ptcl->TimeStepReg = 1;
-			ptcl->TimeLevelReg = 0;
-			ptcl->TimeBlockReg = block_max;
-#endif
-			ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
-		}
-		std::cout << "Time Step done." << std::endl;
-	}
-
-	/* timestep variable synchronization */
-	{
-		std::cout << "Time Step synchronization." << std::endl;
-		task=10;
-		completed_tasks = 0; total_tasks = NumberOfWorker;
-		InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
-		broadcastFromRoot(time_block);
-		broadcastFromRoot(block_max);
-		broadcastFromRoot(time_step);
-		// Synchronize all processes before reading from the shared memory
-		//MPI_Win_fence(0, win);
-		MPI_Win_sync(win);  // Synchronize memory
-		MPI_Barrier(shared_comm);
-		while (completed_tasks < total_tasks) {
-			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-			MPI_Wait(&request, &status);
-			completed_tasks++;
-		}
-		//fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
-		//fflush(stderr);
-	}
-
 	/* Particle Initialization Check */
-	/*
-	{
+	/*{
 		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<NumberOfParticle; i++) {
-			ptcl = &particles[i];
-			fprintf(stdout, "%d(%d)=",ptcl->PID,ptcl->NumberOfNeighbor);
-			for (int j=0;j<ptcl->NumberOfNeighbor;j++) {
-				fprintf(stdout, "%d, ",ptcl->Neighbors[j]);
-			}
-			fprintf(stdout, "\n");
-		}
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
 			fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"\
@@ -265,8 +191,74 @@ void RootRoutines() {
 
 		}
 		fflush(stdout);
+	}*/
+
+	/* synchronization */
+	//ParticleSynchronization();
+
+
+	/* timestep correction */
+	{
+		std::cout << "Time Step correction." << std::endl;
+		for (int i=0; i<NumberOfParticle; i++) {
+			ptcl = &particles[i];
+#define no_IRR_TEST
+#ifndef IRR_TEST
+			if (ptcl->NumberOfNeighbor != 0) {
+				while (ptcl->TimeLevelIrr >= ptcl->TimeLevelReg) {
+					ptcl->TimeStepIrr *= 0.5;
+					ptcl->TimeBlockIrr *= 0.5;
+					ptcl->TimeLevelIrr--;
+				}
+			}
+#endif
+			if (ptcl->TimeLevelIrr < min_time_level) {
+				min_time_level = ptcl->TimeLevelIrr;
+			}
+		}
+
+		// resetting time_block based on the system
+		time_block = std::max(-60, min_time_level-MIN_LEVEL_BUFFER);
+		block_max = static_cast<ULL>(pow(2, -time_block));
+		time_step = pow(2,time_block);
+
+		for (int i=0; i<NumberOfParticle; i++) {
+			ptcl = &particles[i];
+			ptcl->TimeBlockIrr = static_cast<ULL>(pow(2, ptcl->TimeLevelIrr-time_block));
+			ptcl->TimeBlockReg = static_cast<ULL>(pow(2, ptcl->TimeLevelReg-time_block));
+#ifdef IRR_TEST
+			ptcl->TimeStepReg = 1;
+			ptcl->TimeLevelReg = 0;
+			ptcl->TimeBlockReg = block_max;
+#endif
+			ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+		}
+		std::cout << "Time Step done." << std::endl;
 	}
-	*/
+
+	/* timestep variable synchronization */
+	{
+		std::cout << "Time Step synchronization." << std::endl;
+		task=10;
+		completed_tasks = 0; total_tasks = NumberOfWorker;
+		InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
+		broadcastFromRoot(time_block);
+		broadcastFromRoot(block_max);
+		broadcastFromRoot(time_step);
+		// Synchronize all processes before reading from the shared memory
+		//MPI_Win_fence(0, win);
+		//MPI_Win_sync(win);  // Synchronize memory
+		//MPI_Barrier(shared_comm);
+		while (completed_tasks < total_tasks) {
+			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+			MPI_Wait(&request, &status);
+			completed_tasks++;
+		}
+		//fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
+		//fflush(stderr);
+	}
+
+
 	/* Particle Initialization Check */
 	/*
 	{
@@ -311,18 +303,18 @@ void RootRoutines() {
 		//ParticleSynchronization();
 		while (1) {
 			updateNextRegTime(RegularList);
-			/*
 			std::cout << "NextRegTimeBlock=" << NextRegTimeBlock << std::endl;
 			std::cout << "PID= ";
 			for (int i=0; i<RegularList.size(); i++)
 				std::cout << RegularList[i]<< ", ";
 			std::cout << std::endl;
 			std::cout << "size of regularlist= " << RegularList.size() << std::endl;
-			*/
 
 
 			skiplist = new SkipList(max_level, prob);
 			createSkipList(skiplist);
+
+			skiplist->display();
 
 			// Irregular
 			while ( skiplist->getFirstNode() != nullptr) {
@@ -371,9 +363,9 @@ void RootRoutines() {
 					if (remaining_tasks > 0) {
 						ptcl_id = ThisLevelNode->ParticleList[NumberOfWorker + completed_tasks];
 						//printf("ptcl %d,  ",ptcl_id);
-						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-						MPI_Send(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
+						MPI_Ssend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+						MPI_Ssend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+						MPI_Ssend(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
 						remaining_tasks--;
 					} else {
 						//printf("Rank %d: No more tasks to assign\n", completed_rank);
@@ -414,8 +406,8 @@ void RootRoutines() {
 						ptcl_id = ThisLevelNode->ParticleList[NumberOfWorker + completed_tasks];
 						//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
 						//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
-						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+						MPI_Ssend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+						MPI_Ssend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
 						remaining_tasks--;
 					} else {
 						//printf("Rank %d: No more tasks to assign\n", completed_rank);
@@ -551,7 +543,7 @@ void RootRoutines() {
 
 
 
-			//std::cout << "Regular Routine Starts." << std::endl;
+			std::cout << "Regular Routine Starts." << std::endl;
 			// Regular
 			{
 				// Regular Gravity
@@ -592,9 +584,9 @@ void RootRoutines() {
 
 					if (remaining_tasks > 0) {
 						ptcl_id = RegularList[NumberOfWorker + completed_tasks];
-						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-						MPI_Send(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
+						MPI_Ssend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+						MPI_Ssend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+						MPI_Ssend(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
 						remaining_tasks--;
 					} else {
 						//printf("Rank %d: No more tasks to assign\n", completed_rank);
@@ -608,7 +600,7 @@ void RootRoutines() {
 
 
 				// Regular Update
-				//std::cout<< "Reg Acc Done." <<std::endl;
+				std::cout<< "Reg Acc Done." <<std::endl;
 				task = 3;
 				completed_tasks = 0;
 
@@ -628,8 +620,8 @@ void RootRoutines() {
 						ptcl_id = RegularList[NumberOfWorker + completed_tasks];
 						//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
 						//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
-						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+						MPI_Ssend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+						MPI_Ssend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
 						remaining_tasks--;
 					} else {
 						//printf("Rank %d: No more tasks to assign\n", completed_rank);
@@ -638,7 +630,6 @@ void RootRoutines() {
 				}
 
 				//ParticleSynchronization();
-				/*
 				{
 					//, NextRegTime= %.3e Myr(%llu),
 					for (int i=0; i<total_tasks; i++) {
@@ -663,7 +654,10 @@ void RootRoutines() {
 								ptcl->NextBlockIrr,
 								ptcl->NumberOfNeighbor
 								);
+					}
+				}
 
+				/*
 						fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
 								a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
 								a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n", 
@@ -699,8 +693,7 @@ void RootRoutines() {
 									);
 					}
 					//fflush(stdout); 
-				}
-				*/
+				}*/
 				//current_time_irr = particles[ThisLevelNode->ParticleList[0]].CurrentBlockIrr;
 			} // Regular Done.
 
@@ -708,7 +701,7 @@ void RootRoutines() {
 
 			// create output at appropriate time intervals
 			if (global_time >= outputTime) {
-				writeParticle(global_time, outNum++);
+				//writeParticle(global_time, outNum++);
 				outputTime += outputTimeStep;
 			}
 
@@ -765,7 +758,7 @@ bool createSkipList(SkipList *skiplist) {
 	bool debug = false;
 	//fprintf(stdout, "create level starts!\n");
 	//fflush(stdout);
-
+	
 	if (debug) {
 		fprintf(stdout, "create level starts!\n");
 		fflush(stdout);

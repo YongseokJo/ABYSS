@@ -92,7 +92,7 @@ struct Particle {
 		//this->NextParticleInEnzo = NextParticleInEnzo;
 		this->CurrentTimeReg             = 0;
 		this->CurrentTimeIrr             = 0;
-		this->RadiusOfNeighbor           = 0.11*0.11;
+		this->RadiusOfNeighbor           = InitialRadius*InitialRadius;
 		//this->RadiusOfNeighbor         = 1;
 		//this->RadiusOfNeighbor         = 0;
 		this->NumberOfNeighbor           = 0;
