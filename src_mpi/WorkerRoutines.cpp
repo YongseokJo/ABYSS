@@ -9,6 +9,7 @@ void ComputeAcceleration(int ptcl_id, double next_time);
 void broadcastFromRoot(double &data);
 void broadcastFromRoot(ULL &data);
 void broadcastFromRoot(int &data);
+void FindNeighbor(Particle* ptcl1);
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
 
@@ -88,12 +89,17 @@ void WorkerRoutines() {
 				//std::cout << "RegUp end " << MyRank << std::endl;
 				break;
 
-			case 8: // Initialize Acceleration
+			case 7: // Find Neighbor
+				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				FindNeighbor(&particles[ptcl_id]);
+				break;
+
+			case 8: // Initialize Acceleration(01)
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				CalculateAcceleration01(&particles[ptcl_id]);
 				break;
 
-			case 9: // Initialize Acceleration
+			case 9: // Initialize Acceleration(23)
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				CalculateAcceleration23(&particles[ptcl_id]);
 				particles[ptcl_id].initializeTimeStep();

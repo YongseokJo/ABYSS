@@ -212,6 +212,75 @@ void Particle::calculateTimeStepIrr() {
 	*/
 }
 
+// For newly detected CM particle
+void Particle::calculateTimeStepIrr2() {
+	double TimeStepTmp;
+	int TimeLevelTmp, TimeLevelTmp0;
+	ULL TimeBlockTmp;
+
+	if (this->NumberOfNeighbor == 0) {
+		TimeLevelIrr = TimeLevelReg;
+		TimeStepIrr = static_cast<double>(pow(2, TimeLevelReg));
+		TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
+		return;
+	}
+
+	getBlockTimeStep(getNewTimeStepIrr(a_tot, a_irr), TimeLevelTmp, TimeBlockTmp, TimeStepTmp);
+	TimeLevelTmp0 = TimeLevelTmp;
+
+	/*
+	if (NextRegTimeBlock < TimeBlockReg && isRegular) {
+		fprintf(stderr, "PID=%d, NextRegTimeBlock=%llu, TimeBlockReg=%llu\n", PID, NextRegTimeBlock, TimeBlockReg);
+	}
+	*/
+
+
+	while (((NewCurrentBlockIrr < CurrentBlockReg+TimeBlockReg) && (NewCurrentBlockIrr+TimeBlockTmp > CurrentBlockReg+TimeBlockReg)) || (TimeLevelTmp >= TimeLevelReg)) {
+		/*
+		fprintf(stderr,"CurrentBlockIrr = %llu\n",
+				CurrentBlockIrr);
+		fprintf(stderr,"CurrentBlockReg = %llu\n",
+				CurrentBlockReg);
+		fprintf(stderr,"TimeBlockReg    = %llu\n",
+				TimeBlockReg);
+		fprintf(stderr,"TimeBlockIrr    = %llu\n",
+				TimeBlockIrr);
+				*/
+		//if (TimeLevelTmp > TimeLevelReg)
+			//fprintf(stderr, "PID=%d, Irr=%d, Reg=%d\n", PID, TimeLevelTmp0, TimeLevelReg);
+
+		TimeLevelTmp--;
+		TimeBlockTmp *= 0.5;
+	}
+
+	TimeLevelIrr = TimeLevelTmp;
+
+	if (TimeLevelIrr < time_block) {
+		//std::cerr << "TimeLevelIrr is too small" << std::endl;
+		TimeLevelIrr = std::max(time_block, TimeLevelIrr);
+	}
+
+
+	TimeStepIrr = static_cast<double>(pow(2, TimeLevelIrr));
+	TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
+
+	if (TimeStepIrr > 1) {
+		fprintf(stderr, "TimeStepIrr=%e, TimeLevelIrr=%d, TimeLevelTmp0=%d\n",TimeStepIrr, TimeLevelIrr, TimeLevelTmp0);
+		fflush(stderr);
+		throw std::runtime_error("");
+	}
+
+
+	/*
+	if (TimeStepIrr*EnzoTimeStep*1e4 < KSTime && (this->isCMptcl == false))
+		BinaryCandidateList.push_back(this);
+	if (PID == 430) {
+		std::cerr << "After TimeLevelIrr=" << TimeLevelIrr << std::endl;
+		std::cerr << std::endl;
+	}
+	*/
+}
+
 
 
 // Update TimeStepReg // need to review

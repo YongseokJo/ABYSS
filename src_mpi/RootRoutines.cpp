@@ -18,6 +18,8 @@ bool createSkipList(SkipList *skiplist);
 bool updateSkipList(SkipList *skiplist, int ptcl_id);
 int writeParticle(double current_time, int outputNum);
 
+void FindPrimordialBinaries(std::vector<Particle*> &particle)
+
 
 void RootRoutines() {
 
@@ -44,12 +46,12 @@ void RootRoutines() {
 	/* Initialization */
 	{
 		std::cout << "Initialization of particles starts." << std::endl;
-		task            = 8;
+		task            = 7;
 		completed_tasks = 0;
 		total_tasks = NumberOfParticle;
 
 		// Initial assignments
-    int pid[NumberOfWorker];  
+		int pid[NumberOfWorker];  
 		for (int i = 0; i < NumberOfWorker; ++i) {
 			pid[i] = i;
 		}
@@ -99,6 +101,38 @@ void RootRoutines() {
 			completed_tasks++;
 		}
 
+		// Primordial binary search
+		FindPrimordialBinaries(&particles);
+
+		task            = 8;
+		completed_tasks = 0;
+
+		InitialAssignmentOfTasks(task, NumberOfParticle, TASK_TAG);
+		InitialAssignmentOfTasks(pid, NumberOfParticle, PTCL_TAG);
+
+		std::cout << "First round of tasks assignment is sent." << std::endl;
+
+		//MPI_Waitall(worker_rank-1, requests, statuses);
+
+		// further assignments
+		remaining_tasks = total_tasks-NumberOfWorker;
+		while (completed_tasks < total_tasks) {
+			// Check which worker is done
+			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+			MPI_Wait(&request, &status);
+			completed_rank = status.MPI_SOURCE;
+			if (remaining_tasks > 0) {
+				ptcl_id = NumberOfWorker + completed_tasks;
+				MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+				MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+				//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
+				//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
+				remaining_tasks--;
+			} else {
+				//printf("Rank %d: No more tasks to assign\n", completed_rank);
+			}
+			completed_tasks++;
+		}
 
 		task            = 9;
 		completed_tasks = 0;

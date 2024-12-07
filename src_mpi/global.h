@@ -58,5 +58,8 @@ extern double outputTime;
 extern int outNum;
 extern double outputTimeStep;
 
+// SDAR
+extern std::vector<Group*> GroupCandidateList;
+
 
 #endif

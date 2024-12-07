@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "global.h"
 #include <mpi.h>
+#include "FewBody/Group.h"
 
 
 Particle *particles_original;
@@ -49,6 +50,9 @@ char* foutput;
 bool IsOutput;
 double outputTime;
 int outNum;
+
+// SDAR
+std::vector<Group*> GroupCandidateList;
 
 void DefaultGlobal() {
 

@@ -11,6 +11,47 @@ void CalculateAcceleration23(Particle* ptcl);
  *  Initialize Accelerations
  *******************************************************/
 
+void FindNeighbor(Particle* ptcl1) {
+
+	double x[Dim];
+	double r2;
+	Particle *ptcl2;
+
+	ptcl1->NumberOfNeighbor = 0;
+	for(int dim=0; dim<Dim; dim++) {
+		for (int order=0; order<HERMITE_ORDER; order++) {
+			ptcl1->a_reg[dim][order] = 0.0;
+			ptcl1->a_irr[dim][order] = 0.0;
+			ptcl1->a_tot[dim][order] = 0.0;
+		}
+	}
+
+	for (int i=0; i<NumberOfParticle; i++) {
+		ptcl2 = &particles[i];
+
+		if (ptcl1->PID == ptcl2->PID) {
+			continue;
+		}
+
+		r2 = 0;
+
+		// updated the predicted positions and velocities just in case
+		// if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
+		//ptcl2->predictParticleSecondOrder(newTime);
+		for (int dim=0; dim<Dim; dim++) {
+			x[dim] = ptcl2->Position[dim] - ptcl1->Position[dim];
+			r2    += x[dim]*x[dim];
+		}
+
+		if (r2 < ptcl1->RadiusOfNeighbor) {
+			ptcl1->Neighbors[ptcl1->NumberOfNeighbor]=ptcl2->PID;
+			ptcl1->NumberOfNeighbor++;
+			//fprintf(stdout, "pid=%d, nn=%d\n", ptcl1->PID, ptcl1->NumberOfNeighbor);
+		} // endfor dim
+	} // endfor ptcl2
+
+}
+
 
 
 void CalculateAcceleration01(Particle* ptcl1) {
@@ -70,8 +111,6 @@ void CalculateAcceleration01(Particle* ptcl1) {
 				ptcl1->a_irr[dim][0] += m_r3*x[dim];
 				ptcl1->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 			}
-			ptcl1->Neighbors[ptcl1->NumberOfNeighbor]=ptcl2->PID;
-			ptcl1->NumberOfNeighbor++;
 			//fprintf(stdout, "pid=%d, nn=%d\n", ptcl1->PID, ptcl1->NumberOfNeighbor);
 	Particle *ptcl2;
 		} // endfor dim
