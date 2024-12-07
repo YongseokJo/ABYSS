@@ -17,6 +17,7 @@ void updateNextRegTime(std::vector<int>& RegularList);
 bool createSkipList(SkipList *skiplist);
 bool updateSkipList(SkipList *skiplist, int ptcl_id);
 int writeParticle(double current_time, int outputNum);
+void calculateRegAccelerationOnGPU(std::vector<int> RegularList);
 
 
 void RootRoutines() {
@@ -74,6 +75,8 @@ void RootRoutines() {
 
 		InitialAssignmentOfTasks(task, NumberOfParticle, TASK_TAG);
 		InitialAssignmentOfTasks(pid, NumberOfParticle, PTCL_TAG);
+		MPI_Waitall(NumberOfCommunication, requests, statuses);
+		NumberOfCommunication = 0;
 
 		std::cout << "First round of tasks assignment is sent." << std::endl;
 
@@ -105,10 +108,11 @@ void RootRoutines() {
 
 		InitialAssignmentOfTasks(task, NumberOfParticle, TASK_TAG);
 		InitialAssignmentOfTasks(pid, NumberOfParticle, PTCL_TAG);
+		MPI_Waitall(NumberOfCommunication, requests, statuses);
+		NumberOfCommunication = 0;
 
 		std::cout << "First round of tasks assignment is sent." << std::endl;
 
-		//MPI_Waitall(worker_rank-1, requests, statuses);
 
 		// further assignments
 		remaining_tasks = total_tasks-NumberOfWorker;
@@ -180,6 +184,8 @@ void RootRoutines() {
 		task=10;
 		completed_tasks = 0; total_tasks = NumberOfWorker;
 		InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
+		MPI_Waitall(NumberOfCommunication, requests, statuses);
+		NumberOfCommunication = 0;
 		broadcastFromRoot(time_block);
 		broadcastFromRoot(block_max);
 		broadcastFromRoot(time_step);
@@ -347,6 +353,8 @@ void RootRoutines() {
 				//std::cout << std::endl;
 				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
 				InitialAssignmentOfTasks(ThisLevelNode->ParticleList, next_time, total_tasks, PTCL_TAG);
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
 
 
 				// further assignments
@@ -400,6 +408,8 @@ void RootRoutines() {
 
 				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
 				InitialAssignmentOfTasks(ThisLevelNode->ParticleList, total_tasks, PTCL_TAG);
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
 
 
 				// further assignments
@@ -538,6 +548,8 @@ void RootRoutines() {
 				if (current_time_irr >= 1) {
 					task=-100;
 					InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
+					MPI_Waitall(NumberOfCommunication, requests, statuses);
+					NumberOfCommunication = 0;
 					std::cout << EnzoTimeStep << std::endl;
 					std::cout << "Simulation Done!" << std::endl;
 					return;
@@ -551,6 +563,17 @@ void RootRoutines() {
 
 
 
+#ifdef CUDA
+			{
+				total_tasks = RegularList.size();
+				next_time = NextRegTimeBlock*time_step;
+
+
+				calculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vector<Particle*> &particle);
+
+
+			}
+#else
 			//std::cout << "Regular Routine Starts." << std::endl;
 			// Regular
 			{
@@ -571,6 +594,8 @@ void RootRoutines() {
 
 				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
 				InitialAssignmentOfTasks(RegularList, next_time, total_tasks, PTCL_TAG);
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
 
 
 				// further assignments
@@ -614,6 +639,8 @@ void RootRoutines() {
 
 				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
 				InitialAssignmentOfTasks(RegularList, total_tasks, PTCL_TAG);
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
 
 
 				// further assignments
@@ -703,7 +730,7 @@ void RootRoutines() {
 				*/
 				//current_time_irr = particles[ThisLevelNode->ParticleList[0]].CurrentBlockIrr;
 			} // Regular Done.
-
+#endif
 			global_time = NextRegTimeBlock*time_step;
 
 			// create output at appropriate time intervals
@@ -716,6 +743,8 @@ void RootRoutines() {
 			if (global_time >= 1) {
 				task=-100;
 				InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
 				std::cout << EnzoTimeStep << std::endl;
 				std::cout << "Simulation Done!" << std::endl;
 				return;

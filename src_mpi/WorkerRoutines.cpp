@@ -21,11 +21,15 @@ void WorkerRoutines() {
 	MPI_Request request;
 	int ptcl_id;
 	double next_time;
+	int NewNumberOfNeighbor;
+	int NewNeighbors[MaxNumberOfNeighbor];
+	double new_a[Dim];
+	double new_adot[Dim];
 
 	while (true) {
-		//MPI_Recv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &status);
-		MPI_Irecv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &request);
-		MPI_Wait(&request, &status);
+		MPI_Recv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &status);
+		//MPI_Irecv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &request);
+		//MPI_Wait(&request, &status);
 		//if (status.MPI_TAG == TERMINATE_TAG) break;
 		//std::cerr << "Processor " << MyRank << " received task " << task << std::endl;
 
@@ -87,6 +91,25 @@ void WorkerRoutines() {
 				particles[ptcl_id].NextBlockIrr = particles[ptcl_id].CurrentBlockIrr + particles[ptcl_id].TimeBlockIrr; // of this particle
 				//std::cout << "RegUp end " << MyRank << std::endl;
 				break;
+
+			case 4: // Update Regular Particle CUDA
+				MPI_Irecv(&ptcl_id,   1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD,
+						&requests[NumberOfCommunication++]);
+
+				MPI_Irecv(&NewNumberOfNeighbor ,                     1, MPI_INT,
+						ROOT, 10, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+				MPI_Irecv(NewNeighbors, NewNumberOfNeighbor, MPI_INT,
+						ROOT, 11, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+				MPI_Irecv(new_a,                     3, MPI_DOUBLE,
+						ROOT, 12, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+				MPI_Irecv(new_adot,                     3, MPI_DOUBLE,
+						ROOT, 13, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
+				particles[ptcl_id].updateRegularParticleCuda(NewNeighbors, NewNumberOfNeighbor,
+					 	new_a, new_adot);
+				break;
+
 
 			case 8: // Initialize Acceleration
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);

@@ -20,11 +20,11 @@ LDFLAGS = -lm
 #LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart
 
 # Source files
-CXX_SRCS = main.cpp DefaultGlobal.cpp MPIRoutines.cpp readParameterFile.cpp WorkerRoutines.cpp RootRoutines.cpp TimeStepRoutines.cpp parser.cpp ReadWrite.cpp Particle/Initialize.cpp Particle/UpdateParticle.cpp Particle/ComputeAcceleration.cpp
+CXX_SRCS = main.cpp DefaultGlobal.cpp MPIRoutines.cpp readParameterFile.cpp WorkerRoutines.cpp RootRoutines.cpp TimeStepRoutines.cpp parser.cpp ReadWrite.cpp Particle/Initialize.cpp Particle/UpdateParticle.cpp Particle/ComputeAcceleration.cpp 
 #cuda/cuda_routines.cpp
 
 
-#CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu 
+CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu 
 # cuda/cuda_routines.cu
 
 #

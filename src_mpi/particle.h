@@ -155,6 +155,7 @@ struct Particle {
 	void calculateTimeStepIrr();
 	void calculateTimeStepReg();
 
+	void updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeighbor, double *new_a, double *new_adot);
 };
 
 

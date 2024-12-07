@@ -12,7 +12,9 @@ MPI_Comm shared_comm;
 int MyRank;
 int NumberOfProcessor;
 int NumberOfWorker;
-
+int NumberOfCommunication;
+MPI_Request requests[MaxNumberOfCommunication];
+MPI_Status statuses[MaxNumberOfCommunication];
 
 
 int NumberOfParticle;
@@ -62,6 +64,7 @@ void DefaultGlobal() {
 	/* Number of particles */
 	NumberOfParticle = 1000;
 
+	NumberOfCommunication = 0;
 
 	/* Timesteps */
 	endTime = 1;

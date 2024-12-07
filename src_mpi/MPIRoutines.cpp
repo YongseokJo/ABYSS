@@ -66,57 +66,40 @@ void initializeMPI(int argc, char *argv[]) {
 }
 
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG) {
-	MPI_Request requests[NumberOfProcessor];  // Pointer to the request handle
-	MPI_Status statuses[NumberOfProcessor];    // Pointer to the status object
-	int i;
-	for (i=0; i<NumberOfWorker; i++) {
+	for (int i=0; i<NumberOfWorker; i++) {
 		if (i >= NumTask) break;
-		MPI_Isend(&data[i],   1, MPI_INT,    i+1, TAG, MPI_COMM_WORLD, &requests[i]);
+		MPI_Isend(&data[i],   1, MPI_INT,    i+1, TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
 	}
-	MPI_Waitall(i, requests, statuses);
 }
 
 
-
-
-
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG) {
-	MPI_Request requests[NumberOfProcessor];  // Pointer to the request handle
-	MPI_Status statuses[NumberOfProcessor];    // Pointer to the status object
-	int i;
-	for (i=0; i<NumberOfWorker; i++) {
+	for (int i=0; i<NumberOfWorker; i++) {
 		if (i >= NumTask) break;
-		MPI_Isend(&data[i],   1, MPI_INT,    i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[i]);
-		MPI_Isend(&next_time, 1, MPI_DOUBLE, i+1, TIME_TAG, MPI_COMM_WORLD, &requests[i]);
+		MPI_Isend(&data[i],   1, MPI_INT,    i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+		MPI_Isend(&next_time, 1, MPI_DOUBLE, i+1, TIME_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
 	}
-	MPI_Waitall(i, requests, statuses);
 }
 
 
 void InitialAssignmentOfTasks(int* data, int NumTask, int TAG) {
-	MPI_Request requests[NumberOfProcessor];  // Pointer to the request handle
-	MPI_Status statuses[NumberOfProcessor];    // Pointer to the status object
-	int i;
-	for (i=0; i<NumberOfWorker; i++) {
+	for (int i=0; i<NumberOfWorker; i++) {
 		if (i >= NumTask) break;
-		MPI_Isend(&data[i], 1, MPI_INT, i+1, TAG, MPI_COMM_WORLD, &requests[i]);
+		MPI_Isend(&data[i], 1, MPI_INT, i+1, TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
 	}
-	MPI_Waitall(i, requests, statuses);
 }
 
 void InitialAssignmentOfTasks(int data, int NumTask, int TAG) {
-	MPI_Request requests[NumberOfProcessor];  // Pointer to the request handle
-	MPI_Status statuses[NumberOfProcessor];    // Pointer to the status object
-	int i;
-	for (i=0; i<NumberOfWorker; i++) {
+	for (int i=0; i<NumberOfWorker; i++) {
 		if (i >= NumTask) break;
 		//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
-		MPI_Isend(&data, 1, MPI_INT, i+1, TAG, MPI_COMM_WORLD, &requests[i]);
+		MPI_Isend(&data, 1, MPI_INT, i+1, TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
 	}
 	//fprintf(stderr, "Number of tasks assigned = %d\n", i);
 	//fflush(stderr);
-	MPI_Waitall(i, requests, statuses);
 }
+
+
 
 
 void broadcastFromRoot(int &data) {

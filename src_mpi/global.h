@@ -14,6 +14,9 @@ extern int MyRank;
 extern int NumberOfProcessor;
 extern int NumberOfWorker;
 const int ROOT = 0;
+extern int NumberOfCommunication;
+extern MPI_Request requests[MaxNumberOfCommunication];
+extern MPI_Status statuses[MaxNumberOfCommunication];
 
 
 

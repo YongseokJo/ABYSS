@@ -1,3 +1,5 @@
+#define CUDA
+
 #define FAIL    -1
 #define SUCCESS  1
 
@@ -5,6 +7,11 @@
 #define NumberOfTask 20
 #define MaxNumberOfParticle 1000000
 #define MaxNumberOfNeighbor 10000
+
+
+
+#define MaxNumberOfCommunication 100
+
 
 #define FixNumNeighbor 500
 #define NumNeighborMax 5000
@@ -45,3 +52,5 @@ typedef unsigned long long ULL;
 #define RCAST(a)  static_cast<double>(a)
 #define ABS(a) static_cast<double>(std::abs(a))
 #define MIN(a,b) std::min(RCAST(a),RCAST(b))
+
+#define CUDA_REAL double
