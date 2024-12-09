@@ -1,11 +1,11 @@
 #include <vector>
 #include <iostream>
-#include "../global.h"
 #include <cmath>
-#include "defs.h"
 #include <cassert>
-#include "cuda_functions.h"
 #include <mpi.h>
+#include "../def.h"
+#include "../global.h"
+#include "cuda_functions.h"
 
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
@@ -140,7 +140,7 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList){
 
 
 	// Regular Gravity
-	int task = 1;
+	int task = 4;
 	int completed_tasks = 0;
 	int total_tasks = RegularList.size();
 	double next_time = NextRegTimeBlock*time_step;
@@ -168,9 +168,9 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList){
 			 	i+1, 10, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
 		MPI_Isend(&ACListReceive[i*NumNeighborMax], NumNeighborReceive[i], MPI_INT,
 			 	i+1, 11, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		MPI_Isend(&AccRegReceive[i][0]   ,                     1, MPI_DOUBLE,
+		MPI_Isend(&AccRegReceive[i][0]   ,                     3, MPI_DOUBLE,
 			 	i+1, 12, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		MPI_Isend(&AccRegDotReceive[i][0],                     1, MPI_DOUBLE,
+		MPI_Isend(&AccRegDotReceive[i][0],                     3, MPI_DOUBLE,
 			 	i+1, 13, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
 	}
 	MPI_Waitall(NumberOfCommunication, requests, statuses);

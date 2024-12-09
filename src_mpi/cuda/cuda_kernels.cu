@@ -5,7 +5,7 @@
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 #include "cuda_defs.h"
-#include "../defs.h"
+#include "../def.h"
 #include "cuda_kernels.h"
 
 #ifdef THRUST

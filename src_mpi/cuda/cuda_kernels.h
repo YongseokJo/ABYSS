@@ -1,6 +1,6 @@
 #ifndef KERNEL_H
 #define KERNEL_H
-#include "../defs.h"
+#include "../def.h"
 
 
 __global__	void initialize(CUDA_REAL* result, CUDA_REAL* diff, int n, int m, int* subset);

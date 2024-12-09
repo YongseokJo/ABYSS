@@ -6,6 +6,8 @@
 #include "global.h"
 #include <mpi.h>
 #include <unistd.h>
+#include <cuda_runtime.h>
+#include "cuda/cuda_functions.h"
 
 
 void broadcastFromRoot(int &data);
@@ -25,13 +27,19 @@ int main(int argc, char *argv[]) {
 
 
 
-
 	/* Initialize global variables */
 	DefaultGlobal();
+
 
 	/* MPI Initialization */
 	initializeMPI(argc, argv);
 
+#ifdef CUDA
+	int root_proc = 0;
+	//if (MyRank == ROOT)
+	OpenDevice(&root_proc);
+	cudaDeviceSynchronize(); 
+#endif
 
 	/*
 	// Insert this function definition at the top of your code after the include directives.

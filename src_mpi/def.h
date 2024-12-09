@@ -1,4 +1,4 @@
-#define CUDA
+//#define CUDA
 
 #define FAIL    -1
 #define SUCCESS  1
@@ -10,11 +10,13 @@
 
 
 
-#define MaxNumberOfCommunication 100
+#define MaxNumberOfCommunication 10000
 
 
-#define FixNumNeighbor 500
-#define NumNeighborMax 5000
+#define FixNumNeighbor 20
+//#define FixNumNeighbor 500
+#define NumNeighborMax 100
+//#define NumNeighborMax 5000
 
 
 #define MIN_LEVEL_BUFFER 30
@@ -54,3 +56,11 @@ typedef unsigned long long ULL;
 #define MIN(a,b) std::min(RCAST(a),RCAST(b))
 
 #define CUDA_REAL double
+#define nbodymax 100000000 //100000000 for node14
+#define NSIGHT // for nsight debugging
+#define BatchSize 64 // each thread calculates BatchSize particles
+#define GridDimY 32 // each block calcuates NNB/GridDimY particles
+#define NNB_per_block 256
+//#define BatchSize 32 // each thread calculates BatchSize particles
+//#define GridDimY 16 // each block calcuates NNB/GridDimY particles
+//#define NNB_per_block 128

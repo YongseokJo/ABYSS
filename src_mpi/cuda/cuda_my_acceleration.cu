@@ -3,9 +3,10 @@
 #include <unistd.h>
 #include <cmath>
 #include <cassert>
+#include <cuda.h>  // CUDA Driver API
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
-#include "../defs.h"
+#include "../def.h"
 #include "cuda_defs.h"
 #include "cuda_kernels.h"
 #include "cuda_routines.h"
@@ -119,6 +120,7 @@ void GetAcceleration(
 
 
 		dim3 blockDim(64, 1, 1);  // Use a 1D block with 256 threads
+		//dim3 blockDim(32, 1, 1);  // Use a 1D block with 256 threads
 		dim3 gridDim((NumTarget + BatchSize + blockDim.x - 1) / blockDim.x, GridDimY);
 		// dim3 gridDim(32, 32, 1);    // Adjust grid size as needed
 		printf("blockDim=(%d, %d), gridDim=(%d, %d)\n", blockDim.x, blockDim.y, gridDim.x, gridDim.y);
@@ -387,6 +389,11 @@ void _ReceiveFromHost(
 		
 	}
 
+	size_t freeMem, totalMem;
+	cudaMemGetInfo(&freeMem, &totalMem);
+	std::cout << "Free memory: " << freeMem << " bytes, Total memory: " << totalMem << " bytes" << std::endl;
+
+
 	#ifdef oldAoS
 	for (int j=0; j<NNB; j++) {
 		for (int dim=0; dim<Dim; dim++) {
@@ -417,16 +424,10 @@ void _InitializeDevice(int irank){
 
 	std::cout << "Initializing CUDA ..." << std::endl;
 	// Select CUDA device (optional)
-	int device = 0; // Choose GPU device 0
+	int deviceNum = 0; // Choose GPU device 0
 	int deviceCount;
 	cudaGetDeviceCount(&deviceCount);
 
-	cudaStreamCreate(&stream);
-
-	std::cout << "There are " << deviceCount << " GPUs." << std::endl;
-	if (device < 0 || device >= deviceCount) {
-		    // Handle invalid device index
-	}
 
 	cudaDeviceProp prop;
 	cudaGetDeviceProperties(&prop, devid);
@@ -441,7 +442,31 @@ void _InitializeDevice(int irank){
 	fprintf(stderr, "# GPU initialization - rank: %d; HOST %s; NGPU %d; device: %d %s\n", irank, hostname,numGPU, devid, prop.name);
 
 
-	cudaSetDevice(device);
+	cudaSetDevice(deviceNum);
+
+	// Use CUDA Driver API to get the device associated with the current context
+	CUdevice device;
+	CUcontext context;
+	cuCtxGetCurrent(&context); // Get current CUDA context
+
+	if (context != nullptr) {
+		cuCtxGetDevice(&device); // Get the device associated with the current context
+		int deviceId=1;
+		//cuDeviceGetAttribute(&deviceId, CU_DEVICE_ATTRIBUTE_DEVICE_PARTITIONABLE, device);
+		//cuDeviceGetAttribute(&deviceId, CU_DEVICE_ATTRIBUTE_DEVICE_PARTITIONABLE, device);
+		//cuDeviceGetAttribute(&deviceId, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY, device);
+		std::cout << "Root processor's current device is: " << deviceId << std::endl;
+	} else {
+		std::cerr << "Failed to get CUDA context on root processor." << std::endl;
+	}
+
+	cudaStreamCreate(&stream);
+
+	std::cout << "There are " << deviceCount << " GPUs." << std::endl;
+	if (device < 0 || device >= deviceCount) {
+		    // Handle invalid device index
+	}
+
 
 	// Initialize CUDA context
 	/*
@@ -452,7 +477,6 @@ void _InitializeDevice(int irank){
 	}
 	*/
 
-	is_open = true;
 	// CUDA is now initialized and ready to be used
 	std::cout << "CUDA initialized successfully!" << std::endl;
 

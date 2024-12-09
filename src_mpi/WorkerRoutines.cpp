@@ -14,7 +14,7 @@ void CalculateAcceleration23(Particle* ptcl1);
 
 void WorkerRoutines() {
 
-	//std::cout << "Processor " << MyRank << " is ready." << std::endl;
+	std::cout << "Processor " << MyRank << " is ready." << std::endl;
 
 	int task=-1;
 	MPI_Status status;
@@ -93,19 +93,13 @@ void WorkerRoutines() {
 				break;
 
 			case 4: // Update Regular Particle CUDA
-				MPI_Irecv(&ptcl_id,   1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD,
-						&requests[NumberOfCommunication++]);
-
-				MPI_Irecv(&NewNumberOfNeighbor ,                     1, MPI_INT,
-						ROOT, 10, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				MPI_Irecv(NewNeighbors, NewNumberOfNeighbor, MPI_INT,
-						ROOT, 11, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				MPI_Irecv(new_a,                     3, MPI_DOUBLE,
-						ROOT, 12, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				MPI_Irecv(new_adot,                     3, MPI_DOUBLE,
-						ROOT, 13, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
+				MPI_Recv(&ptcl_id            , 1                  , MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Recv(&NewNumberOfNeighbor, 1                  , MPI_INT, ROOT, 10, MPI_COMM_WORLD, &status);
+				MPI_Recv(NewNeighbors        , NewNumberOfNeighbor, MPI_INT, ROOT, 11, MPI_COMM_WORLD, &status);
+				MPI_Recv(new_a               , 3                  , MPI_DOUBLE, ROOT, 12, MPI_COMM_WORLD, &status);
+				MPI_Recv(new_adot            , 3                  , MPI_DOUBLE, ROOT, 13, MPI_COMM_WORLD, &status);
+				//MPI_Waitall(NumberOfCommunication, requests, statuses);
+				//NumberOfCommunication = 0;
 				particles[ptcl_id].updateRegularParticleCuda(NewNeighbors, NewNumberOfNeighbor,
 					 	new_a, new_adot);
 				break;
@@ -113,7 +107,9 @@ void WorkerRoutines() {
 
 			case 8: // Initialize Acceleration
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				//std::cout << "Processor " << MyRank<< " initialization starts." << std::endl;
 				CalculateAcceleration01(&particles[ptcl_id]);
+				//std::cout << "Processor " << MyRank<< " done." << std::endl;
 				break;
 
 			case 9: // Initialize Acceleration

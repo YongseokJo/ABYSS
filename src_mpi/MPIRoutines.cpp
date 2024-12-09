@@ -91,8 +91,9 @@ void InitialAssignmentOfTasks(int* data, int NumTask, int TAG) {
 
 void InitialAssignmentOfTasks(int data, int NumTask, int TAG) {
 	for (int i=0; i<NumberOfWorker; i++) {
-		if (i >= NumTask) break;
-		//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
+		//std::cerr << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
+		if (i >= NumTask)
+			break;
 		MPI_Isend(&data, 1, MPI_INT, i+1, TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
 	}
 	//fprintf(stderr, "Number of tasks assigned = %d\n", i);

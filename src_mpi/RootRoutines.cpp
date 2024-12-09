@@ -80,8 +80,6 @@ void RootRoutines() {
 
 		std::cout << "First round of tasks assignment is sent." << std::endl;
 
-		//MPI_Waitall(worker_rank-1, requests, statuses);
-
 		// further assignments
 		remaining_tasks = total_tasks-NumberOfWorker;
 		while (completed_tasks < total_tasks) {
@@ -568,10 +566,7 @@ void RootRoutines() {
 				total_tasks = RegularList.size();
 				next_time = NextRegTimeBlock*time_step;
 
-
-				calculateRegAccelerationOnGPU(std::vector<Particle*> RegularList, std::vector<Particle*> &particle);
-
-
+				calculateRegAccelerationOnGPU(RegularList);
 			}
 #else
 			//std::cout << "Regular Routine Starts." << std::endl;
