@@ -212,6 +212,7 @@ void RootRoutines() {
 			}
 			fprintf(stdout, "\n");
 		}
+	}
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
 			fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"\
@@ -568,6 +569,69 @@ void RootRoutines() {
 
 				calculateRegAccelerationOnGPU(RegularList);
 			}
+			/*
+				{
+					//, NextRegTime= %.3e Myr(%llu),
+					for (int i=0; i<total_tasks; i++) {
+						ptcl = &particles[RegularList[i]];
+						fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr, NextReg = %.3e (%llu)\n"\
+								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d), NextBlockIrr= %.3e(%llu)\n"\
+								"NumNeighbor= %d\n",
+								ptcl->PID,
+								ptcl->CurrentTimeIrr*EnzoTimeStep*1e10/1e6,
+								ptcl->CurrentBlockIrr,
+								ptcl->CurrentTimeReg*EnzoTimeStep*1e10/1e6,
+								ptcl->CurrentBlockReg,
+								NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
+								NextRegTimeBlock,
+								ptcl->TimeStepIrr*EnzoTimeStep*1e10/1e6,
+								ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6,
+								ptcl->TimeBlockIrr,
+								ptcl->TimeLevelIrr,
+								ptcl->TimeBlockReg,
+								ptcl->TimeLevelReg,
+								ptcl->NextBlockIrr*time_step*EnzoTimeStep*1e10/1e6,
+								ptcl->NextBlockIrr,
+								ptcl->NumberOfNeighbor
+								);
+
+						fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
+								a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
+								a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n", 
+								ptcl->a_tot[0][0],
+								ptcl->a_tot[1][0],
+								ptcl->a_tot[2][0],
+								ptcl->a_reg[0][0],
+								ptcl->a_reg[1][0],
+								ptcl->a_reg[2][0],
+								ptcl->a_irr[0][0],
+								ptcl->a_irr[1][0],
+								ptcl->a_irr[2][0],
+								ptcl->NewNumberOfNeighbor,
+								ptcl->RadiusOfNeighbor,
+								ptcl->a_reg[0][1],
+								ptcl->a_reg[1][1],
+								ptcl->a_reg[2][1],
+								ptcl->a_reg[0][2],
+								ptcl->a_reg[1][2],
+								ptcl->a_reg[2][2],
+								ptcl->a_reg[0][3],
+								ptcl->a_reg[1][3],
+								ptcl->a_reg[2][3],
+								ptcl->a_irr[0][1],
+								ptcl->a_irr[1][1],
+								ptcl->a_irr[2][1],
+								ptcl->a_irr[0][2],
+								ptcl->a_irr[1][2],
+								ptcl->a_irr[2][2],
+								ptcl->a_irr[0][3],
+								ptcl->a_irr[1][3],
+								ptcl->a_irr[2][3]
+									);
+					}
+					//fflush(stdout); 
+				}
+				*/
 #else
 			//std::cout << "Regular Routine Starts." << std::endl;
 			// Regular

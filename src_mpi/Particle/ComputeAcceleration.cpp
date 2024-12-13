@@ -388,11 +388,9 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 
 	for (int i=0; i<size; i++) {
 		if (i < NewNumberOfNeighbor) {
-			//hashTableNew[NewNeighbors[i]] = i;
-			hashTableOld.insert({NewNeighbors[i], i});
+			hashTableNew.insert({NewNeighbors[i], i});
 		}
 		if (i < this->NumberOfNeighbor) {
-			//hashTableOld[this->Neighbors[i]] = i;
 			hashTableOld.insert({this->Neighbors[i], i});
 		}
 	}
@@ -409,9 +407,11 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 	// Aceeleration correction
 	for (int i=0; i<size; i++) {
 
-		if ( i < this->NumberOfNeighbor ){
+		if ( i < this->NumberOfNeighbor ) {
 			// neighbor in old but not in new
-		 	if ( hashTableNew.find(this->Neighbors[i]) != hashTableNew.end() ) {
+		 	if ( hashTableNew.find(this->Neighbors[i]) == hashTableNew.end() ) {
+				//fprintf(stderr, "in old, not in new = %d\n",this->Neighbors[i]);
+				//std::cerr <<  "in old, not in new =" <<  this->Neighbors[i] << std::endl;
 				ptcl = &particles[this->Neighbors[i]];
 
 				if (ptcl->NumberOfNeighbor == 0)
@@ -429,6 +429,7 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 				}
 
 				m_r3 = ptcl->Mass/dr2/sqrt(dr2);
+
 				for (int dim=0; dim<Dim; dim++){
 					a_tmp[dim]    -= m_r3*dx[dim];
 					adot_tmp[dim] -= m_r3*(dv[dim] - 3*dx[dim]*dxdv/dr2);
@@ -439,7 +440,6 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 
 
 		if ( i < NewNumberOfNeighbor ) {
-
 			ptcl = &particles[NewNeighbors[i]];
 
 			if (ptcl->NumberOfNeighbor == 0)
@@ -464,7 +464,9 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 			}
 
 			// neighbor in new but not in old
-			if ( hashTableOld.find(NewNeighbors[i]) != hashTableOld.end() ) {
+			if ( hashTableOld.find(NewNeighbors[i]) == hashTableOld.end() ) {
+				//fprintf(stderr, "in new, not in old = %d\n",this->Neighbors[i]);
+				//std::cerr <<  "in new, not in old =" <<  NewNeighbors[i] << std::endl;
 				for (int dim=0; dim<Dim; dim++){
 					a_tmp[dim]    += m_r3*dx[dim];
 					adot_tmp[dim] += m_r3*(dv[dim] - 3*dx[dim]*dxdv/dr2);
@@ -474,21 +476,24 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 	}
 
 
+
 	/*******************************************************
 	 * Acceleartion correction according to past neighbor
 	 ********************************************************/
 	/*
-		 std::cout <<  "MyPID=" <<  ptcl->PID;
-		 std::cout <<  "(" << NumNeighborReceive[i] << ", ";
-		 std::cout <<  "(" << ptcl->RadiusOfAC << ")" << std::endl;
-	//std::cout <<  "NeighborIndex = ";
-	for (int j=0;  j<NumNeighborReceive[i]; j++) {
-	NeighborIndex = ACListReceive[i][j];  // gained neighbor particle (in next time list)
-																				//std::cout <<  NeighborIndex << "  (" << particle[NeighborIndex]->PID << "), ";
-																				std::cout <<  particle[NeighborIndex]->PID << ", ";
-																				}
-																				std::cout << std::endl;
-																				*/
+	int NeighborIndex;
+	std::cerr <<  "MyPID=" <<  this->PID;
+	std::cerr <<  "(" << NewNumberOfNeighbor << ") " << std::endl;
+	//std::cout <<  "(" << ptcl->RadiusOfAC << ")" << std::endl;
+	std::cerr <<  "NeighborIndex = ";
+	for (int j=0;  j<NewNumberOfNeighbor; j++) {
+		NeighborIndex = NewNeighbors[j];  // gained neighbor particle (in next time list)
+		std::cerr <<  NeighborIndex << "  (" << particles[NeighborIndex].PID << "), ";
+		//std::cout <<  particles[NeighborIndex].PID << ", ";
+	}
+	std::cerr << std::endl;
+	*/
+
 	//fprintf(stderr,"%d Neighbor Correction new=%d, old=%d\n", ptcl->PID, NumNeighborReceive[i], ptcl->NumberOfAC);
 	/*
 		 if (NumNeighborReceive[i]>NumNeighborMax) {
@@ -549,7 +554,7 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 		this->a_reg[dim][1] = new_adot[dim];
 		this->a_tot[dim][0] = this->a_reg[dim][0] + this->a_irr[dim][0];
 		this->a_tot[dim][1] = this->a_reg[dim][1] + this->a_irr[dim][1];
-		if (this->NewNumberOfNeighbor == 0) {
+		if (NewNumberOfNeighbor == 0) {
 			this->a_tot[dim][2] = this->a_reg[dim][2];
 			this->a_tot[dim][3] = this->a_reg[dim][3];
 		}
@@ -594,13 +599,13 @@ _time.reg_cpu2.markStart();
 	/*******************************************************
 	 * Finally update particles
 	 ********************************************************/
+	/*
 	//for (Particle* ptcl: RegularList) {
 	this->CurrentBlockReg = NextRegTimeBlock;
 	this->CurrentTimeReg  = NextRegTimeBlock*time_step;
 	this->calculateTimeStepReg();
 	this->calculateTimeStepIrr();
 
-	/*
 		 if (this->TimeLevelReg > this->TimeLevelIrr+3 || 
 		 mag0(this->a_irr)>mag0(this->a_reg)*1e3) {
 	//this->updateParticle();
@@ -610,7 +615,7 @@ _time.reg_cpu2.markStart();
 	else {
 	this->updateParticle();
 	}
-	*/
+
 	this->updateParticle();
 	//this->calculateTimeStepReg();
 	//this->calculateTimeStepIrr(this->a_tot,this->a_irr);
@@ -626,13 +631,14 @@ _time.reg_cpu2.markStart();
 		//assert(this->Position[0] ==  this->Position[0]);
 	}
 
-	for (int i=0; i<this->NewNumberOfNeighbor; i++)
-		this->Neighbors[i] = this->NewNeighbors[i];
-	this->NumberOfNeighbor = this->NewNumberOfNeighbor;
+	for (int i=0; i<NewNumberOfNeighbor; i++)
+		this->Neighbors[i] = NewNeighbors[i];
+	this->NumberOfNeighbor = NewNumberOfNeighbor;
 
 	this->updateRadius();
 	this->NextBlockIrr = this->CurrentBlockIrr + this->TimeBlockIrr; // of this particle
-
+																																	 */
 }
+
 
 

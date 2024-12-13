@@ -104,7 +104,7 @@ void GetAcceleration(
 
 	for (int TargetStart=0; TargetStart < NumTargetTotal; TargetStart+=target_size){
 		NumTarget = std::min(target_size, NumTargetTotal-TargetStart);
-		fprintf(stdout, "TargetStart=%d, NumTargetTotal=%d, NumTarget=%d\n", TargetStart, NumTargetTotal, NumTarget);
+		//fprintf(stdout, "TargetStart=%d, NumTargetTotal=%d, NumTarget=%d\n", TargetStart, NumTargetTotal, NumTarget);
 
 		// Compute pairwise differences for the subset
 		//blockSize = variable_size;
@@ -123,7 +123,7 @@ void GetAcceleration(
 		//dim3 blockDim(32, 1, 1);  // Use a 1D block with 256 threads
 		dim3 gridDim((NumTarget + BatchSize + blockDim.x - 1) / blockDim.x, GridDimY);
 		// dim3 gridDim(32, 32, 1);    // Adjust grid size as needed
-		printf("blockDim=(%d, %d), gridDim=(%d, %d)\n", blockDim.x, blockDim.y, gridDim.x, gridDim.y);
+		//printf("blockDim=(%d, %d), gridDim=(%d, %d)\n", blockDim.x, blockDim.y, gridDim.x, gridDim.y);
 		compute_forces<<<gridDim, blockDim, 0, stream>>>\
 			(d_ptcl, d_r2, d_diff, NumTarget, NNB, d_target, d_neighbor_block, d_num_neighbor, TargetStart);
 
@@ -149,7 +149,7 @@ void GetAcceleration(
 		dim3 gridDim2(NumTarget, 1);
 		dim3 blockDim2(GridDimY, 1);  // Use a 1D block with 256 threads
 
-		printf("blockDim=(%d, %d), gridDim=(%d, %d)\n", blockDim2.x, blockDim2.y, gridDim2.x, gridDim2.y);
+		//printf("blockDim=(%d, %d), gridDim=(%d, %d)\n", blockDim2.x, blockDim2.y, gridDim2.x, gridDim2.y);
 		gather_neighbor<<<gridDim2, blockDim2, 0, stream>>>\
 			(d_neighbor_block, d_num_neighbor, d_neighbor, NumTarget);
 
@@ -391,7 +391,7 @@ void _ReceiveFromHost(
 
 	size_t freeMem, totalMem;
 	cudaMemGetInfo(&freeMem, &totalMem);
-	std::cout << "Free memory: " << freeMem << " bytes, Total memory: " << totalMem << " bytes" << std::endl;
+	//std::cout << "Free memory: " << freeMem << " bytes, Total memory: " << totalMem << " bytes" << std::endl;
 
 
 	#ifdef oldAoS

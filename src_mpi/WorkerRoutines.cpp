@@ -25,6 +25,7 @@ void WorkerRoutines() {
 	int NewNeighbors[MaxNumberOfNeighbor];
 	double new_a[Dim];
 	double new_adot[Dim];
+	Particle *ptcl;
 
 	while (true) {
 		MPI_Recv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &status);
@@ -100,10 +101,35 @@ void WorkerRoutines() {
 				MPI_Recv(new_adot            , 3                  , MPI_DOUBLE, ROOT, 13, MPI_COMM_WORLD, &status);
 				//MPI_Waitall(NumberOfCommunication, requests, statuses);
 				//NumberOfCommunication = 0;
+				/*
+				for (int dim=0; dim<Dim; dim++)
+					fprintf(stderr, "Worker: new_a=%.3e", new_a[dim]);
+				fprintf(stderr, "\n");
+				*/
 				particles[ptcl_id].updateRegularParticleCuda(NewNeighbors, NewNumberOfNeighbor,
 					 	new_a, new_adot);
 				break;
 
+			case 5: // Update Regular Particle CUDA II
+				MPI_Recv(&ptcl_id            , 1                  , MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Recv(&NewNumberOfNeighbor, 1                  , MPI_INT, ROOT, 10, MPI_COMM_WORLD, &status);
+				MPI_Recv(NewNeighbors        , NewNumberOfNeighbor, MPI_INT, ROOT, 11, MPI_COMM_WORLD, &status);
+			  ptcl = &particles[ptcl_id];
+				ptcl->updateParticle();
+				ptcl->CurrentBlockReg = ptcl->CurrentBlockReg+ptcl->TimeBlockReg;
+				ptcl->CurrentTimeReg  = ptcl->CurrentBlockReg*time_step;
+				ptcl->calculateTimeStepReg();
+				ptcl->calculateTimeStepIrr();
+				if (ptcl->NumberOfNeighbor == 0) {
+					ptcl->CurrentBlockIrr = ptcl->CurrentBlockReg;
+					ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
+				}
+				for (int i=0; i<NewNumberOfNeighbor; i++)
+					ptcl->Neighbors[i] = NewNeighbors[i];
+				ptcl->NumberOfNeighbor = NewNumberOfNeighbor;
+				ptcl->updateRadius();
+				ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of ptcl particle
+				break;
 
 			case 8: // Initialize Acceleration
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
