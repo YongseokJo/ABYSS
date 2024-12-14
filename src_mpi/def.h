@@ -13,10 +13,10 @@
 #define MaxNumberOfCommunication 10000
 
 
-#define FixNumNeighbor 20
-//#define FixNumNeighbor 500
-#define NumNeighborMax 100
-//#define NumNeighborMax 5000
+//#define FixNumNeighbor 20
+#define FixNumNeighbor 500
+//#define NumNeighborMax 100
+#define NumNeighborMax 5000
 
 
 #define MIN_LEVEL_BUFFER 30

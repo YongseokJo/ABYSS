@@ -16,8 +16,8 @@ module add openmpi
 #mv ./abyss_mpi.exe abyss_mpi_no_cuda.exe
 
 
-module add modules/2.2-20230808
-#module add modules/2.3-20240529
+#module add modules/2.2-20230808
+module add modules/2.3-20240529
 module add cuda
 module add openmpi #/cuda
 
