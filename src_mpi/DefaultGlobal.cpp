@@ -17,6 +17,8 @@ MPI_Request requests[MaxNumberOfCommunication];
 MPI_Status statuses[MaxNumberOfCommunication];
 
 
+int LoadBalanceParticle;
+
 int NumberOfParticle;
 
 // Task
@@ -52,6 +54,10 @@ bool IsOutput;
 double outputTime;
 int outNum;
 
+#ifdef PerformanceTrace
+Performance performance;
+#endif
+
 void DefaultGlobal() {
 
 
@@ -65,6 +71,8 @@ void DefaultGlobal() {
 	NumberOfParticle = 1000;
 
 	NumberOfCommunication = 0;
+
+	LoadBalanceParticle = 10;
 
 	/* Timesteps */
 	endTime = 1;

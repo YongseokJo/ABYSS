@@ -2,6 +2,7 @@
 #define GLOBAL_H
 #include "def.h"
 #include "particle.h"
+#include "performance.h"
 #include <mpi.h>
 
 extern Particle *particles;
@@ -19,6 +20,8 @@ extern MPI_Request requests[MaxNumberOfCommunication];
 extern MPI_Status statuses[MaxNumberOfCommunication];
 
 
+// the numer of particles for load balancing
+extern int LoadBalanceParticle; 
 
 extern int NumberOfParticle;
 
@@ -61,5 +64,10 @@ extern double outputTime;
 extern int outNum;
 extern double outputTimeStep;
 
+
+#ifdef PerformanceTrace
+// Performance trace
+extern Performance performance;
+#endif
 
 #endif

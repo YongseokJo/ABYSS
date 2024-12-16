@@ -1,5 +1,8 @@
 //#define CUDA
 
+#define LoadBalance
+#define PerformanceTrace
+
 #define FAIL    -1
 #define SUCCESS  1
 

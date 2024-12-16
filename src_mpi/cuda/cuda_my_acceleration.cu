@@ -391,7 +391,7 @@ void _ReceiveFromHost(
 
 	size_t freeMem, totalMem;
 	cudaMemGetInfo(&freeMem, &totalMem);
-	std::cout << "Free memory: " << freeMem << " bytes, Total memory: " << totalMem << " bytes" << std::endl;
+	//std::cout << "Free memory: " << freeMem << " bytes, Total memory: " << totalMem << " bytes" << std::endl;
 
 
 	#ifdef oldAoS

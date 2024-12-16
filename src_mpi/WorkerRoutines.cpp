@@ -20,12 +20,16 @@ void WorkerRoutines() {
 	MPI_Status status;
 	MPI_Request request;
 	int ptcl_id;
+	std::vector<int> ptcl_id_vector;
 	double next_time;
-	int NewNumberOfNeighbor;
-	int NewNeighbors[MaxNumberOfNeighbor];
-	double new_a[Dim];
-	double new_adot[Dim];
+	int *NewNumberOfNeighbor;
+	int *NewNeighbors;
+	int size=0;
+	double *new_a;
+	double *new_adot;
 	Particle *ptcl;
+	std::chrono::high_resolution_clock::time_point start_point;
+	std::chrono::high_resolution_clock::time_point end_point;
 
 	while (true) {
 		MPI_Recv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &status);
@@ -36,17 +40,40 @@ void WorkerRoutines() {
 
 		switch (task) {
 			case 0: // Irregular Acceleration
-				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+#ifdef LoadBalance
+				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Get_count(&status, MPI_INT, &size);
+				ptcl_id_vector.resize(size);
+				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Recv(&next_time,      1   , MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
+
+				for (int i=0; i<size; i++) {
+					ptcl = &particles[ptcl_id_vector[i]];
+
+#ifdef PerformanceTrace
+					start_point = std::chrono::high_resolution_clock::now();
+					ptcl->computeAccelerationIrr();
+					end_point = std::chrono::high_resolution_clock::now();
+					performance.IrregularForce +=
+						std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
+#else
+					ptcl->computeAccelerationIrr();
+#endif
+
+					ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+					ptcl->calculateTimeStepIrr();
+					ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+				}
+#else
+				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
-				particles[ptcl_id].computeAccelerationIrr();
-				particles[ptcl_id].NewCurrentBlockIrr = particles[ptcl_id].CurrentBlockIrr + particles[ptcl_id].TimeBlockIrr; // of this particle
-				//std::cout << "pid=" << ptcl_id << ", NextBlockIrr=" << particles[ptcl_id].NextBlockIrr \
-				//	<< "TimeBlockIrr="<< particles[ptcl_id].TimeBlockIrr << "CurrentBlockIrr="<<particles[ptcl_id].CurrentBlockIrr \
-				//	<< "NewCurrentBlockIrr="<< particles[ptcl_id].NewCurrentBlockIrr << std::endl;
-			  particles[ptcl_id].calculateTimeStepIrr();
-				particles[ptcl_id].NextBlockIrr = particles[ptcl_id].NewCurrentBlockIrr + particles[ptcl_id].TimeBlockIrr; // of this particle
-				//std::cout << "pid=" << ptcl_id << ", NextBlockIrr=" << particles[ptcl_id].NextBlockIrr \
-				/<< "TimeBlockIrr="<< particles[ptcl_id].TimeBlockIrr 	<< std::endl;
+
+				ptcl = &particles[ptcl_id];
+				ptcl->computeAccelerationIrr();
+				ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+				ptcl->calculateTimeStepIrr();
+				ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+#endif
 				//std::cout << "IrrCal done " << MyRank << std::endl;
 				break;
 
@@ -54,6 +81,7 @@ void WorkerRoutines() {
 				//std::cout << "RegCal start " << MyRank << std::endl;
 				MPI_Recv(&ptcl_id,   1, MPI_INT,    ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
+
 				particles[ptcl_id].computeAccelerationReg();
 				//ComputeAcceleration(ptcl_id, next_time);
 				//std::cout << "RegCal end" << MyRank << std::endl;
@@ -61,10 +89,27 @@ void WorkerRoutines() {
 
 			case 2: // Irregular Update Particle
 				//std::cout << "IrrUp Processor " << MyRank << std::endl;
-				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-			  particles[ptcl_id].updateParticle();
-				particles[ptcl_id].CurrentBlockIrr = particles[ptcl_id].NewCurrentBlockIrr;
-				particles[ptcl_id].CurrentTimeIrr  = particles[ptcl_id].CurrentBlockIrr*time_step;
+#ifdef LoadBalance
+				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Get_count(&status, MPI_INT, &size);
+				ptcl_id_vector.resize(size);
+				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+
+				for (int i=0; i<size; i++) {
+					ptcl = &particles[ptcl_id_vector[i]];
+					ptcl->updateParticle();
+					ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
+					ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
+					//std::cout << "pid=" << ptcl_id << ", CurrentBlockIrr=" << particles[ptcl_id].CurrentBlockIrr << std::endl;
+				}
+#else
+				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+
+				ptcl = &particles[ptcl_id];
+				ptcl->updateParticle();
+				ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
+				ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
+#endif
 				//std::cout << "pid=" << ptcl_id << ", CurrentBlockIrr=" << particles[ptcl_id].CurrentBlockIrr << std::endl;
 				//std::cout << "IrrUp end " << MyRank << std::endl;
 				break;
@@ -73,75 +118,101 @@ void WorkerRoutines() {
 				//std::cout << "RegUp start " << MyRank << std::endl;
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				//std::cout << "ptcl " << ptcl_id << std::endl;
-			  particles[ptcl_id].updateParticle();
 
-				for (int i=0; i<particles[ptcl_id].NewNumberOfNeighbor; i++)
-					particles[ptcl_id].Neighbors[i] = particles[ptcl_id].NewNeighbors[i];
-				particles[ptcl_id].NumberOfNeighbor = particles[ptcl_id].NewNumberOfNeighbor;
-
-				particles[ptcl_id].CurrentBlockReg += particles[ptcl_id].TimeBlockReg;
-				particles[ptcl_id].CurrentTimeReg   = particles[ptcl_id].CurrentBlockReg*time_step;
-			  particles[ptcl_id].calculateTimeStepReg();
-				particles[ptcl_id].NewCurrentBlockIrr = particles[ptcl_id].CurrentBlockReg;
-			  particles[ptcl_id].calculateTimeStepIrr();
-			  particles[ptcl_id].updateRadius();
-				if (particles[ptcl_id].NumberOfNeighbor == 0) {
-					particles[ptcl_id].CurrentBlockIrr = particles[ptcl_id].CurrentBlockReg;
-					particles[ptcl_id].CurrentTimeIrr = particles[ptcl_id].CurrentBlockReg*time_step;
-				}
-				particles[ptcl_id].NextBlockIrr = particles[ptcl_id].CurrentBlockIrr + particles[ptcl_id].TimeBlockIrr; // of this particle
-				//std::cout << "RegUp end " << MyRank << std::endl;
-				break;
-
-			case 4: // Update Regular Particle CUDA
-				MPI_Recv(&ptcl_id            , 1                  , MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Recv(&NewNumberOfNeighbor, 1                  , MPI_INT, ROOT, 10, MPI_COMM_WORLD, &status);
-				MPI_Recv(NewNeighbors        , NewNumberOfNeighbor, MPI_INT, ROOT, 11, MPI_COMM_WORLD, &status);
-				MPI_Recv(new_a               , 3                  , MPI_DOUBLE, ROOT, 12, MPI_COMM_WORLD, &status);
-				MPI_Recv(new_adot            , 3                  , MPI_DOUBLE, ROOT, 13, MPI_COMM_WORLD, &status);
-				//MPI_Waitall(NumberOfCommunication, requests, statuses);
-				//NumberOfCommunication = 0;
-				/*
-				for (int dim=0; dim<Dim; dim++)
-					fprintf(stderr, "Worker: new_a=%.3e", new_a[dim]);
-				fprintf(stderr, "\n");
-				*/
-				particles[ptcl_id].updateRegularParticleCuda(NewNeighbors, NewNumberOfNeighbor,
-					 	new_a, new_adot);
-				break;
-
-			case 5: // Update Regular Particle CUDA II
-				MPI_Recv(&ptcl_id            , 1                  , MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Recv(&NewNumberOfNeighbor, 1                  , MPI_INT, ROOT, 10, MPI_COMM_WORLD, &status);
-				MPI_Recv(NewNeighbors        , NewNumberOfNeighbor, MPI_INT, ROOT, 11, MPI_COMM_WORLD, &status);
-			  ptcl = &particles[ptcl_id];
+				ptcl = &particles[ptcl_id];
 				ptcl->updateParticle();
-				ptcl->CurrentBlockReg = ptcl->CurrentBlockReg+ptcl->TimeBlockReg;
-				ptcl->CurrentTimeReg  = ptcl->CurrentBlockReg*time_step;
+
+				for (int i=0; i<ptcl->NewNumberOfNeighbor; i++)
+					ptcl->Neighbors[i] = ptcl->NewNeighbors[i];
+				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
+
+				ptcl->CurrentBlockReg += ptcl->TimeBlockReg;
+				ptcl->CurrentTimeReg   = ptcl->CurrentBlockReg*time_step;
 				ptcl->calculateTimeStepReg();
+				ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockReg;
 				ptcl->calculateTimeStepIrr();
+				ptcl->updateRadius();
 				if (ptcl->NumberOfNeighbor == 0) {
 					ptcl->CurrentBlockIrr = ptcl->CurrentBlockReg;
 					ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
 				}
-				for (int i=0; i<NewNumberOfNeighbor; i++)
-					ptcl->Neighbors[i] = NewNeighbors[i];
-				ptcl->NumberOfNeighbor = NewNumberOfNeighbor;
-				ptcl->updateRadius();
-				ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of ptcl particle
+				ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+																																				 //std::cout << "RegUp end " << MyRank << std::endl;
+				break;
+
+			case 4: // Update Regular Particle CUDA
+				//MPI_Recv(&size               , 1                  , MPI_INT, ROOT, ANY_TAG, MPI_COMM_WORLD, &status);
+				// Probe to find the size of the incoming message
+				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Get_count(&status, MPI_INT, &size);
+				ptcl_id_vector.resize(size);
+				MPI_Recv(ptcl_id_vector.data(), size                    , MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				NewNeighbors        = new int[size*NumNeighborMax];
+				NewNumberOfNeighbor = new int[size];
+				new_a               = new double[size*3];
+				new_adot            = new double[size*3];
+				MPI_Recv(NewNumberOfNeighbor , size                    , MPI_INT, ROOT, 10, MPI_COMM_WORLD, &status);
+				MPI_Recv(NewNeighbors         , size*NumNeighborMax     , MPI_INT, ROOT, 11, MPI_COMM_WORLD, &status);
+				MPI_Recv(new_a                , size*3                  , MPI_DOUBLE, ROOT, 12, MPI_COMM_WORLD, &status);
+				MPI_Recv(new_adot             , size*3                  , MPI_DOUBLE, ROOT, 13, MPI_COMM_WORLD, &status);
+				//MPI_Waitall(NumberOfCommunication, requests, statuses);
+				//NumberOfCommunication = 0;
+				for (int i=0; i<size; i++) {
+					ptcl = &particles[ptcl_id_vector[i]];
+					ptcl->updateRegularParticleCuda(NewNeighbors, NewNumberOfNeighbor[i], new_a, new_adot, i);
+				}
+				delete NewNeighbors;
+				delete NewNumberOfNeighbor;
+				break;
+
+			case 5: // Update Regular Particle CUDA II
+				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Get_count(&status, MPI_INT, &size);
+				ptcl_id_vector.resize(size);
+				MPI_Recv(ptcl_id_vector.data(), size                    , MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+
+				for (int i=0; i<size; i++) {
+					ptcl = &particles[ptcl_id_vector[i]];
+
+					for (int j=0; j<ptcl->NewNumberOfNeighbor; j++)
+						ptcl->Neighbors[j] = ptcl->NewNeighbors[j];
+					ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
+
+					ptcl->updateParticle();
+					ptcl->CurrentBlockReg = ptcl->CurrentBlockReg+ptcl->TimeBlockReg;
+					ptcl->CurrentTimeReg  = ptcl->CurrentBlockReg*time_step;
+					ptcl->calculateTimeStepReg();
+					ptcl->calculateTimeStepIrr();
+					if (ptcl->NumberOfNeighbor == 0) {
+						ptcl->CurrentBlockIrr = ptcl->CurrentBlockReg;
+						ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
+					}
+					ptcl->updateRadius();
+					ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of ptcl particle
+				}
 				break;
 
 			case 8: // Initialize Acceleration
-				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				//std::cout << "Processor " << MyRank<< " initialization starts." << std::endl;
-				CalculateAcceleration01(&particles[ptcl_id]);
+				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				ptcl_id = ptcl_id*LoadBalanceParticle;
+
+				for (int i=0; i<LoadBalanceParticle; i++) {
+					//std::cerr << ptcl_id+i << std::endl;
+					CalculateAcceleration01(&particles[ptcl_id+i]);
+				}
 				//std::cout << "Processor " << MyRank<< " done." << std::endl;
 				break;
 
 			case 9: // Initialize Acceleration
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				CalculateAcceleration23(&particles[ptcl_id]);
-				particles[ptcl_id].initializeTimeStep();
+				ptcl_id = ptcl_id*LoadBalanceParticle;
+
+				for (int i=0; i<LoadBalanceParticle; i++) {
+					CalculateAcceleration23(&particles[ptcl_id+i]);
+					particles[ptcl_id+i].initializeTimeStep();
+				}
 				break;
 
 			case 10: // Initialize Timestep variables

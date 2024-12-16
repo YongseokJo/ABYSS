@@ -47,7 +47,8 @@ void Particle::computeAccelerationIrr() {
 			fprintf(stderr, "my = %d , pid of cm = %d\n", this->PID, ptcl->PID);
 			fflush(stderr);
 		}
-		*/
+
+
 	 if (ptcl->Position[0]!=ptcl->Position[0]) {
 			fprintf(stderr, "Nan occurs, %lf", ptcl->Position[0]);
 			fflush(stderr);
@@ -60,6 +61,7 @@ void Particle::computeAccelerationIrr() {
 			exit(EXIT_FAILURE);
 			continue;
 		}
+		*/
 
 		// reset temporary variables at the start of a new calculation
 		r2 = 0.0;
@@ -82,8 +84,7 @@ void Particle::computeAccelerationIrr() {
 																													 //
 																													 // add the contribution of jth particle to acceleration of current and predicted times
 
-
-		m_r3 = ptcl->Mass/r2/sqrt(r2);
+		m_r3 = ptcl->Mass/(r2*sqrt(r2));
 
 		for (int dim=0; dim<Dim; dim++){
 			a_tmp[dim]    += m_r3*x[dim];
@@ -95,10 +96,12 @@ void Particle::computeAccelerationIrr() {
 	double a2, a3, da_dt2, adot_dt, dt2, dt3, dt4, dt5;
 	double dt_ex = (new_time - this->CurrentTimeReg)*EnzoTimeStep;
 
+	double A, B, C;
+
 	dt2 = dt*dt;
 	dt3 = dt2*dt;
 	dt4 = dt3*dt;
-	dt5 = dt4*dt;
+	//dt5 = dt4*dt;
 
 	/*******************************************************
 	 * Position and velocity correction due to 4th order correction
@@ -106,27 +109,49 @@ void Particle::computeAccelerationIrr() {
 	for (int dim=0; dim<Dim; dim++) {
 
 
+#define noOptimization // I don't think it works 
+#ifdef Optimization
+		// do the higher order correcteion
+
+
+		A = -12   *( this->a_irr[dim][0]   - a_tmp[dim] );
+		B = -4*dt *( 2*this->a_irr[dim][1] + adot_tmp[dim] );
+		C =  6*dt *( this->a_irr[dim][1]   + adot_tmp[dim] );
+
+		a2 = dt *(A+B)/48;
+		a3 = dt *(C-A)/120;
+
+		//fprintf(stderr, "da_dt2=%.2e, adot_dt=%.2e, a2=%.2e, a3=%.2e\n", da_dt2, adot_dt, a2, a3);
+
+		// 4th order correction
+		// save the values in the temporary variables
+		this->NewPosition[dim] = pos[dim] + a2*dt + a3*dt;
+		this->NewVelocity[dim] = vel[dim] + 4*a2  + 5*a3;
+
+
+		// note that these higher order terms and lowers have different neighbors
+		this->a_irr[dim][0] = a_tmp[dim];
+		this->a_irr[dim][1] = adot_tmp[dim];
+		this->a_irr[dim][2] = a2*24/dt3;
+		this->a_irr[dim][3] = a3*120/dt4;
+#else
 		// do the higher order correcteion
 		da_dt2  = (this->a_irr[dim][0] - a_tmp[dim]) / dt2; 
 		adot_dt = (this->a_irr[dim][1] + adot_tmp[dim]) / dt;
 		a2 =  -6*da_dt2  - 2*adot_dt - 2*this->a_irr[dim][1]/dt;
 		a3 =  (12*da_dt2 + 6*adot_dt)/dt;
 
-		//fprintf(stderr, "da_dt2=%.2e, adot_dt=%.2e, a2=%.2e, a3=%.2e\n", da_dt2, adot_dt, a2, a3);
-
 		// 4th order correction
 		// save the values in the temporary variables
 		this->NewPosition[dim] = pos[dim] + a2*dt4/24 + a3*dt5/120;
 		this->NewVelocity[dim] = vel[dim] + a2*dt3/6  + a3*dt4/24;
-
-		//NewPosition[dim] = PredPosition[dim];// + a2*dt4/24 + a3*dt5/120;
-		//NewVelocity[dim] = PredVelocity[dim];// + a2*dt3/6  + a3*dt4/24;
 
 		// note that these higher order terms and lowers have different neighbors
 		this->a_irr[dim][0] = a_tmp[dim];
 		this->a_irr[dim][1] = adot_tmp[dim];
 		this->a_irr[dim][2] = a2;
 		this->a_irr[dim][3] = a3;
+#endif
 	}
 
 
@@ -139,11 +164,13 @@ void Particle::computeAccelerationIrr() {
 	}
 
 
+	/*
 	if (this->NumberOfNeighbor == 0) {
 		//CurrentTimeIrr += TimeStepIrr;
 		std::cout << "Error: No neighbor in Irregular force!!" << std::endl;
 		return;
 	}
+	*/
 }
 
 
@@ -357,8 +384,22 @@ void Particle::computeAccelerationReg() {
 
 
 
-void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeighbor, double *new_a, double *new_adot) {
+void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNeighborGPU, double *new_a, double *new_adot, int index) {
 
+	/*
+	std::cerr <<  "in here!" << std::endl;
+	int NeighborIndex;
+	std::cerr <<  "Compute: MyPID=" <<  this->PID;
+	std::cerr <<  "(" << NewNumberOfNeighborGPU << ") " << std::endl;
+	//std::cout <<  "(" << ptcl->RadiusOfAC << ")" << std::endl;
+	std::cerr <<  "NeighborIndex = ";
+	for (int j=0;  j<NewNumberOfNeighborGPU; j++) {
+		NeighborIndex = NewNeighborsGPU[index*NumNeighborMax+j];  // gained neighbor particle (in next time list)
+		std::cerr <<  NeighborIndex << "  (" << particles[NeighborIndex].PID << "), ";
+		//std::cout <<  particles[NeighborIndex].PID << ", ";
+	}
+	std::cerr << std::endl;
+	*/
 
 	double new_time = this->CurrentTimeReg+this->TimeStepReg;
 	double pos[Dim], vel[Dim];
@@ -367,10 +408,8 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 	else
 		this->predictParticleSecondOrder(0, pos, vel);
 
-
 	double a_tmp[Dim];
 	double adot_tmp[Dim];
-
 
 	for (int dim=0; dim<Dim; dim++) {
 		a_tmp[dim]          = 0.;
@@ -384,11 +423,11 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 	std::unordered_map<int, int> hashTableNew;
 
 
-	int size = this->NumberOfNeighbor > NewNumberOfNeighbor ? this->NumberOfNeighbor : NewNumberOfNeighbor;
+	int size = this->NumberOfNeighbor > NewNumberOfNeighborGPU ? this->NumberOfNeighbor : NewNumberOfNeighborGPU;
 
 	for (int i=0; i<size; i++) {
-		if (i < NewNumberOfNeighbor) {
-			hashTableNew.insert({NewNeighbors[i], i});
+		if (i < NewNumberOfNeighborGPU) {
+			hashTableNew.insert({NewNeighborsGPU[NumNeighborMax*index+i], i});
 		}
 		if (i < this->NumberOfNeighbor) {
 			hashTableOld.insert({this->Neighbors[i], i});
@@ -439,8 +478,8 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 
 
 
-		if ( i < NewNumberOfNeighbor ) {
-			ptcl = &particles[NewNeighbors[i]];
+		if ( i < NewNumberOfNeighborGPU ) {
+			ptcl = &particles[NewNeighborsGPU[index*NumNeighborMax+i]];
 
 			if (ptcl->NumberOfNeighbor == 0)
 				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
@@ -464,7 +503,7 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 			}
 
 			// neighbor in new but not in old
-			if ( hashTableOld.find(NewNeighbors[i]) == hashTableOld.end() ) {
+			if ( hashTableOld.find(NewNeighborsGPU[index*NumNeighborMax+i]) == hashTableOld.end() ) {
 				//fprintf(stderr, "in new, not in old = %d\n",this->Neighbors[i]);
 				//std::cerr <<  "in new, not in old =" <<  NewNeighbors[i] << std::endl;
 				for (int dim=0; dim<Dim; dim++){
@@ -480,19 +519,7 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 	/*******************************************************
 	 * Acceleartion correction according to past neighbor
 	 ********************************************************/
-	/*
-	int NeighborIndex;
-	std::cerr <<  "MyPID=" <<  this->PID;
-	std::cerr <<  "(" << NewNumberOfNeighbor << ") " << std::endl;
-	//std::cout <<  "(" << ptcl->RadiusOfAC << ")" << std::endl;
-	std::cerr <<  "NeighborIndex = ";
-	for (int j=0;  j<NewNumberOfNeighbor; j++) {
-		NeighborIndex = NewNeighbors[j];  // gained neighbor particle (in next time list)
-		std::cerr <<  NeighborIndex << "  (" << particles[NeighborIndex].PID << "), ";
-		//std::cout <<  particles[NeighborIndex].PID << ", ";
-	}
-	std::cerr << std::endl;
-	*/
+
 
 	//fprintf(stderr,"%d Neighbor Correction new=%d, old=%d\n", ptcl->PID, NumNeighborReceive[i], ptcl->NumberOfAC);
 	/*
@@ -513,8 +540,8 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 
 	//fprintf(stdout, "PID=%d\n", ptcl->PID);
 	for (int dim=0; dim<Dim; dim++) {
-		da_dt2  = (this->a_reg[dim][0] - new_a[dim]   - a_tmp[dim]    ) / dt2;
-		adot_dt = (this->a_reg[dim][1] + new_adot[dim] + adot_tmp[dim]) / dt;
+		da_dt2  = (this->a_reg[dim][0] - new_a[3*index+dim]   - a_tmp[dim]    ) / dt2;
+		adot_dt = (this->a_reg[dim][1] + new_adot[3*index+dim] + adot_tmp[dim]) / dt;
 
 
 		a2 =  -6*da_dt2 - 2*adot_dt - 2*this->a_reg[dim][1]/dt;
@@ -547,97 +574,21 @@ void Particle::updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeigh
 	}
 	fflush(stdout);
 
+	for (int i=0; i<NewNumberOfNeighborGPU; i++)
+		this->NewNeighbors[i] = NewNeighborsGPU[index*NumNeighborMax+i];
+	this->NewNumberOfNeighbor = NewNumberOfNeighborGPU;
 
 
 	for (int dim=0; dim<Dim; dim++) {
-		this->a_reg[dim][0] = new_a[dim];
-		this->a_reg[dim][1] = new_adot[dim];
+		this->a_reg[dim][0] = new_a[3*index+dim];
+		this->a_reg[dim][1] = new_adot[3*index+dim];
 		this->a_tot[dim][0] = this->a_reg[dim][0] + this->a_irr[dim][0];
 		this->a_tot[dim][1] = this->a_reg[dim][1] + this->a_irr[dim][1];
-		if (NewNumberOfNeighbor == 0) {
+		if (this->NewNumberOfNeighbor == 0) {
 			this->a_tot[dim][2] = this->a_reg[dim][2];
 			this->a_tot[dim][3] = this->a_reg[dim][3];
 		}
 	}
-
-
-	/*******************************************************
-	 * Acceleartion correction according to current neighbor
-	 ********************************************************/
-	//std::cout <<  "MyIndex=" <<  ;
-	/*
-		 if (dt*1e4<1e-8) {
-	//std::cout <<  "MyPID=" <<  ptcl->PID;
-	//std::cout <<  "(" << NumNeighborReceive[i] << ")" << std::endl;
-	//std::cout <<  "NeighborIndex = ";
-	for (int j=0;  j<NumNeighborReceive[i]; j++) {
-	NeighborIndex = ACListReceive[i][j];  // gained neighbor particle (in next time list)
-																				//std::cout <<  NeighborIndex << "  (" << particle[NeighborIndex]->PID << "), ";
-																				//std::cout <<  particle[NeighborIndex]->PID << ", ";
-																				}
-	//std::cout << std::endl;
-	}
-	*/
-
-	/*
-		 ptcl->ACList.clear();
-		 ptcl->NumberOfAC = NumNeighborReceive[i];
-		 for (int j=0; j<ptcl->NumberOfAC;j++) {
-		 NeighborIndex = ACListReceive[i][j];  // gained neighbor particle (in next time list)
-		 ptcl->ACList.push_back(particle[NeighborIndex]);
-		 }
-		 */
-/*
-#ifdef time_trace
-_time.reg_cpu1.markEnd();
-_time.reg_cpu1.getDuration();
-
-_time.reg_cpu2.markStart();
-#endif
-*/
-
-	/*******************************************************
-	 * Finally update particles
-	 ********************************************************/
-	/*
-	//for (Particle* ptcl: RegularList) {
-	this->CurrentBlockReg = NextRegTimeBlock;
-	this->CurrentTimeReg  = NextRegTimeBlock*time_step;
-	this->calculateTimeStepReg();
-	this->calculateTimeStepIrr();
-
-		 if (this->TimeLevelReg > this->TimeLevelIrr+3 || 
-		 mag0(this->a_irr)>mag0(this->a_reg)*1e3) {
-	//this->updateParticle();
-	this->calculateTimeStepIrr(this->a_tot,this->a_irr);
-	continue;
-	}
-	else {
-	this->updateParticle();
-	}
-
-	this->updateParticle();
-	//this->calculateTimeStepReg();
-	//this->calculateTimeStepIrr(this->a_tot,this->a_irr);
-	if (this->NumberOfNeighbor == 0) {
-		this->CurrentBlockIrr = this->CurrentBlockReg;
-		this->CurrentTimeIrr = this->CurrentBlockReg*time_step;
-	}
-
-	if (this->Position[0] !=  this->Position[0] || this->Velocity[0] !=  this->Velocity[0]) {
-		fprintf(stdout, "after, myself = %d\n", this->PID);
-		fprintf(stdout, "x[0]=%e, a[0]=%e\n", this->Position[0], this->a_tot[0][0]);
-		fflush(stdout);
-		//assert(this->Position[0] ==  this->Position[0]);
-	}
-
-	for (int i=0; i<NewNumberOfNeighbor; i++)
-		this->Neighbors[i] = NewNeighbors[i];
-	this->NumberOfNeighbor = NewNumberOfNeighbor;
-
-	this->updateRadius();
-	this->NextBlockIrr = this->CurrentBlockIrr + this->TimeBlockIrr; // of this particle
-																																	 */
 }
 
 

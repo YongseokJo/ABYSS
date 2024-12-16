@@ -36,6 +36,9 @@ struct Particle {
 	double BackgroundAcceleration[Dim];
 
 
+	bool isActive;
+	bool isSDAR;
+
 
 	Particle() {
 		Position[0] = Position[1] = Position[2] = 0.0;
@@ -97,6 +100,8 @@ struct Particle {
 		//this->RadiusOfNeighbor         = 0;
 		this->NumberOfNeighbor           = 0;
 		this->NewNumberOfNeighbor        = 0;
+		this->isActive                   = true;
+		this->isSDAR                     = false;
 	}
 
 	void normalizeParticle() {
@@ -155,7 +160,7 @@ struct Particle {
 	void calculateTimeStepIrr();
 	void calculateTimeStepReg();
 
-	void updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeighbor, double *new_a, double *new_adot);
+	void updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeighbor, double *new_a, double *new_adot, int index);
 };
 
 

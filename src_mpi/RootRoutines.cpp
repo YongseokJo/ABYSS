@@ -47,7 +47,7 @@ void RootRoutines() {
 		std::cout << "Initialization of particles starts." << std::endl;
 		task            = 8;
 		completed_tasks = 0;
-		total_tasks = NumberOfParticle;
+		total_tasks = (NumberOfParticle+LoadBalanceParticle-1)/LoadBalanceParticle;
 
 		// Initial assignments
     int pid[NumberOfWorker];  
@@ -79,6 +79,7 @@ void RootRoutines() {
 		NumberOfCommunication = 0;
 
 		std::cout << "First round of tasks assignment is sent." << std::endl;
+		std::cout << "total_tasks = "<< total_tasks << std::endl;
 
 		// further assignments
 		remaining_tasks = total_tasks-NumberOfWorker;
@@ -273,7 +274,6 @@ void RootRoutines() {
 	}
 	*/
 	/* Particle Initialization Check */
-	/*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
 		for (int i=0; i<NumberOfParticle; i++) {
@@ -297,7 +297,7 @@ void RootRoutines() {
 					ptcl->NumberOfNeighbor
 					);
 		}
-	}*/
+	}
 
 
 
@@ -312,6 +312,8 @@ void RootRoutines() {
 		double current_time_irr=0;
 		double next_time=0;
 		int ptcl_id_return;
+		int AdaptiveLoadBalancing;
+		int size=0;
 
 		//ParticleSynchronization();
 		while (1) {
@@ -333,11 +335,6 @@ void RootRoutines() {
 			while ( skiplist->getFirstNode() != nullptr) {
 				update_idx=0;
 				ThisLevelNode = skiplist->getFirstNode();
-
-				// Irregular Gravity
-				task = 0;
-				completed_tasks = 0;
-				total_tasks = ThisLevelNode->ParticleList.size();
 				next_time = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	+ particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 				//std::cout << "TotalTask=" << total_tasks << std::endl;
@@ -350,6 +347,70 @@ void RootRoutines() {
 				}
 				*/
 				//std::cout << std::endl;
+#ifdef LoadBalance
+				// Calculate Irregular
+				task = 0;
+				completed_tasks = 0;
+				total_tasks = ThisLevelNode->ParticleList.size();
+				//total_tasks = (ThisLevelNode->ParticleList.size()+LoadBalanceParticle-1)/LoadBalanceParticle;
+
+				AdaptiveLoadBalancing = (total_tasks+NumberOfWorker-1)/NumberOfWorker;
+				for (int i=0; i<NumberOfWorker; i++) {
+					if (i*AdaptiveLoadBalancing >= total_tasks) break;
+					//std::cout << "=" << RegularList[0] << std::endl;
+					MPI_Isend(&task, 1, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+					//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
+					size = total_tasks - i*AdaptiveLoadBalancing;
+					size = (size < AdaptiveLoadBalancing) ? size : AdaptiveLoadBalancing;
+
+					MPI_Isend(&ThisLevelNode->ParticleList[i*AdaptiveLoadBalancing], size, MPI_INT,
+							i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+					MPI_Isend(&next_time                                           ,     1, MPI_DOUBLE,
+							i+1, TIME_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+				}
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
+
+				for (int i=0; i<NumberOfWorker; i++) {
+					if (i*AdaptiveLoadBalancing >= total_tasks) break;
+					MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+				}
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
+
+				task = 2;
+				completed_tasks = 0;
+				for (int i=0; i<NumberOfWorker; i++) {
+					if (i*AdaptiveLoadBalancing >= total_tasks) break;
+					//std::cout << "=" << RegularList[0] << std::endl;
+					MPI_Isend(&task, 1, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+					//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
+					size = total_tasks - i*AdaptiveLoadBalancing;
+					size = (size < AdaptiveLoadBalancing) ? size : AdaptiveLoadBalancing;
+
+					MPI_Isend(&ThisLevelNode->ParticleList[i*AdaptiveLoadBalancing], size, MPI_INT,
+							i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+				}
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
+
+				for (int i=0; i<NumberOfWorker; i++) {
+					if (i*AdaptiveLoadBalancing >= total_tasks) break;
+					MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+				}
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
+
+
+				for (int i=0; i<total_tasks; i++)
+					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
+
+
+#else
+				// Irregular Gravity
+				task = 0;
+				completed_tasks = 0;
+
 				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
 				InitialAssignmentOfTasks(ThisLevelNode->ParticleList, next_time, total_tasks, PTCL_TAG);
 				MPI_Waitall(NumberOfCommunication, requests, statuses);
@@ -437,9 +498,10 @@ void RootRoutines() {
 				for (int i=0; i<total_tasks; i++)
 					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
 
+
+#endif
+
 				//skiplist->display();
-
-
 				/*
 				{
 					//, NextRegTime= %.3e Myr(%llu),
@@ -564,7 +626,7 @@ void RootRoutines() {
 
 #ifdef CUDA
 			{
-				total_tasks = RegularList.size();
+				//total_tasks = RegularList.size();
 				next_time = NextRegTimeBlock*time_step;
 
 				calculateRegAccelerationOnGPU(RegularList);
@@ -572,7 +634,7 @@ void RootRoutines() {
 			/*
 				{
 					//, NextRegTime= %.3e Myr(%llu),
-					for (int i=0; i<total_tasks; i++) {
+					for (int i=0; i<RegularList.size(); i++) {
 						ptcl = &particles[RegularList[i]];
 						fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr, NextReg = %.3e (%llu)\n"\
 								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d), NextBlockIrr= %.3e(%llu)\n"\
@@ -607,7 +669,7 @@ void RootRoutines() {
 								ptcl->a_irr[0][0],
 								ptcl->a_irr[1][0],
 								ptcl->a_irr[2][0],
-								ptcl->NewNumberOfNeighbor,
+								ptcl->NumberOfNeighbor,
 								ptcl->RadiusOfNeighbor,
 								ptcl->a_reg[0][1],
 								ptcl->a_reg[1][1],
