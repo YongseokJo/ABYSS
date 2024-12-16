@@ -42,6 +42,8 @@ void Particle::computeAccelerationIrr() {
 
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
 		ptcl = &particles[this->Neighbors[i]];
+
+		if (!ptcl->isActive) continue;
 		/*
 		if (ptcl->isCMptcl) {
 			fprintf(stderr, "my = %d , pid of cm = %d\n", this->PID, ptcl->PID);
@@ -218,6 +220,8 @@ void Particle::computeAccelerationReg() {
 
 	for (int i=0; i<NumberOfParticle; i++) {
 		ptcl = &particles[i];
+
+		if (!ptcl->isActive) continue;
 
 		if (this->PID == ptcl->PID)
 			continue;
@@ -453,6 +457,8 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 				//std::cerr <<  "in old, not in new =" <<  this->Neighbors[i] << std::endl;
 				ptcl = &particles[this->Neighbors[i]];
 
+				if (!ptcl->isActive) continue;
+
 				if (ptcl->NumberOfNeighbor == 0)
 					ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
 				else
@@ -480,6 +486,8 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 		if ( i < NewNumberOfNeighborGPU ) {
 			ptcl = &particles[NewNeighborsGPU[index*NumNeighborMax+i]];
+
+			if (!ptcl->isActive) continue;
 
 			if (ptcl->NumberOfNeighbor == 0)
 				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
@@ -590,6 +598,4 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 		}
 	}
 }
-
-
 

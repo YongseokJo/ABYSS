@@ -402,6 +402,8 @@ void sendAllParticlesToGPU(double new_time) {
 	// copy the data of particles to the arrays to be sent
 	for (int i=0; i<size; i++) {
 		ptcl       = &particles[i];
+		if (!ptcl->isActive) continue;
+
 		Mass[i]    = ptcl->Mass;
 		Mdot[i]    = 0; //particle[i]->Mass;
 		Radius2[i] = ptcl->RadiusOfNeighbor; // mass wieght?
