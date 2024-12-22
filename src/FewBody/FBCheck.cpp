@@ -177,7 +177,7 @@ void Particle::checkNewGroup2() {
         const Float dr = dist(this->PredPosition, ptcl->PredPosition);
         ASSERT(dr>0.0);
 
-        REAL v2 = std::pow(dist(this->PredVelocity, ptcl->PredPosition), 2);
+        REAL v2 = std::pow(dist(this->PredVelocity, ptcl->PredVelocity), 2);
         // determine they are bound or not
         REAL energy = v2/2 - (this->Mass + ptcl->Mass)/dr;
 

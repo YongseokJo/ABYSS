@@ -36,6 +36,7 @@ void UpdateEvolution(Particle* ptcl);
 void GR_energy_loss(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin, REAL current_time, REAL next_time);
 void GR_energy_loss_iter(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin, REAL current_time, REAL next_time);
 
+void NewFBInitialization3(Group* group, std::vector<Particle*> &particle);
 void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> &particle);
 
 
@@ -54,7 +55,7 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
     // fprintf(mergerout, "PID: %d\n", groupCM->PID);
     // fprintf(mergerout, "before posx: %e pc\n", sym_int.particles[0].Position[0]*position_unit);
 
-    // auto bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
+    auto bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
 
     // AR::InterruptBinary<Particle> bin_interrupt;
     // if (groupCM->PID != -1025)
@@ -131,6 +132,7 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
         bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
 */ // Precession test
 
+/* // Widely used version, but let's just use only SDAR, not Kepler integration
     AR::InterruptBinary<Particle> bin_interrupt;
     if (Members.size() == 2 && groupCM->NumberOfAC == 0) { // for unperturbed binary
     // if (Members.size() == 2) { // test
@@ -147,12 +149,25 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
         if (manager.interrupt_detection_option > 0) {
             Interaction interaction;
             interaction.modifyAndInterruptKepler(bin_interrupt, bin_root, (next_time - CurrentTime)*EnzoTimeStep);
-        }        
-        sym_int.initialIntegration(next_time*EnzoTimeStep);
+        }
+        if (bin_interrupt.status == AR::InterruptStatus::none) {
+        // if (!(sym_int.info.getBinaryTreeRoot().Velocity[0]*sym_int.info.getBinaryTreeRoot().Velocity[0]<1e-10)) { 
+        //     fprintf(stderr, "Kepler\n");
+        //     fprintf(stderr, "pos: (%e, %e, %e)\n", sym_int.info.getBinaryTreeRoot().Position[0], sym_int.info.getBinaryTreeRoot().Position[1], sym_int.info.getBinaryTreeRoot().Position[2]);
+        //     fprintf(stderr, "vel: (%e, %e, %e)\n", sym_int.info.getBinaryTreeRoot().Velocity[0], sym_int.info.getBinaryTreeRoot().Velocity[1], sym_int.info.getBinaryTreeRoot().Velocity[2]);
+        //     for (Particle* members: Members) {
+        //         fprintf(stderr, "PID: %d\n", members->PID);
+        //     }
+        //     fflush(stderr);
+        // }
+            // sym_int.particles.calcCenterOfMass();        
+            sym_int.initialIntegration(next_time*EnzoTimeStep);
+        }
     }
     else {
         bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
     }
+*/
 
 // /* PN corrections
     // if (PNon && bin_interrupt.status == AR::InterruptStatus::none) { // Only particles with BH
@@ -185,8 +200,26 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
         else {
             GR_energy_loss_iter(bin_interrupt, bin_root, CurrentTime, next_time);
         }
-        if (bin_interrupt.status == AR::InterruptStatus::none)
+        if (bin_interrupt.status == AR::InterruptStatus::none) {
+            // if (!(sym_int.info.getBinaryTreeRoot().Velocity[0]*sym_int.info.getBinaryTreeRoot().Velocity[0]<1e-10)) { 
+            //     fprintf(stderr, "PN correction\n");
+            //     // fprintf(stderr, "pos: (%e, %e, %e)\n", sym_int.info.getBinaryTreeRoot().Position[0], sym_int.info.getBinaryTreeRoot().Position[1], sym_int.info.getBinaryTreeRoot().Position[2]);
+            //     // fprintf(stderr, "vel: (%e, %e, %e)\n", sym_int.info.getBinaryTreeRoot().Velocity[0], sym_int.info.getBinaryTreeRoot().Velocity[1], sym_int.info.getBinaryTreeRoot().Velocity[2]);
+            //     for (Particle* members: Members) {
+            //         fprintf(stderr, "PID: %d\n", members->PID);
+            //         // fprintf(stderr, "pos: %e, %e, %e\n", members->Position[0], members->Position[1], members->Position[2]);
+            //         // fprintf(stderr, "vel: %e, %e, %e\n", members->Velocity[0], members->Velocity[1], members->Velocity[2]);
+            //     }
+            //     fflush(stderr);
+            // }
+            // if (groupCM->PID == -10917) {
+            //     fprintf(stderr, "CurrentTime: %e Myr\n", next_time*EnzoTimeStep*1e4);
+            //     fprintf(stderr, "treepos: %e, %e, %e\n", bin_root.Position[0], bin_root.Position[1], bin_root.Position[2]);
+            //     fprintf(stderr, "treevel: %e, %e, %e\n", bin_root.Velocity[0], bin_root.Velocity[1], bin_root.Velocity[2]);
+            //     fflush(stderr);
+            // }
             sym_int.initialIntegration(next_time*EnzoTimeStep); // Eunwoo: this should be fixed later // Eunwoo: I don't think so!
+        }
     }    
 // */
 
@@ -208,16 +241,18 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
             return false;   
         }
         else {
+
+            CurrentTime = bin_interrupt.time_now/EnzoTimeStep;
+
             sym_int.particles.shiftToOriginFrame();
             sym_int.particles.template writeBackMemberAll<Particle>();
-
-            Group *newGroup = new Group();
 
             for (int i = 0; i < Members.size(); i++) {
                 if (Members[i]->Mass == 0)
                     Members[i]->isErase = true;
-                else
-                    newGroup->Members.push_back(Members[i]);
+                else {
+                    Members[i]->CurrentTimeIrr  = next_time;
+                }
             }
 
 #ifdef SEVN
@@ -251,25 +286,8 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
             );
 #endif
 
-            newGroup->initialManager();
-            newGroup->initialIntegrator();
-            newGroup->sym_int.particles.cm = *groupCM;
-            newGroup->sym_int.initialIntegration(bin_interrupt.time_now);
-            newGroup->sym_int.info.calcDsAndStepOption(newGroup->manager.step.getOrder(), newGroup->manager.interaction.gravitational_constant, newGroup->manager.ds_scale);
-
-            if (bin_interrupt.time_now != next_time*EnzoTimeStep)
-                newGroup->ARIntegration(next_time*EnzoTimeStep, particle);
-            // /* // This is correct
-            auto& bin_root = sym_int.info.getBinaryTreeRoot();
-            if (bin_root.semi>0.0)
-                newGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, groupCM->RadiusOfAC);
-            else
-                newGroup->sym_int.info.r_break_crit = 2*bin_root.semi*(1-bin_root.ecc); // r_break_crit = 2*peri
-            // */ // This is correct
-            CurrentTime = next_time;
-            sym_int = newGroup->sym_int;
-            manager = newGroup->manager;
-            return true;
+            NewFBInitialization3(this, particle);
+            return false; // Eunwoo: return true makes an SIGMENTATION FAULT error when doing checkBreak!
         }
     }
 #ifdef SEVN
@@ -277,7 +295,15 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
     if (useSEVN) {
 
         bool breakEvolution = false;
+        bool evolved = false;
         while (EvolutionTime + EvolutionTimeStep < next_time*EnzoTimeStep*1e4) {
+
+            evolved = true;
+
+            // if (groupCM->PID == -10917) {
+            //     fprintf(stderr, "Stellar evolution!\n");
+            //     fflush(stderr);
+            // }
 
             EvolutionTime += EvolutionTimeStep;
 
@@ -326,7 +352,11 @@ bool Group::ARIntegration(REAL next_time, std::vector<Particle*> &particle){
             FBTermination2(groupCM, next_time, particle);
             return false;
         }
-
+        if (evolved) { // Eunwoo: orbital parameters should be re-calculated due to mass changes during stellar evolution!
+            sym_int.particles.shiftToOriginFrame();
+            sym_int.info.generateBinaryTree(sym_int.particles,manager.interaction.gravitational_constant);
+            sym_int.initialIntegration(next_time*EnzoTimeStep);
+        }
     }
     
 #endif

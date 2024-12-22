@@ -1631,15 +1631,34 @@ namespace AR {
             // Eunwoo debug
             // if (!(info.getBinaryTreeRoot().Position[0]*info.getBinaryTreeRoot().Position[0]<1e-10)) { 
             //     fprintf(stderr, "N: %d\n", info.binarytree.getSize());
+            //     fprintf(stderr, "CM Num Neighbor: %d\n", particles.cm.NumberOfAC);
+            //     fprintf(stderr, "PID: %d\n", info.getBinaryTreeRoot().getLeftMember()->PID);
+            //     fprintf(stderr, "mass: %e\n", info.getBinaryTreeRoot().getLeftMember()->Mass);
+            //     fprintf(stderr, "x: %e\n", info.getBinaryTreeRoot().getLeftMember()->Position[0]);
+            //     fprintf(stderr, "y: %e\n", info.getBinaryTreeRoot().getLeftMember()->Position[1]);
+            //     fprintf(stderr, "z: %e\n", info.getBinaryTreeRoot().getLeftMember()->Position[2]);
+            //     fprintf(stderr, "vx: %e\n", info.getBinaryTreeRoot().getLeftMember()->Velocity[0]);
+            //     fprintf(stderr, "vy: %e\n", info.getBinaryTreeRoot().getLeftMember()->Velocity[1]);
+            //     fprintf(stderr, "vz: %e\n", info.getBinaryTreeRoot().getLeftMember()->Velocity[2]);
+
+            //     fprintf(stderr, "PID: %d\n", info.getBinaryTreeRoot().getRightMember()->PID);
+            //     fprintf(stderr, "mass: %e\n", info.getBinaryTreeRoot().getRightMember()->Mass);
+            //     fprintf(stderr, "x: %e\n", info.getBinaryTreeRoot().getRightMember()->Position[0]);
+            //     fprintf(stderr, "y: %e\n", info.getBinaryTreeRoot().getRightMember()->Position[1]);
+            //     fprintf(stderr, "z: %e\n", info.getBinaryTreeRoot().getRightMember()->Position[2]);
+            //     fprintf(stderr, "vx: %e\n", info.getBinaryTreeRoot().getRightMember()->Velocity[0]);
+            //     fprintf(stderr, "vy: %e\n", info.getBinaryTreeRoot().getRightMember()->Velocity[1]);
+            //     fprintf(stderr, "vz: %e\n", info.getBinaryTreeRoot().getRightMember()->Velocity[2]);
             //     for (int i=0; i<info.binarytree.getSize(); i++) {
             //         auto& bin = info.binarytree[i];
-            //         fprintf(stderr, "x: %e\n", bin.Position[0]);
-            //         fprintf(stderr, "y: %e\n", bin.Position[1]);
-            //         fprintf(stderr, "z: %e\n", bin.Position[2]);
-            //         fprintf(stderr, "vx: %e\n", bin.Velocity[0]);
-            //         fprintf(stderr, "vy: %e\n", bin.Velocity[1]);
-            //         fprintf(stderr, "vz: %e\n", bin.Velocity[2]);
+            //         fprintf(stderr, "tree x: %e\n", bin.Position[0]);
+            //         fprintf(stderr, "tree y: %e\n", bin.Position[1]);
+            //         fprintf(stderr, "tree z: %e\n", bin.Position[2]);
+            //         fprintf(stderr, "tree vx: %e\n", bin.Velocity[0]);
+            //         fprintf(stderr, "tree vy: %e\n", bin.Velocity[1]);
+            //         fprintf(stderr, "tree vz: %e\n", bin.Velocity[2]);
             //     }
+            //     fflush(stderr);
             // }
             // Eunwoo debug
             ASSERT(info.getBinaryTreeRoot().Position[0]*info.getBinaryTreeRoot().Position[0]<1e-10);

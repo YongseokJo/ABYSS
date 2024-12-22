@@ -6,7 +6,7 @@ NVCC = nvcc
 
 # Compiler flags
 # With SEVN
-#CXXFLAGS  = -O3 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -I./../SDAR/src -I./../SEVN/include -g -fopenmp -fPIC  #-fopenmp  -fsanitize=thread
+#CXXFLAGS  = -O3 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -I./../SDAR/src -I./../SEVN/include -g -fopenmp -fPIC -DSEVN #-fopenmp  -fsanitize=thread
 CXXFLAGS  = -O3 -march=native -ftree-vectorize -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -I./../SDAR/src -g -fopenmp -fPIC  #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -qopenmp  #-fopenmp  -fsanitize=thread
 #CXXFLAGS  = -O0 -std=c++11 -Wall -Wextra -Wuninitialized -I./Particle -I./ -g -fopenmp  -fsanitize=thread
@@ -40,6 +40,12 @@ EXEC = nbodyplus_binary.exe
 
 # Main target
 all: $(EXEC)
+
+# SEVN build
+sevn: CXXFLAGS += -DSEVN -I./../SEVN/include
+sevn: LDFLAGS += -L./../SEVN/lib -lsevn_lib_shared
+sevn: CXX_SRCS += StellarEvolution.cpp
+sevn: $(EXEC)
 
 # Link object files into the executable
 $(EXEC): $(OBJS)

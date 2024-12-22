@@ -3,8 +3,8 @@
 //#define NUM_THREAD 16
 #endif
 
-#define FixNumNeighbor 50 // 50
-#define NumNeighborMax 1000
+#define FixNumNeighbor 100 // 100 // 50
+#define NumNeighborMax 1000 // 200 // 1000
 #define HERMITE_ORDER 4
 #define Dim 3
 

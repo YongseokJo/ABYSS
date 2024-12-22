@@ -116,13 +116,13 @@ void Particle::calculateTimeStepIrr(REAL f[3][4],REAL df[3][4]) {
 	}
 	*/ // Eunwoo test
 
-// /* // Eunwoo added
+/* // Eunwoo added
 	while (TimeStepIrr*EnzoTimeStep*1e4 < 1e-8) {
 		TimeLevelIrr += 1;
 		TimeStepIrr = static_cast<REAL>(pow(2, TimeLevelIrr));
 		TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
 	}
-// */
+*/
 
 	if (TimeStepIrr > 1) {
 		fprintf(stderr, "TimeStepIrr=%e, TimeLevelIrr=%d, TimeLevelTmp0=%d\n",TimeStepIrr, TimeLevelIrr, TimeLevelTmp0);
@@ -239,13 +239,13 @@ void Particle::calculateTimeStepIrr2(REAL f[3][4],REAL df[3][4]) {
 	}
 	*/ // Eunwoo test
 
-// /* // Eunwoo added
+/* // Eunwoo added
 	while (TimeStepIrr*EnzoTimeStep*1e4 < 1e-8) {
 		TimeLevelIrr += 1;
 		TimeStepIrr = static_cast<REAL>(pow(2, TimeLevelIrr));
 		TimeBlockIrr = static_cast<ULL>(pow(2, TimeLevelIrr-time_block));
 	}
-// */
+*/
 
 	if (TimeStepIrr > 1) {
 		fprintf(stderr, "TimeStepIrr=%e, TimeLevelIrr=%d, TimeLevelTmp0=%d\n",TimeStepIrr, TimeLevelIrr, TimeLevelTmp0);
@@ -355,9 +355,19 @@ void Particle::calculateTimeStepReg() {
 		TimeBlockReg = block_max-CurrentBlockReg;
 	}
 
+/* // Eunwoo added
+	while (TimeStepReg*EnzoTimeStep*1e4 < 1e-8) {
+		TimeLevelReg += 1;
+		TimeStepReg = static_cast<REAL>(pow(2, TimeLevelReg));
+		TimeBlockReg = static_cast<ULL>(pow(2, TimeLevelReg-time_block));
+	}
+*/
+
 	if (TimeStepReg*EnzoTimeStep*1e4<1e-9) {
 		fprintf(stderr, "PID: %d, TimeStep = %.3e, TimeStepTmp0 = %.3e\n", // Eunwoo add
 			PID, TimeStepReg*EnzoTimeStep*1e4, static_cast<REAL>(pow(2, TimeLevelTmp0))*EnzoTimeStep*1e4); // Eunwoo add
+		fprintf(stderr, "RadiusOfAC: %e pc, NumAC: %d\n", RadiusOfAC*position_unit, NumberOfAC); // Eunwoo added
+		fprintf(stderr, "TimeStepIrr: %e Myr\n", TimeStepIrr*EnzoTimeStep*1e4); // Eunwoo added
 		throw std::runtime_error("TimeStepReg is too small.");
 	}
 	if (TimeStepReg > 1) {

@@ -147,31 +147,38 @@ nvtxRangePop();
 					}),
 				particle.end());
 
+			RegularList.erase(
+				std::remove_if(RegularList.begin(), RegularList.end(),
+					[](Particle* p) {
+					bool to_remove = p->isErase;
+					//if (to_remove) delete p;
+					return to_remove;
+					}),
+				RegularList.end());
+
 			for (int i=0; i<particle.size(); i++) {
 				particle[i]->ParticleOrder = i;
+
+				// This might be not necessary because we're moving to the regular acceleration routine, and re-set neighbors.
+				// Should be checked again later.
+				particle[i]->ACList.erase(
+						std::remove_if(particle[i]->ACList.begin(), particle[i]->ACList.end(),
+							[](Particle* p) {
+							return p->isErase; }),
+						particle[i]->ACList.end());
+
+				particle[i]->NumberOfAC = particle[i]->ACList.size();
 			}
-			// This might be not necessary because we're moving to the regular acceleration routine, and re-set neighbors.
-			// Should be checked again later.
-			for (Particle* massless: MasslessList) {
-				int index = 0;
-				for (Particle* ptcl: particle) {
-					index = 0;
-					for (Particle* neighbor: ptcl->ACList) {
-						if (neighbor->PID == massless->PID) {
-							ptcl->ACList.erase(ptcl->ACList.begin() + index);
-							ptcl->NumberOfAC--;
-							break; // Eunwoo check
-						}
-						index++;
-					}
-				}
-				// fprintf(SEVNout, "3\n");
-				// fflush(SEVNout);
-				// delete massless->star; // I don't know why but there is an issue with Star::default_destructor(). This must be fixed!
-				// delete massless;
-				// fprintf(SEVNout, "4\n");
-				// fflush(SEVNout);
-			}
+			
+			// fprintf(SEVNout, "3\n");
+			// fflush(SEVNout);
+			// delete massless->star; // I don't know why but there is an issue with Star::default_destructor(). This must be fixed!
+			// delete massless;
+			// fprintf(SEVNout, "4\n");
+			// fflush(SEVNout);
+
+			MasslessList.clear();			// Massless particles are not deleted yet, so this must occur memory leak!
+			MasslessList.shrink_to_fit();	// Let's think about this with Enzo together!
 		}
 #endif
 

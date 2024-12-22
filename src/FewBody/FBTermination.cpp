@@ -210,7 +210,7 @@ void FBTermination(Particle* ptclCM, std::vector<Particle*> &particle){
 
 }
 
-// Use this function when SDAR is interrupted in the middle of its integration by stellar merger, TDE, GW merger, etc.
+// Use this function when SDAR (2-body) is interrupted in the middle of its integration by stellar merger, TDE, GW merger, etc.
 // current_time: interrupted time in SDAR
 // next_time: intended time to integrate
 void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> &particle){
@@ -275,9 +275,6 @@ void FBTermination2(Particle* ptclCM, REAL current_time, std::vector<Particle*> 
 			ptclGroup->Members.begin(), ptclGroup->Members.end(),
 			[](Particle* p) {
 				bool to_remove = p->isErase;
-				if (to_remove) {
-					MasslessList.push_back(p);
-				}
 				return to_remove;
 			}
 		),
