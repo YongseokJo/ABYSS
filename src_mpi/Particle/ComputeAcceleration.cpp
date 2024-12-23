@@ -13,6 +13,8 @@ void calculateSingleAcceleration(Particle *ptcl2, double *pos, double *vel, doub
 
 void Particle::computeAccelerationIrr() {
 
+	if (NumberOfNeighbor == 0) return; // IAR modified
+
 	double dt, mdot, epsilon=1e-6;
 	double new_time; // 0 for current and 1 for advanced times
 
@@ -42,8 +44,6 @@ void Particle::computeAccelerationIrr() {
 
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
 		ptcl = &particles[this->Neighbors[i]];
-
-		if (!ptcl->isActive) continue;
 		/*
 		if (ptcl->isCMptcl) {
 			fprintf(stderr, "my = %d , pid of cm = %d\n", this->PID, ptcl->PID);
@@ -256,7 +256,7 @@ void Particle::computeAccelerationReg() {
 
 		//std::cout << "PIDs=" <<  this->Neighbors[j] << ', ' << ptcl->PID << NumberOfNeighbor<< std::endl;
 		//if (this->Neighbors[j] == ptcl->PID) {
-		if (j < this->NumberOfNeighbor && this->Neighbors[j] == ptcl->PID) {
+		if (j < this->NumberOfNeighbor && this->Neighbors[j] == ptcl->ParticleOrder) {
 			//std::cout << this->PID << ", PIDs=" <<  this->Neighbors[j] << ", " << ptcl->PID << std::endl;
 			j++;
 		} 
@@ -269,7 +269,7 @@ void Particle::computeAccelerationReg() {
 
 
 		if (r2 < this->RadiusOfNeighbor) {
-			this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->PID;
+			this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->ParticleOrder;
 			this->NewNumberOfNeighbor++;
 			for (int dim=0; dim<Dim; dim++){
 				this->a_irr[dim][0] += m_r3*x[dim];
@@ -457,8 +457,6 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 				//std::cerr <<  "in old, not in new =" <<  this->Neighbors[i] << std::endl;
 				ptcl = &particles[this->Neighbors[i]];
 
-				if (!ptcl->isActive) continue;
-
 				if (ptcl->NumberOfNeighbor == 0)
 					ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
 				else
@@ -486,8 +484,6 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 		if ( i < NewNumberOfNeighborGPU ) {
 			ptcl = &particles[NewNeighborsGPU[index*NumNeighborMax+i]];
-
-			if (!ptcl->isActive) continue;
 
 			if (ptcl->NumberOfNeighbor == 0)
 				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);

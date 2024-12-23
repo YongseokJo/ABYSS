@@ -2,6 +2,7 @@
 #define GLOBAL_H
 #include "def.h"
 #include "particle.h"
+#include "./FewBody/Group.h"
 #include "performance.h"
 #include <mpi.h>
 
@@ -24,6 +25,8 @@ extern MPI_Status statuses[MaxNumberOfCommunication];
 extern int LoadBalanceParticle; 
 
 extern int NumberOfParticle;
+extern int NumberOfSingle;
+extern int NewPID;
 
 // Task
 const int TASK_TAG = 1;
@@ -64,6 +67,8 @@ extern double outputTime;
 extern int outNum;
 extern double outputTimeStep;
 
+extern FILE* binout;
+extern FILE* mergerout;
 
 #ifdef PerformanceTrace
 // Performance trace

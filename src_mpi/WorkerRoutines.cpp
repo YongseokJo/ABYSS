@@ -97,7 +97,16 @@ void WorkerRoutines() {
 
 				for (int i=0; i<size; i++) {
 					ptcl = &particles[ptcl_id_vector[i]];
-					ptcl->updateParticle();
+
+					if (ptcl->GroupInfo) {
+						ptcl->GroupInfo->sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
+						for (int i=0; i<ptcl->NumberOfNeighbor; i++)
+							ptcl->GroupInfo->sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
+						bool int_normal = ptcl->GroupInfo->ARIntegration(ptcl->NewCurrentBlockIrr*time_step);
+						if (!int_normal) break;
+					}
+					if (ptcl->NumberOfNeighbor != 0)
+						ptcl->updateParticle();
 					ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
 					ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
 					//std::cout << "pid=" << ptcl_id << ", CurrentBlockIrr=" << particles[ptcl_id].CurrentBlockIrr << std::endl;
@@ -106,7 +115,16 @@ void WorkerRoutines() {
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 
 				ptcl = &particles[ptcl_id];
-				ptcl->updateParticle();
+
+				if (ptcl->GroupInfo) {
+					ptcl->GroupInfo->sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
+					for (int i=0; i<ptcl->NumberOfNeighbor; i++)
+						ptcl->GroupInfo->sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
+					bool int_normal = ptcl->GroupInfo->ARIntegration(ptcl->NewCurrentBlockIrr*time_step);
+					if (!int_normal) break;
+				}
+				if (ptcl->NumberOfNeighbor != 0) // IAR modified
+					ptcl->updateParticle();
 				ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
 				ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
 #endif
@@ -184,16 +202,18 @@ void WorkerRoutines() {
 					ptcl->CurrentTimeReg  = ptcl->CurrentBlockReg*time_step;
 					ptcl->calculateTimeStepReg();
 					ptcl->calculateTimeStepIrr();
+					/* // IAR original
 					if (ptcl->NumberOfNeighbor == 0) {
 						ptcl->CurrentBlockIrr = ptcl->CurrentBlockReg;
 						ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
 					}
+					*/ // IAR original
 					ptcl->updateRadius();
 					ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of ptcl particle
 				}
 				break;
 
-			case 8: // Initialize Acceleration
+			case 7: // Initialize Acceleration(01)
 				//std::cout << "Processor " << MyRank<< " initialization starts." << std::endl;
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl_id = ptcl_id*LoadBalanceParticle;
@@ -205,12 +225,22 @@ void WorkerRoutines() {
 				//std::cout << "Processor " << MyRank<< " done." << std::endl;
 				break;
 
-			case 9: // Initialize Acceleration
+			case 8: // Initialize Acceleration(23)
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl_id = ptcl_id*LoadBalanceParticle;
 
 				for (int i=0; i<LoadBalanceParticle; i++) {
 					CalculateAcceleration23(&particles[ptcl_id+i]);
+				}
+				break;
+
+			case 9: // Initialize Time Step
+				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				ptcl_id = ptcl_id*LoadBalanceParticle;
+
+				for (int i=0; i<LoadBalanceParticle; i++) {
+					if (!particles[ptcl_id+i].isActive)
+						continue;
 					particles[ptcl_id+i].initializeTimeStep();
 				}
 				break;
@@ -226,6 +256,32 @@ void WorkerRoutines() {
 				//fflush(stderr);
 				break;
 
+			case 20: // Primordial binary search
+				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+
+				ptcl = &particles[ptcl_id];
+				ptcl->checkNewGroup2();
+				break;
+
+			case 21: // CheckBreak
+				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+
+				ptcl = &particles[ptcl_id];
+				if (ptcl->GroupInfo) {
+					if (!ptcl->GroupInfo->isMerger)
+						ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
+					else if (ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
+						ptcl->GroupInfo->isMerger = false;
+				}
+				break;
+
+			case 22: // Few-body group search
+				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+
+				ptcl = &particles[ptcl_id];
+				if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > tbin) break;
+				ptcl->checkNewGroup();
+				break;
 
 			case 100: // Synchronize
 				MPI_Win_sync(win);  // Synchronize memory

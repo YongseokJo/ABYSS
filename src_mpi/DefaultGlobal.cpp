@@ -20,6 +20,8 @@ MPI_Status statuses[MaxNumberOfCommunication];
 int LoadBalanceParticle;
 
 int NumberOfParticle;
+int NumberOfSingle;
+int NewPID;
 
 // Task
 int Task[NumberOfTask];
@@ -54,12 +56,19 @@ bool IsOutput;
 double outputTime;
 int outNum;
 
+FILE* binout;
+FILE* mergerout;
+
 #ifdef PerformanceTrace
 Performance performance;
 #endif
 
 void DefaultGlobal() {
 
+	binout = fopen("binary_output.txt", "w");
+	fprintf(binout, "Starting nbody - Binary OUTPUT\n");
+	mergerout = fopen("merger_output.txt", "w");
+	fprintf(mergerout, "Starting nbody - Merger OUTPUT\n");
 
 	/* Task initialization */
 	//int Task[NumberOfTask];
@@ -67,8 +76,11 @@ void DefaultGlobal() {
 		Task[i] = i;
 	}
 
+	// Eunwoo: I think these lines are redundant
 	/* Number of particles */
 	NumberOfParticle = 1000;
+	NumberOfSingle = 1000;
+	// Eunwoo: I think these lines are redundant
 
 	NumberOfCommunication = 0;
 

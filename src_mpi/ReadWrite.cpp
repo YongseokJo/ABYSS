@@ -9,6 +9,7 @@
 int getLineNumber();
 //void write_out(std::ofstream& outputFile, const Particle* ptcl);
 void write_out(std::ofstream& outputFile, const Particle* ptcl, const double *pos, const double *vel);
+void write_out_group(std::ofstream& outputFile, const Particle* ptcl, const Particle* members, const double *pos, const double *vel);
 void write_neighbor(std::ofstream& outputFile, const Particle* ptcl);
 const int NUM_COLUMNS = 7; // Define the number of columns
 const int width = 18;
@@ -24,6 +25,8 @@ int readData() {
 	}
 
 	NumberOfParticle = getLineNumber();
+	NumberOfSingle = NumberOfParticle;
+	NewPID = NumberOfParticle;
 
 	// Declaration
 	//Particle *particle_temp;	
@@ -187,7 +190,12 @@ int writeParticle(double current_time, int outputNum) {
 			<< std::setw(width) << "Z (pc)"
 			<< std::setw(width) << "Vx (km/s)"
 		 	<< std::setw(width) << "Vy (km/s)" 
+#ifdef SEVN
+			<< std::setw(width) << "Vz (km/s)"
+			<< std::setw(width) << "Type" << "\n";
+#else
 			<< std::setw(width) << "Vz (km/s)" << "\n";
+#endif 
 
 
     // Write particle data to the file
@@ -196,21 +204,23 @@ int writeParticle(double current_time, int outputNum) {
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
 			ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
-			/*
-			if (ptcl->isCMptcl)  {
-				ptcl->convertBinaryCoordinatesToCartesian();
-				write_out(outputFile, ptcl->BinaryParticleI);
-				//write_neighbor(output_nn, ptcl->BinaryParticleI);
-				write_out(outputFile, ptcl->BinaryParticleJ);
-				//write_neighbor(output_nn, ptcl->BinaryParticleJ);
+			if (ptcl->GroupInfo)  { // Eunwoo edited
+				for (int dim=0; dim<Dim; dim++) {
+					ptcl->GroupInfo->sym_int.particles.cm.Position[dim] = ptcl->Position[dim];
+					ptcl->GroupInfo->sym_int.particles.cm.Velocity[dim] = ptcl->Velocity[dim];
+				}
+				ptcl->GroupInfo->sym_int.particles.shiftToOriginFrame();
+				ptcl->GroupInfo->sym_int.particles.template writeBackMemberAll<Particle>();
+				for (int j=0; j < ptcl->GroupInfo->sym_int.particles.getSize(); j++) {
+					Particle* members = &ptcl->GroupInfo->sym_int.particles[j];
+					write_out_group(outputFile, ptcl, members, pos, vel);
+				}
+				ptcl->GroupInfo->sym_int.particles.shiftToCenterOfMassFrame();
 			}
 			else {
-				write_out(outputFile, ptcl);
+				write_out(outputFile, ptcl, pos, vel);
 				//write_neighbor(output_nn, ptcl);
 			}
-			*/
-			write_out(outputFile, ptcl, pos, vel);
-			//write_neighbor(output_nn, ptcl);
     }
 
     // Close the file
@@ -225,15 +235,39 @@ int writeParticle(double current_time, int outputNum) {
 
 
 void write_out(std::ofstream& outputFile, const Particle* ptcl, const double *pos, const double *vel) {
-        outputFile  << std::left
-										<< std::setw(width) << ptcl->PID
-										<< std::setw(width) << ptcl->Mass*mass_unit
+        outputFile  << std::left << std::fixed << std::setprecision(8) // Eunwoo test
+					<< std::setw(width) << ptcl->PID
+					<< std::setw(width) << ptcl->Mass*mass_unit
                     << std::setw(width) << pos[0]*position_unit
                     << std::setw(width) << pos[1]*position_unit
                     << std::setw(width) << pos[2]*position_unit
                     << std::setw(width) << vel[0]*velocity_unit/yr*pc/1e5
                     << std::setw(width) << vel[1]*velocity_unit/yr*pc/1e5
                     << std::setw(width) << vel[2]*velocity_unit/yr*pc/1e5 << '\n';
+}
+
+// This function is for group members cause group members have pos, vel in original frame, not predicted values.
+void write_out_group(std::ofstream& outputFile, const Particle* ptclCM, const Particle* ptcl, const double *pos, const double *vel) {
+        // outputFile  << std::left
+		outputFile  << std::left << std::fixed << std::setprecision(8) // Eunwoo test
+					<< std::setw(width) << ptcl->PID
+					<< std::setw(width) << ptcl->Mass*mass_unit
+                    << std::setw(width) << (pos[0] - ptclCM->Position[0] + ptcl->Position[0])*position_unit
+                    << std::setw(width) << (pos[1] - ptclCM->Position[1] + ptcl->Position[1])*position_unit
+                    << std::setw(width) << (pos[2] - ptclCM->Position[2] + ptcl->Position[2])*position_unit
+                    << std::setw(width) << (vel[0] - ptclCM->Velocity[0] + ptcl->Velocity[0])*velocity_unit/yr*pc/1e5
+                    << std::setw(width) << (vel[1] - ptclCM->Velocity[1] + ptcl->Velocity[1])*velocity_unit/yr*pc/1e5;
+#ifdef SEVN
+		outputFile << std::setw(width) << (vel[2] - ptclCM->Velocity[2] + ptcl->Velocity[2])*velocity_unit/yr*pc/1e5;
+		if (ptcl->star == nullptr)
+			outputFile << std::setw(width) << "1" << '\n';
+		else if (!ptcl->star->amiremnant())
+			outputFile << std::setw(width) << int(ptcl->star->getp(Phase::ID)) << '\n';
+		else
+			outputFile << std::setw(width) << 8+int(ptcl->star->getp(RemnantType::ID)) << '\n';
+#else
+		outputFile << std::setw(width) << (vel[2] - ptclCM->Velocity[2] + ptcl->Velocity[2])*velocity_unit/yr*pc/1e5 << '\n';
+#endif
 }
 
 /*

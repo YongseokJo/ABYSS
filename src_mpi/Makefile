@@ -27,6 +27,11 @@ CXX_SRCS = main.cpp DefaultGlobal.cpp MPIRoutines.cpp readParameterFile.cpp Work
 CU_SRCS = cuda/cuda_my_acceleration.cu cuda/cuda_kernels.cu 
 # cuda/cuda_routines.cu
 
+
+# SDAR
+CXXFLAGS += -I./../SDAR/src -DAR_TTL -DAR_SLOWDOWN_TREE -DAR_SLOWDOWN_TIMESCALE
+CXX_SRCS += FewBody/FBCheck.cpp FewBody/FBInitialization.cpp FewBody/FBIntegration.cpp FewBody/FBTermination.cpp FewBody/GroupAccelerationRoutine.cpp
+
 #
 OBJS = $(CU_SRCS:.cu=.o) $(CXX_SRCS:.cpp=.o)
 #OBJS = $(CXX_SRCS:.cpp=.o)

@@ -22,6 +22,14 @@
 #define NumNeighborMax 5000
 
 
+// SDAR
+#define rbin 0.25e-3 // pc
+#define tbin 1e-6 // Myr
+#define NormalStar 1
+#define Blackhole 32
+#define SingleParticle 64
+
+
 #define MIN_LEVEL_BUFFER 30
 
 #define Dim 3
@@ -51,8 +59,8 @@ typedef unsigned long long ULL;
 //#define mass_unit 256e-20  // 256e-20 Msun in the unit that G = 1.
 #define mass_unit 0.0001424198  // Msun in the unit that G = 1.
 // Physical constants
-#define G_cgs 6.67430e-8
-#define G // pc, yr, Msun
+// #define G_cgs 6.67430e-8 // Eunwoo: crash with SEVN
+// #define G // pc, yr, Msun // Eunwoo: crash with SEVN
 
 #define RCAST(a)  static_cast<double>(a)
 #define ABS(a) static_cast<double>(std::abs(a))

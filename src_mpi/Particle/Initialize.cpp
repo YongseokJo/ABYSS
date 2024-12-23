@@ -15,18 +15,24 @@ void CalculateAcceleration23(Particle* ptcl);
 
 void CalculateAcceleration01(Particle* ptcl1) {
 
-	int j=0;
-	double x[Dim], v[Dim], a[Dim], adot[Dim];
-	double vx_r2, m_r3, v2x2_r4,v2_r2__ax_r2__v2x2_r4, a2dot, a3dot;
-	double A, B, v2;
+	double x[Dim], v[Dim];
+	double m_r3;
+	double v2;
 	double r2 = 0;
 	double vx = 0;
 
 	for (int dim=0; dim<Dim; dim++) {
 		x[dim]    = 0.;
 		v[dim]    = 0.;
-		a[dim]    = 0.;
-		adot[dim] = 0.;
+	}
+
+	ptcl1->NumberOfNeighbor = 0;
+	for(int dim=0; dim<Dim; dim++) {
+		for (int order=0; order<HERMITE_ORDER; order++) {
+			ptcl1->a_reg[dim][order] = 0.0;
+			ptcl1->a_irr[dim][order] = 0.0;
+			ptcl1->a_tot[dim][order] = 0.0;
+		}
 	}
 
 	//std::cout << "nbody+: Entering CalculateInitialAcceleration  ..." << std::endl;
@@ -37,13 +43,13 @@ void CalculateAcceleration01(Particle* ptcl1) {
 	for (int i=0; i<NumberOfParticle; i++) {
 		ptcl2 = &particles[i];
 
+		if (ptcl1->PID == ptcl2->PID || !ptcl2->isActive) {
+			continue;
+		}
+
 		r2 = 0;
 		vx = 0;
 		v2 = 0;
-
-		if (ptcl1->PID == ptcl2->PID) {
-			continue;
-		}
 
 		// updated the predicted positions and velocities just in case
 		// if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
@@ -70,7 +76,7 @@ void CalculateAcceleration01(Particle* ptcl1) {
 				ptcl1->a_irr[dim][0] += m_r3*x[dim];
 				ptcl1->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 			}
-			ptcl1->Neighbors[ptcl1->NumberOfNeighbor]=ptcl2->PID;
+			ptcl1->Neighbors[ptcl1->NumberOfNeighbor]=ptcl2->ParticleOrder; // Eunwoo: PID -> ParticleOrder
 			ptcl1->NumberOfNeighbor++;
 			//fprintf(stdout, "pid=%d, nn=%d\n", ptcl1->PID, ptcl1->NumberOfNeighbor);
 	Particle *ptcl2;
@@ -95,7 +101,6 @@ void CalculateAcceleration01(Particle* ptcl1) {
 
 void CalculateAcceleration23(Particle* ptcl1) {
 
-	int j=0;
 	double x[Dim], v[Dim], a21[Dim], a21dot[Dim], a1[Dim], a2[Dim], a1dot[Dim], a2dot[Dim];
 	double a, b, c;
 	double rdf_r2, vdf_r2, rdfdot_r2, v2, r2, r3, vr, m_r3;
@@ -113,6 +118,11 @@ void CalculateAcceleration23(Particle* ptcl1) {
 	Particle *ptcl2;
 	for (int i=0; i<NumberOfParticle; i++) {
 		ptcl2 = &particles[i];
+
+		if (ptcl1->PID == ptcl2->PID || !ptcl2->isActive) {
+			continue;
+		}
+		
 		r2 = 0;
 		r3 = 0;
 		v2 = 0;
@@ -120,10 +130,6 @@ void CalculateAcceleration23(Particle* ptcl1) {
 		rdf_r2 = 0;
 		vdf_r2 = 0;
 		rdfdot_r2 = 0;
-
-		if (ptcl1->PID == ptcl2->PID) {
-			continue;
-		}
 
 		// updated the predicted positions and velocities just in case
 		// if current time = the time we need, then PredPosition and PredVelocity is same as Position and Velocity
