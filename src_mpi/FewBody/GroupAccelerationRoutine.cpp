@@ -10,6 +10,7 @@ void MergeGroups();
 void NewPrimordialBinaries(int newOrder);
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
+void broadcastFromRoot(int &data);
 
 /*
 bool AddNewGroupsToList(std::vector<Particle*> &particle) {
@@ -103,6 +104,8 @@ void SetPrimordialBinaries() {
 	MergeGroups();	// Merge group candidates
 					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
 
+	broadcastFromRoot(NumberOfParticle);
+
 	for (int i=NumberOfSingle; i<NumberOfParticle; i++) {
 		NewPrimordialBinaries(i);
 	}
@@ -138,6 +141,7 @@ void SetBinaries(std::vector<int>& ParticleList) {
 	for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
 		NewFBInitialization(i);
 	}
+	/*
 	for (int i=NumberOfSingle; i<NumberOfParticle; i++) {
 		Particle* members = &particles[i];
 
@@ -160,6 +164,7 @@ void SetBinaries(std::vector<int>& ParticleList) {
 			}
 		}
 	}
+	*/
 }
 
 
@@ -199,6 +204,7 @@ void MergeGroups() {
 							currentCM->NewNumberOfNeighbor++;
                         }
                     }
+					merged = true;
 
                     // Mark otherGroup for deletion after the loop
 					particles[j] = particles[NumberOfParticle]; // Eunwoo: is this right?
@@ -270,6 +276,10 @@ void NewPrimordialBinaries(int newOrder) {
 	ptclGroup->initialIntegrator(ptclCM->NewNumberOfNeighbor); // Binary tree is made and CM particle is made automatically.
 
 	// ptclCM = &ptclGroup->sym_int.particles.cm;
+	for (int dim=0; dim<Dim; dim++) {
+		ptclCM->Position[dim] = ptclGroup->sym_int.particles.cm.Position[dim];
+		ptclCM->Velocity[dim] = ptclGroup->sym_int.particles.cm.Velocity[dim];
+	}
 
 	// Set ptcl information like time, PID, etc.
 

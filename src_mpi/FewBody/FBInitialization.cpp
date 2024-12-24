@@ -41,7 +41,7 @@ void Group::initialManager() {
 	// 1000000 in PeTar & ar.cxx
 	manager.step.initialSymplecticCofficients(-6); // Symplectic integrator order, should be even number
 	// -6 in PeTar & ar.cxx
-	manager.interrupt_detection_option = 0; // modify orbit or check interruption using modifyAndInterruptIter function
+	manager.interrupt_detection_option = 2; // modify orbit or check interruption using modifyAndInterruptIter function
 											// 0: turn off
 											// 1: modify the binary orbits based on detetion criterion
 											// 2. modify and also interrupt integrations
@@ -254,6 +254,10 @@ void NewFBInitialization(int newOrder) {
 	ptclGroup->initialIntegrator(NumberOfMembers); // Binary tree is made and CM particle is made automatically.
 
 	// ptclCM = &ptclGroup->sym_int.particles.cm;
+	for (int dim=0; dim<Dim; dim++) {
+		ptclCM->Position[dim] = ptclGroup->sym_int.particles.cm.Position[dim];
+		ptclCM->Velocity[dim] = ptclGroup->sym_int.particles.cm.Velocity[dim];
+	}
 
 	// Set ptcl information like time, PID, etc.
 

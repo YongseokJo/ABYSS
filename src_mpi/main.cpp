@@ -24,14 +24,15 @@ int readParameterFile();
 
 int main(int argc, char *argv[]) {
 
-	//binout = fopen("binary_output.txt", "w");
-	//fprintf(binout, "Starting nbody - Binary OUTPUT\n"); 
-
-
-
 	/* Initialize global variables */
 	DefaultGlobal();
 
+	binout = fopen("binary_output.txt", "w");
+	fprintf(binout, "Starting nbody - Binary OUTPUT\n");
+	fflush(binout);
+	mergerout = fopen("merger_output.txt", "w");
+	fprintf(mergerout, "Starting nbody - Merger OUTPUT\n");
+	fflush(mergerout);
 
 	/* MPI Initialization */
 	initializeMPI(argc, argv);
@@ -70,6 +71,7 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Read Data Failed!\n");
 
 	broadcastFromRoot(NumberOfParticle);
+	broadcastFromRoot(NumberOfSingle);
 	//MPI_Win_fence(0, win);
 
 	if (MyRank == ROOT) {

@@ -356,16 +356,14 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList){
 
 
 
+	delete[] IndexList;
 
-
-	delete[] NumNeighborReceive;
 	delete[] AccRegReceive;
 	delete[] AccRegDotReceive;
 	delete[] AccIrr;
 	delete[] AccIrrDot;
-	// for (int i=0; i<ListSize; i++) {
-	//	delete[] ACListReceive[i];
-	// }
+
+	delete[] NumNeighborReceive;
 	delete[] ACListReceive;
 
 

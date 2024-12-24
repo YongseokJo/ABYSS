@@ -173,7 +173,6 @@ struct Particle {
 		this->Velocity[2]  = data[5];
 		this->Mass         = data[6];
 		// this->ParticleType = 0; //NormalStar+SingleParticle;
-		this->ParticleType = NormalStar+SingleParticle;
 		//this->NextParticleInEnzo = NextParticleInEnzo;
 		this->CurrentTimeReg		= 0;
 		this->CurrentTimeIrr		= 0;
@@ -185,12 +184,27 @@ struct Particle {
 
 		this->isActive				= true;
 		this->ParticleOrder			= PID;
-		radius = 0.;
-		dm = 0.0;
-		time_check = NUMERIC_FLOAT_MAX;
-		binary_state = 0;
-		GroupInfo = nullptr;
-		a_spin[0] = a_spin[1] = a_spin[2] = 0.;
+		this->dm = 0.0;
+		this->time_check = NUMERIC_FLOAT_MAX;
+		this->binary_state = 0;
+		this->GroupInfo = nullptr;
+		this->a_spin[0] = 0.;
+		this->a_spin[1] = 0.;
+		this->a_spin[2] = 0.;
+
+#ifdef SEVN
+		this->ParticleType = NormalStar+SingleParticle;
+#else
+		if (this->Mass*1e9 > 8) {
+			this->ParticleType = Blackhole+SingleParticle;
+			this->radius = 6*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // innermost stable circular orbit around a Schwartzshild BH = 3 * R_sch
+			// initialBHspin(this);
+		}
+		else {
+			this->ParticleType = NormalStar+SingleParticle;
+			this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // stellar radius in code unit
+		}
+#endif
 	}
 
 	// Clear function

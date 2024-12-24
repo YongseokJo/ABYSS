@@ -156,6 +156,7 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 
 	// free all temporary variables
 	delete[] MassSend;
+	delete[] MdotSend;
 	delete[] PositionSend;
 	delete[] VelocitySend;
 
@@ -164,6 +165,12 @@ void CalculateAllAccelerationOnGPU(std::vector<Particle*> &particle){
 
 	delete[] AccSend;
 	delete[] AccDotSend;
+
+	delete[] NumNeighborReceive;
+	for (int i = 0; i < NNB; ++i) {
+		delete[] ACListReceive[i];
+	}
+	delete[] ACListReceive;
 
 	// close GPU
 	//
@@ -316,6 +323,7 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 
 	// free all temporary variables
 	delete[] MassSend;
+	delete[] MdotSend;
 	delete[] PositionSend;
 	delete[] VelocitySend;
 
@@ -325,6 +333,10 @@ void CalculateListAccelerationOnGPU(std::vector<int> &IndexList, std::vector<Par
 	delete[] AccSend;
 	delete[] AccDotSend;
 	delete[] PotSend;
+
+	for (int i = 0; i < ListSize; ++i) {
+		delete[] AClistGpu[i];
+	}
 	delete[] AClistGpu;
 
 } // calculate 0th, 1st derivative of force + neighbors on GPU ends

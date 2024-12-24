@@ -172,6 +172,9 @@ void RootRoutines() {
 
 		SetPrimordialBinaries();
 
+		fprintf(stdout, "SetPrimordialBinaries ends... NumberOfParticle: %d\n", NumberOfParticle);
+		fflush(stdout);
+
 		// Initialize Time Step
 		task            = 9;
 		completed_tasks = 0;
@@ -240,7 +243,7 @@ void RootRoutines() {
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
 
-			if (!ptcl->isActive)
+			if (!ptcl->isActive) // Eunwoo: If I'm correct, there should be no isActive=false particle here!
 				continue;
 
 			ptcl->TimeBlockIrr = static_cast<ULL>(pow(2, ptcl->TimeLevelIrr-time_block));
@@ -357,7 +360,7 @@ void RootRoutines() {
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
 
-			if (!ptcl->isActive)
+			if (!ptcl->isActive) // Eunwoo: If I'm correct, there should be no isActive=false particle here!
 				continue;
 			
 			fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"\
@@ -486,10 +489,72 @@ void RootRoutines() {
 				MPI_Waitall(NumberOfCommunication, requests, statuses);
 				NumberOfCommunication = 0;
 
+				task = 21;
+				completed_tasks = 0;
+				for (int i=0; i<NumberOfWorker; i++) {
+					if (i*AdaptiveLoadBalancing >= total_tasks) break;
+					//std::cout << "=" << RegularList[0] << std::endl;
+					MPI_Isend(&task, 1, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+					//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
+					size = total_tasks - i*AdaptiveLoadBalancing;
+					size = (size < AdaptiveLoadBalancing) ? size : AdaptiveLoadBalancing;
 
-				for (int i=0; i<total_tasks; i++)
-					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
+					MPI_Isend(&ThisLevelNode->ParticleList[i*AdaptiveLoadBalancing], size, MPI_INT,
+							i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+				}
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
 
+				for (int i=0; i<NumberOfWorker; i++) {
+					if (i*AdaptiveLoadBalancing >= total_tasks) break;
+					MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+				}
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
+
+				int OriginalSize = ThisLevelNode->ParticleList.size();
+				for (int i=0; i<OriginalSize; i++) {
+					Particle* ptclCM = &particles[ThisLevelNode->ParticleList[i]];
+					if (!ptclCM->GroupInfo) continue;
+
+					if (ptclCM->GroupInfo->isTerminate) {
+						if (ptclCM->GroupInfo->isMerger) {
+							for (int i=0; i<ptclCM->GroupInfo->sym_int.particles.getSize(); i++) {
+								Particle* ptcl = &particles[ptclCM->GroupInfo->sym_int.particles[i].ParticleOrder];
+								if (ptcl->Mass != 0.0)
+									ThisLevelNode->ParticleList[i] = ptcl->ParticleOrder;
+							}
+							FBTermination2(ThisLevelNode->ParticleList[i]);
+							bin_termination = true;
+						}
+						else {
+							if (ptclCM->GroupInfo->sym_int.particles.getSize() > 2) { // Terminate many-body (> 2) group
+
+								ThisLevelNode->ParticleList[i] = ptclCM->GroupInfo->sym_int.particles[0].ParticleOrder; // CM particle -> 1st group member
+								for (int i=1; i<ptclCM->GroupInfo->sym_int.particles.getSize(); i++) {
+									Particle* ptcl = &particles[ptclCM->GroupInfo->sym_int.particles[i].ParticleOrder]; 
+									ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder); // push_back other group members
+								}
+								/* Eunwoo: This might be needed later!
+								std::vector<Particle*> members = ptcl->GroupInfo->Members;
+								FBTermination(ThisLevelNode->ParticleList[i]);
+								AddNewGroupsToList2(members, particle);
+								members.clear();
+								*/
+								FBTermination(ThisLevelNode->ParticleList[i]);
+								bin_termination = true;
+							}
+							else { // Terminate binary
+
+								ThisLevelNode->ParticleList[i] = ptclCM->GroupInfo->sym_int.particles[0].ParticleOrder; // CM particle -> 1st binary member
+								ThisLevelNode->ParticleList.push_back(ptclCM->GroupInfo->sym_int.particles[1].ParticleOrder); // push_back 2nd binary member
+
+								FBTermination(ThisLevelNode->ParticleList[i]);
+								bin_termination = true;
+							}
+						}
+					}
+				}
 
 #else
 				// Irregular Gravity
@@ -625,12 +690,12 @@ void RootRoutines() {
 							bin_termination = true;
 						}
 						else {
-							if (ptclCM->GroupInfo->sym_int.particles.getSize() > 2) {
+							if (ptclCM->GroupInfo->sym_int.particles.getSize() > 2) { // Terminate many-body (> 2) group
 
-								ThisLevelNode->ParticleList[i] = ptclCM->GroupInfo->sym_int.particles[0].ParticleOrder;
+								ThisLevelNode->ParticleList[i] = ptclCM->GroupInfo->sym_int.particles[0].ParticleOrder; // CM particle -> 1st group member
 								for (int i=1; i<ptclCM->GroupInfo->sym_int.particles.getSize(); i++) {
-									Particle* ptcl = &particles[ptclCM->GroupInfo->sym_int.particles[i].ParticleOrder];
-									ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder);
+									Particle* ptcl = &particles[ptclCM->GroupInfo->sym_int.particles[i].ParticleOrder]; 
+									ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder); // push_back other group members
 								}
 								/* Eunwoo: This might be needed later!
 								std::vector<Particle*> members = ptcl->GroupInfo->Members;
@@ -641,10 +706,10 @@ void RootRoutines() {
 								FBTermination(ThisLevelNode->ParticleList[i]);
 								bin_termination = true;
 							}
-							else {
+							else { // Terminate binary
 
-								ThisLevelNode->ParticleList[i] = ptclCM->GroupInfo->sym_int.particles[0].ParticleOrder;
-								ThisLevelNode->ParticleList.push_back(ptclCM->GroupInfo->sym_int.particles[1].ParticleOrder);
+								ThisLevelNode->ParticleList[i] = ptclCM->GroupInfo->sym_int.particles[0].ParticleOrder; // CM particle -> 1st binary member
+								ThisLevelNode->ParticleList.push_back(ptclCM->GroupInfo->sym_int.particles[1].ParticleOrder); // push_back 2nd binary member
 
 								FBTermination(ThisLevelNode->ParticleList[i]);
 								bin_termination = true;
@@ -686,25 +751,29 @@ void RootRoutines() {
 				}
 				int beforeNumberOfParticle = NumberOfParticle;
 				SetBinaries(ThisLevelNode->ParticleList);
-				if (beforeNumberOfParticle != NumberOfParticle)
+				if (beforeNumberOfParticle != NumberOfParticle) {
 					new_binaries = true;
+					for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
+						Particle* ptcl = &particles[i];
+						ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder);
+					}
+				}
 
 				ThisLevelNode->ParticleList.erase(
 					std::remove_if(
 							ThisLevelNode->ParticleList.begin(), 
 							ThisLevelNode->ParticleList.end(),
-							[](Particle* p) { return !p->isActive; }
+							[&particles](int i) { return !particles[i].isActive; }
 					),
 					ThisLevelNode->ParticleList.end()
 				);
 
 				//ParticleSynchronization();
-
+#endif
 				for (int i=0; i<total_tasks; i++)
 					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
 
-
-#endif
+				broadcastFromRoot(NumberOfParticle);
 
 				//skiplist->display();
 				/*
@@ -823,6 +892,7 @@ void RootRoutines() {
 #endif
 			} // Irr
 			delete skiplist;
+			skiplist = nullptr;
 			//exit(SUCCESS);
 
 
@@ -835,6 +905,8 @@ void RootRoutines() {
 				next_time = NextRegTimeBlock*time_step;
 
 				calculateRegAccelerationOnGPU(RegularList);
+
+				int beforeNumberOfParticle = NumberOfParticle;
 
 				// Few-body group search
 				task            = 22;
@@ -868,6 +940,8 @@ void RootRoutines() {
 					completed_tasks++;
 				}
 				SetBinaries(RegularList);
+				if (beforeNumberOfParticle != NumberOfParticle)
+					broadcastFromRoot(NumberOfParticle);
 			}
 			/*
 				{
@@ -1126,6 +1200,8 @@ void updateNextRegTime(std::vector<int>& RegularList) {
 	for (int i=0; i<NumberOfParticle; i++)
 	{
 		ptcl = &particles[i];
+		if (!ptcl->isActive)
+			continue;
 		// Next regular time step
 		time_tmp = ptcl->CurrentBlockReg + ptcl->TimeBlockReg;
 
@@ -1136,7 +1212,7 @@ void updateNextRegTime(std::vector<int>& RegularList) {
 				RegularList.clear();
 				time = time_tmp;
 			}
-			RegularList.push_back(ptcl->PID);
+			RegularList.push_back(ptcl->ParticleOrder);
 		}
 	}
 	NextRegTimeBlock = time;
@@ -1169,12 +1245,14 @@ bool createSkipList(SkipList *skiplist) {
 
 	for (int i=0; i<NumberOfParticle; i++) {
 		ptcl =  &particles[i];
+		if (!ptcl->isActive)
+			continue;
 
 		// if ((ptcl->NumberOfNeighbor != 0) && (ptcl->NextBlockIrr <= NextRegTimeBlock)) { // IAR original
 		if (ptcl->NextBlockIrr <= NextRegTimeBlock) {	// IAR modified
 			//fprintf(stdout, "PID=%d, NBI=%llu\n", ptcl->PID, ptcl->NextBlockIrr);
-			if (!skiplist->search(ptcl->NextBlockIrr, ptcl->PID))
-				skiplist->insert(ptcl->NextBlockIrr, ptcl->PID);
+			if (!skiplist->search(ptcl->NextBlockIrr, ptcl->ParticleOrder))
+				skiplist->insert(ptcl->NextBlockIrr, ptcl->ParticleOrder);
 		}
 	}
 
@@ -1232,8 +1310,8 @@ bool updateSkipList(SkipList *skiplist, int ptcl_id) {
 	if (ptcl->NextBlockIrr > NextRegTimeBlock)
 		return true;
 
-	if (!skiplist->search(ptcl->NextBlockIrr, ptcl->PID))
-		skiplist->insert(ptcl->NextBlockIrr, ptcl->PID);
+	if (!skiplist->search(ptcl->NextBlockIrr, ptcl->ParticleOrder))
+		skiplist->insert(ptcl->NextBlockIrr, ptcl->ParticleOrder);
 
 	if (debug) {
 	}

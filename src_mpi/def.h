@@ -1,6 +1,6 @@
 //#define CUDA
 
-#define LoadBalance
+// #define LoadBalance
 #define PerformanceTrace
 
 #define FAIL    -1

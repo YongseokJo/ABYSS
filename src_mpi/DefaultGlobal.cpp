@@ -65,11 +65,6 @@ Performance performance;
 
 void DefaultGlobal() {
 
-	binout = fopen("binary_output.txt", "w");
-	fprintf(binout, "Starting nbody - Binary OUTPUT\n");
-	mergerout = fopen("merger_output.txt", "w");
-	fprintf(mergerout, "Starting nbody - Merger OUTPUT\n");
-
 	/* Task initialization */
 	//int Task[NumberOfTask];
 	for (int i=0;i<NumberOfTask; i++) {

@@ -181,6 +181,8 @@ void WorkerRoutines() {
 				}
 				delete NewNeighbors;
 				delete NewNumberOfNeighbor;
+				delete new_a;
+				delete new_adot;
 				break;
 
 			case 5: // Update Regular Particle CUDA II

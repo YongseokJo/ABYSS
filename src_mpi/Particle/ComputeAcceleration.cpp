@@ -43,6 +43,9 @@ void Particle::computeAccelerationIrr() {
 	this->predictParticleSecondOrder(this->TimeStepIrr, pos, vel);
 
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
+
+		fprintf(stdout, "ptcl order: %d, Neighbor order: %d\n", ParticleOrder, Neighbors[i]);
+		fflush(stdout);
 		ptcl = &particles[this->Neighbors[i]];
 		/*
 		if (ptcl->isCMptcl) {
