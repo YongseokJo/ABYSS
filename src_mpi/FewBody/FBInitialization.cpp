@@ -58,20 +58,23 @@ void Group::initialIntegrator(int NumMembers) {
     sym_int.particles.reserveMem(NumMembers);
 	sym_int.info.reserveMem(NumMembers);
 
+	fprintf(binout, "Mem PID:");
     for (int i = 0; i < groupCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[groupCM->NewNeighbors[i]];
         members->isActive = false;
 		if (!members->GroupInfo) {
 			sym_int.particles.addMemberAndAddress(*members);
-			fprintf(binout, "Mem PID: %d\n", sym_int.particles[i].PID);
+			fprintf(binout, " %d", sym_int.particles[i].PID);
 		}
 		else {
 			for (int j=0; j < members->GroupInfo->sym_int.particles.getSize(); j++) {
 				sym_int.particles.addMemberAndAddress(members->GroupInfo->sym_int.particles[j]);
-				fprintf(binout, "Mem PID: %d\n", sym_int.particles[i].PID);
+				fprintf(binout, " %d", sym_int.particles[i].PID);
 			}
 		}
     }
+	fprintf(binout, "\n");
+	fflush(binout);
 
 	// if (BHinside) sym_int.manager->setBHinside();
 

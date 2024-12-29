@@ -262,6 +262,7 @@ void WorkerRoutines() {
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 
 				ptcl = &particles[ptcl_id];
+				ptcl->NewNumberOfNeighbor = 0;
 				ptcl->checkNewGroup2();
 				break;
 
@@ -279,8 +280,11 @@ void WorkerRoutines() {
 
 			case 22: // Few-body group search
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-
+				
 				ptcl = &particles[ptcl_id];
+				fprintf(stdout, "PID: %d\n", ptcl->PID);
+				fflush(stdout);
+				ptcl->NewNumberOfNeighbor = 0;
 				if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > tbin) break;
 				ptcl->checkNewGroup();
 				break;

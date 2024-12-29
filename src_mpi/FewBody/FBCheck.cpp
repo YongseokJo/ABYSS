@@ -27,7 +27,7 @@ void Particle::checkNewGroup() {
     const Float kappa_org_crit = 1e-2;
 
     double pos1[Dim], vel1[Dim];
-    this->NewNumberOfNeighbor = 0;
+    // this->NewNumberOfNeighbor = 0;
 
     Particle* ptcl2;
 
@@ -142,7 +142,7 @@ void Particle::checkNewGroup2() {
     const Float kappa_org_crit = 1e-2;
 
     double pos1[Dim], vel1[Dim];
-    this->NewNumberOfNeighbor = 0;
+    // this->NewNumberOfNeighbor = 0;
 
     Particle* ptcl2;
 
