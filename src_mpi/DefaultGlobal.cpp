@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdio.h>
 #include "global.h"
+#include "GlobalVariable.h"
 #include <mpi.h>
 
 
@@ -8,6 +9,7 @@ Particle *particles_original;
 Particle *particles;
 
 MPI_Win win;
+MPI_Win win2;
 MPI_Comm shared_comm;
 int MyRank;
 int NumberOfProcessor;
@@ -19,6 +21,9 @@ MPI_Status statuses[MaxNumberOfCommunication];
 
 int LoadBalanceParticle;
 
+
+GlobalVariable global_variable;
+GlobalVariable global_variable_original;
 int NumberOfParticle;
 int NumberOfSingle;
 int NewPID;

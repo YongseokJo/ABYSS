@@ -428,12 +428,10 @@ void RootRoutines() {
 				//std::cout << "TotalTask=" << total_tasks << std::endl;
 
 
-				/*
 				std::cout << "PID= ";
 				for (int i=0; i<total_tasks; i++) {
 					std::cout << ThisLevelNode->ParticleList[i]<< ", ";
 				}
-				*/
 				//std::cout << std::endl;
 #ifdef LoadBalance
 				// Calculate Irregular
@@ -830,7 +828,9 @@ void RootRoutines() {
 				for (int i=0; i<total_tasks; i++)
 					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
 
-				broadcastFromRoot(NumberOfParticle);
+
+				//broadcastFromRoot(NumberOfParticle);
+				global_variable.NumberOfParticle = NumberOfParticle;
 
 				//skiplist->display();
 				/*
@@ -947,7 +947,9 @@ void RootRoutines() {
 					return;
 				}
 #endif
+			fprintf(stdout, "here?3\n");
 			} // Irr
+			fprintf(stdout, "here?3-1\n");
 			delete skiplist;
 			skiplist = nullptr;
 			//exit(SUCCESS);
@@ -955,15 +957,19 @@ void RootRoutines() {
 
 			if (bin_termination || new_binaries) updateNextRegTime(RegularList);
 
+			fprintf(stdout, "here?4\n");
 
 #ifdef CUDA
 			{
 				//total_tasks = RegularList.size();
 				next_time = NextRegTimeBlock*time_step;
 
+				fprintf(stdout, "Regular starts\n");
+				fflush(stdout);
 				calculateRegAccelerationOnGPU(RegularList);
 
 				fprintf(stdout, "Regular list: ");
+				fflush(stdout);
 				Particle* ptcl;
 				for (int i=0; i<RegularList.size(); i++) {
 					ptcl = &particles[RegularList[i]];
@@ -1003,7 +1009,8 @@ void RootRoutines() {
 				int beforeNumberOfParticle = NumberOfParticle;
 				SetBinaries(RegularList);
 				if (beforeNumberOfParticle != NumberOfParticle)
-					broadcastFromRoot(NumberOfParticle);
+					global_variable.NumberOfParticle = NumberOfParticle;
+					//broadcastFromRoot(NumberOfParticle);
 			}
 			/*
 				{
