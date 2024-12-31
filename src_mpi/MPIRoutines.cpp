@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include "def.h"
 #include "particle.h"
+#include "GlobalVariable.h"
 #include "global.h"
 #include <mpi.h>
 
@@ -53,9 +54,10 @@ void initializeMPI(int argc, char *argv[]) {
 	if (shared_rank == 0) {
 		//MPI_Win_allocate_shared(sizeof(int), sizeof(int), MPI_INFO_NULL, shared_comm, &shared_mem, &win);
 		MPI_Win_allocate_shared(sizeof(Particle) * MaxNumberOfParticle, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles_original, &win);
+		MPI_Win_allocate_shared(sizeof(GlobalVariable), sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);
 	} else {
 		MPI_Win_allocate_shared(0, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles_original, &win);
-		//MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, shared_comm, &shared_mem, &win);
+		MPI_Win_allocate_shared(0, sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &shared_mem, &win2);
 	}
 	    // Query shared memory of rank 0
 	
@@ -63,6 +65,7 @@ void initializeMPI(int argc, char *argv[]) {
 	int disp_unit;
 
 	MPI_Win_shared_query(win, 0, &size_bytes, &disp_unit, &particles);
+	MPI_Win_shared_query(win, 0, &size_bytes, &disp_unit, &global_variable);
 }
 
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG) {

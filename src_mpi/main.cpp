@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include "def.h"
 #include "particle.h"
+#include "GlobalVariable.h"
 #include "global.h"
 #include <mpi.h>
 #include <unistd.h>
@@ -70,8 +71,10 @@ int main(int argc, char *argv[]) {
 	if (MyRank == ROOT && readData() == FAIL)
 		fprintf(stderr, "Read Data Failed!\n");
 
-	broadcastFromRoot(NumberOfParticle);
-	broadcastFromRoot(NumberOfSingle);
+	global_variable.NumberOfParticle = NumberOfParticle;
+	global_variable.NumberOfSingle = NumberOfSingle;
+	//broadcastFromRoot(NumberOfParticle);
+	//broadcastFromRoot(NumberOfSingle);
 	//MPI_Win_fence(0, win);
 
 	if (MyRank == ROOT) {

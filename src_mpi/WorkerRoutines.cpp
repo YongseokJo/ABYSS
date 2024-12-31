@@ -282,7 +282,7 @@ void WorkerRoutines() {
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				
 				ptcl = &particles[ptcl_id];
-				fprintf(stdout, "PID: %d\n", ptcl->PID);
+				fprintf(stdout, "(rank=%d) PID: %d\n", MyRank, ptcl->PID);
 				fflush(stdout);
 				ptcl->NewNumberOfNeighbor = 0;
 				if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > tbin) break;

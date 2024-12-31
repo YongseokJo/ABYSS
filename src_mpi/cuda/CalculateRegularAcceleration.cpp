@@ -157,9 +157,6 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList){
 
 
 
-	
-
-
 	MPI_Request request;  // Pointer to the request handle
 	MPI_Status status;    // Pointer to the status object
 	

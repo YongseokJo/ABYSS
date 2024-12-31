@@ -1,5 +1,8 @@
-#pragma once
+#ifndef AR_INTERACTION_H
+#define AR_INTERACTION_H
+//#pragma once
 #include <cmath>
+#include <random>
 
 extern double EnzoTimeStep;
 extern FILE* mergerout;
@@ -1205,4 +1208,4 @@ public:
     }
     
 };
-
+#endif
