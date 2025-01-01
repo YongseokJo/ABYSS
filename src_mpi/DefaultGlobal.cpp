@@ -7,9 +7,12 @@
 
 Particle *particles_original;
 Particle *particles;
+Group *groups;
+Group *groups_original;
 
 MPI_Win win;
 MPI_Win win2;
+MPI_Win win3;
 MPI_Comm shared_comm;
 int MyRank;
 int NumberOfProcessor;

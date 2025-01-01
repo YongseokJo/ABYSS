@@ -433,7 +433,7 @@ void RootRoutines() {
 					std::cout << ThisLevelNode->ParticleList[i]<< ", ";
 				}
 				//std::cout << std::endl;
-#ifdef LoadBalance
+#ifdef NoLoadBalance
 				// Calculate Irregular
 				task = 0;
 				completed_tasks = 0;

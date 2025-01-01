@@ -9,10 +9,13 @@
 
 extern Particle *particles;
 extern Particle *particles_original;
+extern Group *groups;
+extern Group *groups_original;
 
 /* Communicators */
 extern MPI_Win win;
 extern MPI_Win win2;
+extern MPI_Win win3;
 extern MPI_Comm shared_comm;
 extern int MyRank;
 extern int NumberOfProcessor;

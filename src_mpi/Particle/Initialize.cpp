@@ -40,7 +40,7 @@ void CalculateAcceleration01(Particle* ptcl1) {
 	
 	//fprintf(stdout, "pid=%d, nn=%d, numpart=%d\n", ptcl1->PID, ptcl1->NumberOfNeighbor, NumberOfParticle);
 	Particle *ptcl2;
-	for (int i=0; i<NumberOfParticle; i++) {
+	for (int i=0; i<global_variable.NumberOfParticle; i++) {
 		ptcl2 = &particles[i];
 
 		if (ptcl1->PID == ptcl2->PID || !ptcl2->isActive) {
@@ -116,7 +116,7 @@ void CalculateAcceleration23(Particle* ptcl1) {
 	}
 
 	Particle *ptcl2;
-	for (int i=0; i<NumberOfParticle; i++) {
+	for (int i=0; i<global_variable.NumberOfParticle; i++) {
 		ptcl2 = &particles[i];
 
 		if (ptcl1->PID == ptcl2->PID || !ptcl2->isActive) {

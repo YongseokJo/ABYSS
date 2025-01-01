@@ -219,7 +219,7 @@ void Particle::computeAccelerationReg() {
 		this->predictParticleSecondOrder(0, pos, vel);
 
 
-	for (int i=0; i<NumberOfParticle; i++) {
+	for (int i=0; i<global_variable.NumberOfParticle; i++) {
 		ptcl = &particles[i];
 
 		if (!ptcl->isActive) continue;

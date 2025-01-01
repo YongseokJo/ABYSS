@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GROUP_H
+#define GROUP_H
 
 #include <vector>
 #include <iostream>
@@ -71,3 +72,4 @@ struct Group
 	};
 
 };
+#endif
