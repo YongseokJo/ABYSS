@@ -359,6 +359,7 @@ void NewFBInitialization(int newOrder) {
 	CalculateAcceleration01(ptclCM);
 	CalculateAcceleration23(ptclCM);
 	
+	fprintf(stdout, "NumNeighbor of 100000: %d\n", particles[100000].NumberOfNeighbor);
 	fprintf(stdout, "Neighbor ParticleOrders of 10000: ");
 	for (int i=0; i<particles[100000].NumberOfNeighbor; i++)
 		fprintf(stdout, "%d ", particles[100000].Neighbors[i]);

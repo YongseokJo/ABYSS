@@ -143,7 +143,7 @@ void SetBinaries(std::vector<int>& ParticleList) {
 	MergeGroups();	// Merge group candidates
 					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
 	global_variable->NumberOfParticle = NumberOfParticle;
-	
+
 	for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
 		NewFBInitialization(i);
 	}

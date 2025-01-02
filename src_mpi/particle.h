@@ -249,7 +249,7 @@ struct Particle {
             BackgroundAcceleration[i] = 0.0;
 			a_spin[i] = 0.0;
         }
-        RadiusOfNeighbor = 0.11;
+        RadiusOfNeighbor = 0.11*0.11;
 
         isActive = false;
 		ParticleOrder = -1;
