@@ -72,7 +72,8 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Read Data Failed!\n");
 
 	global_variable.NumberOfParticle = NumberOfParticle;
-	global_variable.NumberOfSingle = NumberOfSingle;
+	global_variable.NumberOfSingle   = NumberOfSingle;
+	global_variable.NewPID           = NewPID;
 	//broadcastFromRoot(NumberOfParticle);
 	//broadcastFromRoot(NumberOfSingle);
 	//MPI_Win_fence(0, win);

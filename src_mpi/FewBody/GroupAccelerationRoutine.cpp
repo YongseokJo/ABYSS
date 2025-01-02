@@ -266,8 +266,8 @@ void NewPrimordialBinaries(int newOrder) {
 	ptclGroup->groupCM		= ptclCM;
 
 	ptclCM->ParticleOrder = newOrder;
-	ptclCM->PID = NewPID;
-	NewPID++;
+	ptclCM->PID = global_variable.NewPID;
+	global_variable.NewPID++;
 	ptclCM->isActive = true;
 
 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).

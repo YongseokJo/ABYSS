@@ -362,7 +362,6 @@ void RootRoutines() {
 
 			if (!ptcl->isActive) // Eunwoo: If I'm correct, there should be no isActive=false particle here!
 				continue;
-			
 			fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"\
 					"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"\
 					"NumNeighbor= %d\n",
@@ -403,14 +402,12 @@ void RootRoutines() {
 		//ParticleSynchronization();
 		while (1) {
 			updateNextRegTime(RegularList);
-			/*
 			std::cout << "NextRegTimeBlock=" << NextRegTimeBlock << std::endl;
 			std::cout << "PID= ";
 			for (int i=0; i<RegularList.size(); i++)
 				std::cout << RegularList[i]<< ", ";
 			std::cout << std::endl;
 			std::cout << "size of regularlist= " << RegularList.size() << std::endl;
-			*/
 
 
 			skiplist = new SkipList(max_level, prob);
@@ -419,16 +416,23 @@ void RootRoutines() {
 			bool bin_termination = false;
 			bool new_binaries = false;
 
+			skiplist->display();
+			ThisLevelNode = skiplist->getFirstNode();
+			std::cout << "1. PID= ";
+			for (int i=0; i<total_tasks; i++) {
+				std::cout << ThisLevelNode->ParticleList[i]<< ", ";
+			}
+
 			// Irregular
 			while ( skiplist->getFirstNode() != nullptr) {
 				update_idx=0;
 				ThisLevelNode = skiplist->getFirstNode();
-				next_time = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
-									 	+ particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
+				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
+									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 				//std::cout << "TotalTask=" << total_tasks << std::endl;
 
 
-				std::cout << "PID= ";
+				std::cout << "2. PID= ";
 				for (int i=0; i<total_tasks; i++) {
 					std::cout << ThisLevelNode->ParticleList[i]<< ", ";
 				}
@@ -1314,11 +1318,9 @@ bool createSkipList(SkipList *skiplist) {
 
 	for (int i=0; i<NumberOfParticle; i++) {
 		ptcl =  &particles[i];
-		if (!ptcl->isActive)
-			continue;
 
 		// if ((ptcl->NumberOfNeighbor != 0) && (ptcl->NextBlockIrr <= NextRegTimeBlock)) { // IAR original
-		if (ptcl->NextBlockIrr <= NextRegTimeBlock) {	// IAR modified
+		if (ptcl->isActive && ptcl->NextBlockIrr <= NextRegTimeBlock) {	// IAR modified
 			//fprintf(stdout, "PID=%d, NBI=%llu\n", ptcl->PID, ptcl->NextBlockIrr);
 			if (!skiplist->search(ptcl->NextBlockIrr, ptcl->ParticleOrder))
 				skiplist->insert(ptcl->NextBlockIrr, ptcl->ParticleOrder);

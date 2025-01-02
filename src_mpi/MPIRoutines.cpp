@@ -39,7 +39,6 @@ void initializeMPI(int argc, char *argv[]) {
 	MPI_Comm_size(shmcomm, &local_size);
 	*/
 
-	int *shared_mem;
 
 	// Create a shared memory communicator
 	MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, MyRank, MPI_INFO_NULL, &shared_comm);
@@ -59,9 +58,9 @@ void initializeMPI(int argc, char *argv[]) {
 	} else {
 		MPI_Win_allocate_shared(0, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles_original, &win);
 		MPI_Win_allocate_shared(0, sizeof(Group), MPI_INFO_NULL, shared_comm, &groups_original, &win3);
-		MPI_Win_allocate_shared(0, sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &shared_mem, &win2);
+		MPI_Win_allocate_shared(0, sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);
 	}
-	    // Query shared memory of rank 0
+	// Query shared memory of rank 0
 	
 	MPI_Aint size_bytes;
 	int disp_unit;

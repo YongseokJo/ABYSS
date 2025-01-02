@@ -278,8 +278,8 @@ void NewFBInitialization(int newOrder) {
 	ptclCM->TimeLevelReg    = ptcl->TimeLevelReg;
 
 	ptclCM->ParticleOrder	= newOrder;
-	ptclCM->PID             = NewPID;
-	NewPID++;
+	ptclCM->PID             = global_variable.NewPID;
+	global_variable.NewPID++;
 	ptclCM->GroupInfo		= ptclGroup;
 	ptclCM->isActive = true;
 

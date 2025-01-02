@@ -4,6 +4,7 @@
 struct GlobalVariable {
 	int NumberOfParticle;
 	int NumberOfSingle;
+	int NewPID;
 };
 
 #endif
