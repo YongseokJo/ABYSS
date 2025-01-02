@@ -52,6 +52,8 @@ bool Group::ARIntegration(double next_time){
     // fprintf(mergerout, "PID: %d\n", groupCM->PID);
     // fprintf(mergerout, "before posx: %e pc\n", sym_int.particles[0].Position[0]*position_unit);
 
+    Particle* groupCM = &particles[groupCMOrder];
+
     auto bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
 
     // AR::InterruptBinary<Particle> bin_interrupt;

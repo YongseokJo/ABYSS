@@ -98,11 +98,11 @@ void WorkerRoutines() {
 				for (int i=0; i<size; i++) {
 					ptcl = &particles[ptcl_id_vector[i]];
 
-					if (ptcl->GroupInfo) {
-						ptcl->GroupInfo->sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
+					if (ptcl->GroupOrder >= 0) {
+						groups[ptcl->GroupOrder].sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
 						for (int i=0; i<ptcl->NumberOfNeighbor; i++)
-							ptcl->GroupInfo->sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
-						bool int_normal = ptcl->GroupInfo->ARIntegration(ptcl->NewCurrentBlockIrr*time_step);
+							groups[ptcl->GroupOrder].sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
+						bool int_normal = groups[ptcl->GroupOrder].ARIntegration(ptcl->NewCurrentBlockIrr*time_step);
 						if (!int_normal) break;
 					}
 					if (ptcl->NumberOfNeighbor != 0)
@@ -116,11 +116,11 @@ void WorkerRoutines() {
 
 				ptcl = &particles[ptcl_id];
 
-				if (ptcl->GroupInfo) {
-					ptcl->GroupInfo->sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
+				if (ptcl->GroupOrder >= 0) {
+					groups[ptcl->GroupOrder].sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
 					for (int i=0; i<ptcl->NumberOfNeighbor; i++)
-						ptcl->GroupInfo->sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
-					bool int_normal = ptcl->GroupInfo->ARIntegration(ptcl->NewCurrentBlockIrr*time_step);
+						groups[ptcl->GroupOrder].sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
+					bool int_normal = groups[ptcl->GroupOrder].ARIntegration(ptcl->NewCurrentBlockIrr*time_step);
 					if (!int_normal) break;
 				}
 				if (ptcl->NumberOfNeighbor != 0) // IAR modified
@@ -278,11 +278,11 @@ void WorkerRoutines() {
 				for (int i=0; i<size; i++) {
 					ptcl = &particles[ptcl_id_vector[i]];
 
-					if (ptcl->GroupInfo) {
-						if (!ptcl->GroupInfo->isMerger)
-							ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
-						else if (ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
-							ptcl->GroupInfo->isMerger = false;
+					if (ptcl->GroupOrder >= 0) {
+						if (!groups[ptcl->GroupOrder].isMerger)
+							groups[ptcl->GroupOrder].isTerminate = groups[ptcl->GroupOrder].CheckBreak();
+						else if (groups[ptcl->GroupOrder].isMerger && !groups[ptcl->GroupOrder].isTerminate)
+							groups[ptcl->GroupOrder].isMerger = false;
 					}
 				}
 				break;

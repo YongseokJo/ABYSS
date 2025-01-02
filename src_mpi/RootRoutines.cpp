@@ -505,12 +505,12 @@ void RootRoutines() {
 				int OriginalSize = ThisLevelNode->ParticleList.size();
 				for (int i=0; i<OriginalSize; i++) {
 					Particle* ptclCM = &particles[ThisLevelNode->ParticleList[i]];
-					if (!ptclCM->GroupInfo) continue;
+					if (ptclCM->GroupOrder < 0) continue;
 
-					if (ptclCM->GroupInfo->isTerminate) {
-						if (ptclCM->GroupInfo->isMerger) {
-							for (int i=0; i<ptclCM->GroupInfo->sym_int.particles.getSize(); i++) {
-								Particle* ptcl = &particles[ptclCM->GroupInfo->sym_int.particles[i].ParticleOrder];
+					if (groups[ptclCM->GroupOrder].isTerminate) {
+						if (groups[ptclCM->GroupOrder].isMerger) {
+							for (int i=0; i<groups[ptclCM->GroupOrder].sym_int.particles.getSize(); i++) {
+								Particle* ptcl = &particles[groups[ptclCM->GroupOrder].sym_int.particles[i].ParticleOrder];
 								if (ptcl->Mass != 0.0)
 									ThisLevelNode->ParticleList[i] = ptcl->ParticleOrder;
 							}
@@ -518,11 +518,11 @@ void RootRoutines() {
 							bin_termination = true;
 						}
 						else {
-							if (ptclCM->GroupInfo->sym_int.particles.getSize() > 2) { // Terminate many-body (> 2) group
+							if (groups[ptclCM->GroupOrder].sym_int.particles.getSize() > 2) { // Terminate many-body (> 2) group
 
-								ThisLevelNode->ParticleList[i] = ptclCM->GroupInfo->sym_int.particles[0].ParticleOrder; // CM particle -> 1st group member
-								for (int i=1; i<ptclCM->GroupInfo->sym_int.particles.getSize(); i++) {
-									Particle* ptcl = &particles[ptclCM->GroupInfo->sym_int.particles[i].ParticleOrder]; 
+								ThisLevelNode->ParticleList[i] = groups[ptclCM->GroupOrder].sym_int.particles[0].ParticleOrder; // CM particle -> 1st group member
+								for (int i=1; i<groups[ptclCM->GroupOrder].sym_int.particles.getSize(); i++) {
+									Particle* ptcl = &particles[groups[ptclCM->GroupOrder].sym_int.particles[i].ParticleOrder]; 
 									ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder); // push_back other group members
 								}
 								/* Eunwoo: This might be needed later!
@@ -536,8 +536,8 @@ void RootRoutines() {
 							}
 							else { // Terminate binary
 
-								ThisLevelNode->ParticleList[i] = ptclCM->GroupInfo->sym_int.particles[0].ParticleOrder; // CM particle -> 1st binary member
-								ThisLevelNode->ParticleList.push_back(ptclCM->GroupInfo->sym_int.particles[1].ParticleOrder); // push_back 2nd binary member
+								ThisLevelNode->ParticleList[i] = groups[ptclCM->GroupOrder].sym_int.particles[0].ParticleOrder; // CM particle -> 1st binary member
+								ThisLevelNode->ParticleList.push_back(groups[ptclCM->GroupOrder].sym_int.particles[1].ParticleOrder); // push_back 2nd binary member
 
 								FBTermination(ThisLevelNode->ParticleList[i]);
 								bin_termination = true;
@@ -729,12 +729,12 @@ void RootRoutines() {
 				int OriginalSize = ThisLevelNode->ParticleList.size();
 				for (int i=0; i<OriginalSize; i++) {
 					Particle* ptclCM = &particles[ThisLevelNode->ParticleList[i]];
-					if (!ptclCM->GroupInfo) continue;
+					if (ptclCM->GroupOrder < 0) continue;
 
-					if (ptclCM->GroupInfo->isTerminate) {
-						if (ptclCM->GroupInfo->isMerger) {
-							for (int i=0; i<ptclCM->GroupInfo->sym_int.particles.getSize(); i++) {
-								Particle* ptcl = &particles[ptclCM->GroupInfo->sym_int.particles[i].ParticleOrder];
+					if (groups[ptclCM->GroupOrder].isTerminate) {
+						if (groups[ptclCM->GroupOrder].isMerger) {
+							for (int i=0; i<groups[ptclCM->GroupOrder].sym_int.particles.getSize(); i++) {
+								Particle* ptcl = &particles[groups[ptclCM->GroupOrder].sym_int.particles[i].ParticleOrder];
 								if (ptcl->Mass != 0.0)
 									ThisLevelNode->ParticleList[i] = ptcl->ParticleOrder;
 							}
@@ -742,11 +742,11 @@ void RootRoutines() {
 							bin_termination = true;
 						}
 						else {
-							if (ptclCM->GroupInfo->sym_int.particles.getSize() > 2) { // Terminate many-body (> 2) group
+							if (groups[ptclCM->GroupOrder].sym_int.particles.getSize() > 2) { // Terminate many-body (> 2) group
 
-								ThisLevelNode->ParticleList[i] = ptclCM->GroupInfo->sym_int.particles[0].ParticleOrder; // CM particle -> 1st group member
-								for (int i=1; i<ptclCM->GroupInfo->sym_int.particles.getSize(); i++) {
-									Particle* ptcl = &particles[ptclCM->GroupInfo->sym_int.particles[i].ParticleOrder]; 
+								ThisLevelNode->ParticleList[i] = groups[ptclCM->GroupOrder].sym_int.particles[0].ParticleOrder; // CM particle -> 1st group member
+								for (int i=1; i<groups[ptclCM->GroupOrder].sym_int.particles.getSize(); i++) {
+									Particle* ptcl = &particles[groups[ptclCM->GroupOrder].sym_int.particles[i].ParticleOrder]; 
 									ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder); // push_back other group members
 								}
 								/* Eunwoo: This might be needed later!
@@ -760,8 +760,8 @@ void RootRoutines() {
 							}
 							else { // Terminate binary
 
-								ThisLevelNode->ParticleList[i] = ptclCM->GroupInfo->sym_int.particles[0].ParticleOrder; // CM particle -> 1st binary member
-								ThisLevelNode->ParticleList.push_back(ptclCM->GroupInfo->sym_int.particles[1].ParticleOrder); // push_back 2nd binary member
+								ThisLevelNode->ParticleList[i] = groups[ptclCM->GroupOrder].sym_int.particles[0].ParticleOrder; // CM particle -> 1st binary member
+								ThisLevelNode->ParticleList.push_back(groups[ptclCM->GroupOrder].ym_int.particles[1].ParticleOrder); // push_back 2nd binary member
 
 								FBTermination(ThisLevelNode->ParticleList[i]);
 								bin_termination = true;

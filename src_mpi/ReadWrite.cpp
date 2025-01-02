@@ -204,18 +204,18 @@ int writeParticle(double current_time, int outputNum) {
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
 			ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
-			if (ptcl->GroupInfo)  { // Eunwoo edited
+			if (ptcl->GroupOrder >= 0)  { // Eunwoo edited
 				for (int dim=0; dim<Dim; dim++) {
-					ptcl->GroupInfo->sym_int.particles.cm.Position[dim] = ptcl->Position[dim];
-					ptcl->GroupInfo->sym_int.particles.cm.Velocity[dim] = ptcl->Velocity[dim];
+					groups[ptcl->GroupOrder].sym_int.particles.cm.Position[dim] = ptcl->Position[dim];
+					groups[ptcl->GroupOrder].sym_int.particles.cm.Velocity[dim] = ptcl->Velocity[dim];
 				}
-				ptcl->GroupInfo->sym_int.particles.shiftToOriginFrame();
-				ptcl->GroupInfo->sym_int.particles.template writeBackMemberAll<Particle>();
-				for (int j=0; j < ptcl->GroupInfo->sym_int.particles.getSize(); j++) {
-					Particle* members = &ptcl->GroupInfo->sym_int.particles[j];
+				groups[ptcl->GroupOrder].sym_int.particles.shiftToOriginFrame();
+				groups[ptcl->GroupOrder].sym_int.particles.template writeBackMemberAll<Particle>();
+				for (int j=0; j < groups[ptcl->GroupOrder].sym_int.particles.getSize(); j++) {
+					Particle* members = &groups[ptcl->GroupOrder].sym_int.particles[j];
 					write_out_group(outputFile, ptcl, members, pos, vel);
 				}
-				ptcl->GroupInfo->sym_int.particles.shiftToCenterOfMassFrame();
+				groups[ptcl->GroupOrder].sym_int.particles.shiftToCenterOfMassFrame();
 			}
 			else {
 				write_out(outputFile, ptcl, pos, vel);

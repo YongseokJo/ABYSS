@@ -19,7 +19,7 @@ struct Particle;
 struct Group
 {
 
-	Particle* groupCM;
+	int groupCMOrder;
 	bool isTerminate; // For later use: I will use this when Binary Interrupt State is being used
 	bool isMerger; // True if merger happened
 
@@ -37,7 +37,7 @@ struct Group
 	// Constructor
 #ifdef SEVN
 	Group(void) 
-		: groupCM(nullptr),
+		: groupCMOrder(-1),
 		isTerminate(false),
 		isMerger(false),
 		CurrentTime(0.0),
@@ -49,7 +49,7 @@ struct Group
 	{}
 #else
 	Group(void) 
-		: groupCM(nullptr),
+		: groupCMOrder(-1),
 		isTerminate(false),
 		isMerger(false),
 		CurrentTime(0.0),
@@ -58,18 +58,39 @@ struct Group
 	{}
 #endif
 
+	Group& operator = (const Group& other) {
+		groupCMOrder = other.groupCMOrder;
+		isTerminate = other.isTerminate;
+		isMerger = other.isMerger;
+		CurrentTime = other.CurrentTime;
+		sym_int = other.sym_int;
+#ifdef SEVN
+		useSEVN = other.useSEVN;
+		EvolutionTime = other.EvolutionTime;
+		EvolutionTimeStep = other.EvolutionTimeStep;
+#endif
+		return *this;
+	}
+
+	void clear() {
+		groupCMOrder = -1;
+		isTerminate = false;
+		isMerger = false;
+		CurrentTime = 0.0;
+		sym_int.clear(); // Delocate memory
+		sym_int.particles.clear(); // Delocate memory
+		manager.step.clear(); // Delocate memory
+#ifdef SEVN
+		useSEVN = false;
+		EvolutionTime = 0.0;
+		EvolutionTimeStep = 0.0;
+#endif		
+	}
+
 	bool ARIntegration(double next_time);
 	bool CheckBreak();
 	void initialManager();
 	void initialIntegrator(int NumMembers);
-
-	~Group() {
-
-		sym_int.clear(); // Delocate memory
-		sym_int.particles.clear(); // Delocate memory
-		manager.step.clear(); // Delocate memory
-		groupCM = nullptr;
-	};
 
 };
 #endif

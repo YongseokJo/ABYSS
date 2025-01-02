@@ -247,9 +247,15 @@ void NewPrimordialBinaries(int newOrder) {
 	Particle* ptclCM;
 	Group* ptclGroup;
 
-	// Set ptclGroup members first; this will be very useful
+	ptclCM = &particles[newOrder];
+	ptclCM->ParticleOrder = newOrder;
+	ptclCM->PID = NewPID;
+	NewPID++;
+	ptclCM->isActive = true;
+	ptclCM->GroupOrder = ptclCM->ParticleOrder - NumberOfSingle + 1;
 
-	ptclGroup = new Group();
+	ptclGroup = &groups[ptclCM->ParticleOrder - NumberOfSingle + 1];
+	ptclGroup->groupCMOrder = ptclCM->ParticleOrder;
 
 #ifdef SEVN
 	ptclGroup->useSEVN = false;
@@ -272,14 +278,6 @@ void NewPrimordialBinaries(int newOrder) {
 	}
 #endif
 
-	ptclCM = &particles[newOrder];
-	ptclGroup->groupCM		= ptclCM;
-
-	ptclCM->ParticleOrder = newOrder;
-	ptclCM->PID = NewPID;
-	NewPID++;
-	ptclCM->isActive = true;
-
 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
 
 	ptclGroup->initialManager();
@@ -289,14 +287,11 @@ void NewPrimordialBinaries(int newOrder) {
 	for (int dim=0; dim<Dim; dim++) {
 		ptclCM->Position[dim] = ptclGroup->sym_int.particles.cm.Position[dim];
 		ptclCM->Velocity[dim] = ptclGroup->sym_int.particles.cm.Velocity[dim];
+		ptclCM->Mass = ptclGroup->sym_int.particles.cm.Mass;
 	}
 
-	// Set ptcl information like time, PID, etc.
-
-	ptclCM->GroupInfo		= ptclGroup;
 
 	fprintf(binout, "The ID of CM is %d.\n",ptclCM->PID);
-
 
 	fprintf(binout, "------------------NEW-GROUP-MEMBER-INFORMATION------------------\n");
 	for (int i=0; i < ptclGroup->sym_int.particles.getSize(); i++) {

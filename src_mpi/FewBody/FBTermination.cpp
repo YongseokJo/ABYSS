@@ -15,8 +15,7 @@ void FBTermination(int Order){
 
 	Particle* ptclCM = &particles[Order];
 
-	Group* ptclGroup;
-	ptclGroup	= ptclCM->GroupInfo;
+	Group* ptclGroup = &groups[ptclCM->GroupOrder];
 
 	fprintf(binout,"--------------------------------------\n");
 	fprintf(binout,"In FBTermination.cpp... (CM PID: %d)\n\n", ptclCM->PID);
@@ -157,7 +156,7 @@ void FBTermination(int Order){
 
 	// Change the booleans, pointers, and vectors about group information for the group members
 
-	delete ptclCM->GroupInfo;
+	ptclGroup->clear();
 	ptclCM->clear();
 
 	if (Order != NumberOfParticle-1) {
@@ -165,7 +164,9 @@ void FBTermination(int Order){
 		int afterOrder = particles[Order].ParticleOrder;
 
 		std::swap(particles[Order], particles[NumberOfParticle-1]);
+		std::swap(groups[Order - NumberOfSingle +1], groups[NumberOfParticle - NumberOfSingle + 1]);
 		particles[Order].ParticleOrder = afterOrder;
+		groups[Order].groupCMOrder = afterOrder;
 		NumberOfParticle--;
 		for (int i=0; i<NumberOfParticle; i++) {
 			Particle* ptcl = &particles[i];
@@ -194,8 +195,7 @@ void FBTermination2(int Order){
 
 	Particle* ptclCM = &particles[Order];
 
-	Group* ptclGroup;
-	ptclGroup	= ptclCM->GroupInfo;
+	Group* ptclGroup = &groups[ptclCM->GroupOrder];
 
 	double current_time = ptclGroup->CurrentTime;
 
@@ -305,7 +305,7 @@ void FBTermination2(int Order){
 
 	// Change the booleans, pointers, and vectors about group information for the group members
 
-	delete ptclCM->GroupInfo;
+	ptclGroup->clear();
 	ptclCM->clear();
 
 	// Swap particle orders; last ptclCM <-> terminated ptclCM
@@ -314,9 +314,10 @@ void FBTermination2(int Order){
 		int beforeOrder = particles[NumberOfParticle-1].ParticleOrder;
 		int afterOrder = particles[Order].ParticleOrder;
 
-		// std::swap(&particles[Order], &particles[NumberOfParticle-1]);
 		std::swap(particles[Order], particles[NumberOfParticle-1]); // Eunwoo: is this right?
+		std::swap(groups[Order - NumberOfSingle +1], groups[NumberOfParticle - NumberOfSingle + 1]);
 		particles[Order].ParticleOrder = afterOrder;
+		groups[Order].groupCMOrder = afterOrder;
 		NumberOfParticle--;
 		for (int i=0; i<NumberOfParticle; i++) {
 			Particle* ptcl = &particles[i];

@@ -52,6 +52,9 @@ void Group::initialManager() {
 
 void Group::initialIntegrator(int NumMembers) {
 
+	Particle* groupCM;
+	groupCM = &particles[groupCMOrder];
+
 	sym_int.manager = &manager;
 
 	sym_int.particles.setMode(COMM::ListMode::copy);
@@ -62,13 +65,13 @@ void Group::initialIntegrator(int NumMembers) {
     for (int i = 0; i < groupCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[groupCM->NewNeighbors[i]];
         members->isActive = false;
-		if (!members->GroupInfo) {
+		if (members->GroupOrder < 0) {
 			sym_int.particles.addMemberAndAddress(*members);
 			fprintf(binout, " %d", sym_int.particles[i].PID);
 		}
 		else {
-			for (int j=0; j < members->GroupInfo->sym_int.particles.getSize(); j++) {
-				sym_int.particles.addMemberAndAddress(members->GroupInfo->sym_int.particles[j]);
+			for (int j=0; j < groups[members->GroupOrder].sym_int.particles.getSize(); j++) {
+				sym_int.particles.addMemberAndAddress(groups[members->GroupOrder].sym_int.particles[j]);
 				fprintf(binout, " %d", sym_int.particles[i].PID);
 			}
 		}
@@ -119,13 +122,18 @@ void Group::initialIntegrator(int NumMembers) {
 // Initialize new Few body group
 void NewFBInitialization(int newOrder) {
 
-	Particle *ptclCM;
-	Group *ptclGroup;
-
-	ptclGroup = new Group();
+	Particle* ptclCM;
+	Group* ptclGroup;
 
 	ptclCM = &particles[newOrder];
-	ptclGroup->groupCM		= ptclCM;
+	ptclCM->ParticleOrder	= newOrder;
+	ptclCM->PID             = NewPID;
+	NewPID++;
+	ptclCM->isActive = true;
+	ptclCM->GroupOrder = ptclCM->ParticleOrder - NumberOfSingle + 1;
+
+	ptclGroup = &groups[ptclCM->ParticleOrder - NumberOfSingle + 1];
+	ptclGroup->groupCMOrder = ptclCM->ParticleOrder;
 
 	// Find member particle with the biggest CurrentTimeIrr
 	Particle* ptcl = &particles[ptclCM->NewNeighbors[0]];
@@ -136,10 +144,10 @@ void NewFBInitialization(int newOrder) {
 		if (members->CurrentTimeIrr > ptcl->CurrentTimeIrr) {
         	ptcl = members;
     	}
-		if (!members->GroupInfo)
+		if (members->GroupOrder < 0)
 			NumberOfMembers++;
 		else
-			NumberOfMembers += members->GroupInfo->sym_int.particles.getSize();
+			NumberOfMembers += groups[members->GroupOrder].sym_int.particles.getSize();
     }
 
 	fprintf(binout, "Starting time CurrentTimeIrr (Myr): %e\n", ptcl->CurrentTimeIrr*EnzoTimeStep*1e4);
@@ -241,13 +249,14 @@ void NewFBInitialization(int newOrder) {
 			members->Position[dim] = pos[dim];
 			members->Velocity[dim] = vel[dim];
 		}
-		if (members->GroupInfo) {
+		if (members->GroupOrder >= 0) {
+			Group* group2 = &groups[members->GroupOrder];
 			for (int dim=0; dim<Dim; dim++) {
-				members->GroupInfo->sym_int.particles.cm.Position[dim] = pos[dim];
-                members->GroupInfo->sym_int.particles.cm.Velocity[dim] = vel[dim];
+				group2->sym_int.particles.cm.Position[dim] = pos[dim];
+                group2->sym_int.particles.cm.Velocity[dim] = vel[dim];
 			}
-			members->GroupInfo->sym_int.particles.shiftToOriginFrame();
-			members->GroupInfo->sym_int.particles.template writeBackMemberAll<Particle>();
+			group2->sym_int.particles.shiftToOriginFrame();
+			group2->sym_int.particles.template writeBackMemberAll<Particle>();
 		}
 	}
 
@@ -279,11 +288,6 @@ void NewFBInitialization(int newOrder) {
 	ptclCM->TimeBlockReg    = ptcl->TimeBlockReg;
 	ptclCM->TimeLevelReg    = ptcl->TimeLevelReg;
 
-	ptclCM->ParticleOrder	= newOrder;
-	ptclCM->PID             = NewPID;
-	NewPID++;
-	ptclCM->GroupInfo		= ptclGroup;
-	ptclCM->isActive = true;
 
 	fprintf(binout, "The ID of CM is %d.\n",ptclCM->PID);
 
@@ -349,22 +353,15 @@ void NewFBInitialization(int newOrder) {
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[ptclCM->NewNeighbors[i]];
 
-		if (members->GroupInfo) {
-			delete members->GroupInfo;
+		if (members->GroupOrder >= 0) {
 			members->clear();
+			groups[members->GroupOrder].clear();
 		}
 	}
 
 	// Find neighbors for CM particle and calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately 
 	CalculateAcceleration01(ptclCM);
 	CalculateAcceleration23(ptclCM);
-	
-	fprintf(stdout, "NumNeighbor of 100000: %d\n", particles[100000].NumberOfNeighbor);
-	fprintf(stdout, "Neighbor ParticleOrders of 10000: ");
-	for (int i=0; i<particles[100000].NumberOfNeighbor; i++)
-		fprintf(stdout, "%d ", particles[100000].Neighbors[i]);
-	fprintf(stdout, "\n");
-	fflush(stdout);
 
 	ptclCM->calculateTimeStepReg();
 	if (ptclCM->TimeLevelReg <= ptcl->TimeLevelReg-1 
@@ -443,12 +440,6 @@ void NewFBInitialization(int newOrder) {
 			ptcl->Neighbors,
 			ptcl->Neighbors + ptcl->NumberOfNeighbor, 
 			[&particles](int j) {
-				if (j < 0 || j >= NumberOfParticle) {
-					fprintf(stdout, "j: %d\n", j);
-					fflush(stdout);
-				}
-				assert(j >= 0 && j < NumberOfParticle);
-
 				return !particles[j].isActive;
 			}
 		);
@@ -859,43 +850,41 @@ void NewFBInitialization3(Group* group) {
 
 	// Set ptclGroup members first; this will be very useful
 
-	ptclGroup = new Group();
-	ptclGroup->groupCM = group->groupCM;
-	Particle* ptclCM = ptclGroup->groupCM;
+	ptclGroup = &groups[global_variable->NumberOfParticle - global_variable->NumberOfSingle];
+	Particle* ptclCM = &particles[group->groupCMOrder];
 
-	ptclGroup->groupCM->NewNumberOfNeighbor = 0;
-	for (int i = 0; i < group->sym_int.particles.getSize(); i++) {
-		if (group->sym_int.particles[i].Mass != 0) {
-			ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = group->sym_int.particles[i].ParticleOrder;
-			ptclCM->NewNumberOfNeighbor++;
-		}
-	}
-	ptclGroup->CurrentTime	= group->CurrentTime;
-
-	delete group;
-	group = nullptr;
-
+	ptclGroup->groupCMOrder = group->groupCMOrder;
+	ptclGroup->isTerminate = group->isTerminate;
+	ptclGroup->isMerger = group->isMerger;
+	ptclGroup->CurrentTime = group->CurrentTime;
 #ifdef SEVN
 	ptclGroup->useSEVN = group->useSEVN;
 	ptclGroup->EvolutionTime = group->EvolutionTime;
 	ptclGroup->EvolutionTimeStep = group->EvolutionTimeStep;
 #endif
 
+	ptclCM->NewNumberOfNeighbor = 0;
+	for (int i = 0; i < group->sym_int.particles.getSize(); i++) {
+		if (group->sym_int.particles[i].Mass != 0) {
+			ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = group->sym_int.particles[i].ParticleOrder;
+			ptclCM->NewNumberOfNeighbor++;
+		}
+	}
 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
 
 	ptclGroup->initialManager();
 	ptclGroup->initialIntegrator(ptclCM->NewNumberOfNeighbor); // Binary tree is made and CM particle is made automatically.
 
-	// ptclCM = &ptclGroup->sym_int.particles.cm;
+	group->clear();
+	group = ptclGroup;
+	ptclGroup->clear();
 
-	ptclCM->GroupInfo		= ptclGroup;
-
-	fprintf(binout, "The ID of CM is %d.\n",ptclCM->PID);
+	fprintf(binout, "The ID of CM is %d.\n", ptclCM->PID);
 
 
 	fprintf(binout, "------------------NEW-GROUP-MEMBER-INFORMATION------------------\n");
-	for (int i=0; i < ptclGroup->sym_int.particles.getSize(); i++) {
-		Particle* members = &ptclGroup->sym_int.particles[i];
+	for (int i=0; i < group->sym_int.particles.getSize(); i++) {
+		Particle* members = &group->sym_int.particles[i];
 
 		fprintf(binout, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
 		fprintf(binout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
@@ -917,14 +906,13 @@ void NewFBInitialization3(Group* group) {
 		// fprintf(binout, "PID: %d. Current Blocks - irregular: %llu, regular:%llu \n", members->PID, members->CurrentBlockIrr, members->CurrentBlockReg);
     }
 
-
-	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
-    ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
+	group->sym_int.initialIntegration(group->CurrentTime*EnzoTimeStep);
+    group->sym_int.info.calcDsAndStepOption(group->manager.step.getOrder(), group->manager.interaction.gravitational_constant, group->manager.ds_scale);
 
 // /* // Eunwoo test
-	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();
+	auto& bin_root = group->sym_int.info.getBinaryTreeRoot();
 	if (bin_root.semi>0.0) {
-		ptclGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, sqrt(ptclCM->RadiusOfNeighbor));
+		group->sym_int.info.r_break_crit = fmin(2*bin_root.semi, sqrt(ptclCM->RadiusOfNeighbor));
 		fprintf(binout, "Bound. separation: %e pc\n\t", bin_root.r*position_unit);
 		fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
 		fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
@@ -932,17 +920,17 @@ void NewFBInitialization3(Group* group) {
 		fprintf(binout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
 		fprintf(binout, "period: %e Myr\n\t", bin_root.period*1e4);
 		fprintf(binout, "t_peri: %e Myr\n\t", abs(bin_root.t_peri*1e4));
-		fprintf(binout, "r_break_crit: %e pc\n", ptclGroup->sym_int.info.r_break_crit*position_unit);
+		fprintf(binout, "r_break_crit: %e pc\n", group->sym_int.info.r_break_crit*position_unit);
 	}
 	else {
-		ptclGroup->sym_int.info.r_break_crit = 2*bin_root.semi*(1-bin_root.ecc); // r_break_crit = 2*peri
+		group->sym_int.info.r_break_crit = 2*bin_root.semi*(1-bin_root.ecc); // r_break_crit = 2*peri
 		fprintf(binout, "Unbound. separation: %e pc\n\t", bin_root.r*position_unit);
 		fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
 		fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
 		fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
 		fprintf(binout, "period: %e Myr\n\t", bin_root.period*1e4);
 		fprintf(binout, "t_peri: %e Myr\n\t", abs(bin_root.t_peri*1e4));
-		fprintf(binout, "r_break_crit: %e pc\n", ptclGroup->sym_int.info.r_break_crit*position_unit);
+		fprintf(binout, "r_break_crit: %e pc\n", group->sym_int.info.r_break_crit*position_unit);
 	}
 // */ // Eunwoo test
 
