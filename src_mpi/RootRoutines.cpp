@@ -411,17 +411,12 @@ void RootRoutines() {
 
 
 			skiplist = new SkipList(max_level, prob);
-			createSkipList(skiplist);
+			if (createSkipList(skiplist) == FAIL)
+				fprintf(stderr, "There are no irregular particles!\nBut is it really happening? check skiplist->display()\n");
 
 			bool bin_termination = false;
 			bool new_binaries = false;
 
-			skiplist->display();
-			ThisLevelNode = skiplist->getFirstNode();
-			std::cout << "1. PID= ";
-			for (int i=0; i<total_tasks; i++) {
-				std::cout << ThisLevelNode->ParticleList[i]<< ", ";
-			}
 
 			// Irregular
 			while ( skiplist->getFirstNode() != nullptr) {
@@ -430,12 +425,6 @@ void RootRoutines() {
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 				//std::cout << "TotalTask=" << total_tasks << std::endl;
-
-
-				std::cout << "2. PID= ";
-				for (int i=0; i<total_tasks; i++) {
-					std::cout << ThisLevelNode->ParticleList[i]<< ", ";
-				}
 				//std::cout << std::endl;
 #ifdef NoLoadBalance
 				// Calculate Irregular
@@ -619,6 +608,7 @@ void RootRoutines() {
 				// Irregular Gravity
 				task = 0;
 				completed_tasks = 0;
+				total_tasks = ThisLevelNode->ParticleList.size();
 
 				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
 				InitialAssignmentOfTasks(ThisLevelNode->ParticleList, next_time, total_tasks, PTCL_TAG);
@@ -1344,9 +1334,9 @@ bool createSkipList(SkipList *skiplist) {
 	//fflush(stdout);
 
 	if (skiplist->getFirstNode() == nullptr)
-		return true;
+		return FAIL;
 	else
-		return false;
+		return SUCCESS;
 }
 
 
