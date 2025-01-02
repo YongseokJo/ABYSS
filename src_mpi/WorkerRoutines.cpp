@@ -40,7 +40,7 @@ void WorkerRoutines() {
 
 		switch (task) {
 			case 0: // Irregular Acceleration
-#ifdef NoLoadBalance
+#ifdef LoadBalance
 				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Get_count(&status, MPI_INT, &size);
 				ptcl_id_vector.resize(size);
@@ -89,7 +89,7 @@ void WorkerRoutines() {
 
 			case 2: // Irregular Update Particle
 				//std::cout << "IrrUp Processor " << MyRank << std::endl;
-#ifdef NoLoadBalance
+#ifdef LoadBalance
 				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Get_count(&status, MPI_INT, &size);
 				ptcl_id_vector.resize(size);
@@ -260,34 +260,48 @@ void WorkerRoutines() {
 				break;
 
 			case 20: // Primordial binary search
-				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				ptcl_id = ptcl_id*LoadBalanceParticle;
 
-				ptcl = &particles[ptcl_id];
-				ptcl->NewNumberOfNeighbor = 0;
-				ptcl->checkNewGroup2();
+				for (int i=0; i<LoadBalanceParticle; i++) {
+					particles[ptcl_id+i].NewNumberOfNeighbor = 0;
+					particles[ptcl_id+i].checkNewGroup2();
+				}
 				break;
 
 			case 21: // CheckBreak
-				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Get_count(&status, MPI_INT, &size);
+				ptcl_id_vector.resize(size);
+				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 
-				ptcl = &particles[ptcl_id];
-				if (ptcl->GroupInfo) {
-					if (!ptcl->GroupInfo->isMerger)
-						ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
-					else if (ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
-						ptcl->GroupInfo->isMerger = false;
+				for (int i=0; i<size; i++) {
+					ptcl = &particles[ptcl_id_vector[i]];
+
+					if (ptcl->GroupInfo) {
+						if (!ptcl->GroupInfo->isMerger)
+							ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
+						else if (ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
+							ptcl->GroupInfo->isMerger = false;
+					}
 				}
 				break;
 
 			case 22: // Few-body group search
-				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Get_count(&status, MPI_INT, &size);
+				ptcl_id_vector.resize(size);
+				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+
+				for (int i=0; i<size; i++) {
+					ptcl = &particles[ptcl_id_vector[i]];
 				
-				ptcl = &particles[ptcl_id];
-				fprintf(stdout, "(rank=%d) PID: %d\n", MyRank, ptcl->PID);
-				fflush(stdout);
-				ptcl->NewNumberOfNeighbor = 0;
-				if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > tbin) break;
-				ptcl->checkNewGroup();
+					// fprintf(stdout, "(rank=%d) PID: %d\n", MyRank, ptcl->PID);
+					// fflush(stdout);
+					ptcl->NewNumberOfNeighbor = 0;
+					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
+						ptcl->checkNewGroup();
+				}
 				break;
 
 			case 100: // Synchronize

@@ -409,7 +409,6 @@ void RootRoutines() {
 			std::cout << std::endl;
 			std::cout << "size of regularlist= " << RegularList.size() << std::endl;
 
-
 			skiplist = new SkipList(max_level, prob);
 			if (createSkipList(skiplist) == FAIL)
 				fprintf(stderr, "There are no irregular particles!\nBut is it really happening? check skiplist->display()\n");
@@ -426,7 +425,7 @@ void RootRoutines() {
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 				//std::cout << "TotalTask=" << total_tasks << std::endl;
 				//std::cout << std::endl;
-#ifdef NoLoadBalance
+#ifdef LoadBalance
 				// Calculate Irregular
 				task = 0;
 				completed_tasks = 0;
@@ -546,6 +545,8 @@ void RootRoutines() {
 						}
 					}
 				}
+				if (bin_termination)
+					global_variable->NumberOfParticle = NumberOfParticle;
 
 				fprintf(stdout, "Irregular list: ");
 				Particle* ptcl;
@@ -592,6 +593,8 @@ void RootRoutines() {
 					for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
 						Particle* ptcl = &particles[i];
 						ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder);
+						fprintf(stdout, "PID(%d) is pushed back to the ParticleList\n", ptcl->PID);
+						fflush(stdout);
 					}
 				}
 
@@ -766,6 +769,8 @@ void RootRoutines() {
 						}
 					}
 				}
+				if (bin_termination)
+					global_variable->NumberOfParticle = NumberOfParticle;
 
 				// Few-body group search
 				task            = 22;
@@ -819,12 +824,8 @@ void RootRoutines() {
 
 				//ParticleSynchronization();
 #endif
-				for (int i=0; i<total_tasks; i++)
+				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++)
 					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
-
-
-				//broadcastFromRoot(NumberOfParticle);
-				global_variable->NumberOfParticle = NumberOfParticle;
 
 				//skiplist->display();
 				/*
@@ -1000,11 +1001,7 @@ void RootRoutines() {
 				MPI_Waitall(NumberOfCommunication, requests, statuses);
 				NumberOfCommunication = 0;
 				
-				int beforeNumberOfParticle = NumberOfParticle;
 				SetBinaries(RegularList);
-				if (beforeNumberOfParticle != NumberOfParticle)
-					global_variable->NumberOfParticle = NumberOfParticle;
-					//broadcastFromRoot(NumberOfParticle);
 			}
 			/*
 				{

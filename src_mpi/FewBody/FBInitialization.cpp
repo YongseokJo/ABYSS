@@ -260,6 +260,7 @@ void NewFBInitialization(int newOrder) {
 	for (int dim=0; dim<Dim; dim++) {
 		ptclCM->Position[dim] = ptclGroup->sym_int.particles.cm.Position[dim];
 		ptclCM->Velocity[dim] = ptclGroup->sym_int.particles.cm.Velocity[dim];
+		ptclCM->Mass = ptclGroup->sym_int.particles.cm.Mass;
 	}
 
 	// Set ptcl information like time, PID, etc.
@@ -268,6 +269,7 @@ void NewFBInitialization(int newOrder) {
 	ptclCM->CurrentTimeReg  = ptcl->CurrentTimeReg;
 	ptclCM->CurrentBlockIrr = ptcl->CurrentBlockIrr; 
 	ptclCM->CurrentBlockReg = ptcl->CurrentBlockReg;
+	ptclCM->NewCurrentBlockIrr = ptcl->NewCurrentBlockIrr;
 
 	ptclCM->TimeStepIrr     = ptcl->TimeStepIrr;
 	ptclCM->TimeBlockIrr    = ptcl->TimeBlockIrr;
@@ -278,8 +280,8 @@ void NewFBInitialization(int newOrder) {
 	ptclCM->TimeLevelReg    = ptcl->TimeLevelReg;
 
 	ptclCM->ParticleOrder	= newOrder;
-	ptclCM->PID             = global_variable->NewPID;
-	global_variable->NewPID++;
+	ptclCM->PID             = NewPID;
+	NewPID++;
 	ptclCM->GroupInfo		= ptclGroup;
 	ptclCM->isActive = true;
 
@@ -344,10 +346,24 @@ void NewFBInitialization(int newOrder) {
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
 
+	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
+		Particle* members = &particles[ptclCM->NewNeighbors[i]];
+
+		if (members->GroupInfo) {
+			delete members->GroupInfo;
+			members->clear();
+		}
+	}
 
 	// Find neighbors for CM particle and calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately 
 	CalculateAcceleration01(ptclCM);
 	CalculateAcceleration23(ptclCM);
+	
+	fprintf(stdout, "Neighbor ParticleOrders of 10000: ");
+	for (int i=0; i<particles[100000].NumberOfNeighbor; i++)
+		fprintf(stdout, "%d ", particles[100000].Neighbors[i]);
+	fprintf(stdout, "\n");
+	fflush(stdout);
 
 	ptclCM->calculateTimeStepReg();
 	if (ptclCM->TimeLevelReg <= ptcl->TimeLevelReg-1 
@@ -364,13 +380,15 @@ void NewFBInitialization(int newOrder) {
 	ptclCM->TimeBlockReg = static_cast<ULL>(pow(2, ptclCM->TimeLevelReg-time_block));
 
 	// ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr); // fiducial
-	ptclCM->calculateTimeStepIrr2(); // Eunwoo: This can make errors because NewCurrentBlockIrr is not set yet.
+	ptclCM->calculateTimeStepIrr(); // Eunwoo: This can make errors because NewCurrentBlockIrr is not set yet.
+/*
 	while (ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr <= global_time_irr 
 			&& ptclCM->TimeLevelIrr <= ptcl->TimeLevelIrr) { //first condition guarantees that ptclcm is small than ptcl
 		ptclCM->TimeLevelIrr++;
 		ptclCM->TimeStepIrr  = static_cast<double>(pow(2, ptclCM->TimeLevelIrr));
 		ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
 	}
+*/
 
 /* // Eunwoo added
 	while (ptclCM->TimeStepIrr*EnzoTimeStep*1e4 < 1e-7) {
@@ -421,9 +439,15 @@ void NewFBInitialization(int newOrder) {
 	for (int i=0; i<newOrder; i++) {
 		Particle* ptcl = &particles[i];
 		auto newEnd = std::remove_if(
-			ptcl->Neighbors, 
+			ptcl->Neighbors,
 			ptcl->Neighbors + ptcl->NumberOfNeighbor, 
 			[&particles](int j) {
+				if (j < 0 || j >= NumberOfParticle) {
+					fprintf(stdout, "j: %d\n", j);
+					fflush(stdout);
+				}
+				assert(j >= 0 && j < NumberOfParticle);
+
 				return !particles[j].isActive;
 			}
 		);
@@ -432,15 +456,6 @@ void NewFBInitialization(int newOrder) {
 			ptcl->NumberOfNeighbor = newEnd - ptcl->Neighbors;
 			ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->ParticleOrder;
 			ptcl->NumberOfNeighbor++;
-		}
-	}
-
-	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
-		Particle* members = &particles[ptclCM->NewNeighbors[i]];
-
-		if (members->GroupInfo) {
-			delete members->GroupInfo;
-			members->clear();
 		}
 	}
 

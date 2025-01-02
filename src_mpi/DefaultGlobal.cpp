@@ -81,8 +81,8 @@ void DefaultGlobal() {
 
 	// Eunwoo: I think these lines are redundant
 	/* Number of particles */
-	NumberOfParticle = 1000;
-	NumberOfSingle = 1000;
+	// NumberOfParticle = 1000;
+	// NumberOfSingle = 1000;
 	// Eunwoo: I think these lines are redundant
 
 	NumberOfCommunication = 0;

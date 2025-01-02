@@ -84,10 +84,10 @@ void SetPrimordialBinaries() {
 	Particle* ptcl;
 	Particle* NewCM;
 
-	for (int i=0; i<global_variable->NumberOfSingle; i++) {
+	for (int i=0; i<NumberOfSingle; i++) {
 		ptcl = &particles[i];
 		if (ptcl->NewNumberOfNeighbor > 0) {
-			NewCM = &particles[global_variable->NumberOfParticle];
+			NewCM = &particles[NumberOfParticle];
 			NewCM->clear();
 			for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++) {
 				NewCM->NewNeighbors[j] = ptcl->NewNeighbors[j];
@@ -95,20 +95,21 @@ void SetPrimordialBinaries() {
 			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleOrder;
 			NewCM->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor + 1;
 
-			global_variable->NumberOfParticle++;
+			NumberOfParticle++;
 		}
 	}
 
-	if (global_variable->NumberOfSingle == global_variable->NumberOfParticle) return;
+	if (NumberOfSingle == NumberOfParticle) return;
 
 	MergeGroups();	// Merge group candidates
 					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
-
-	broadcastFromRoot(global_variable->NumberOfParticle);
-
-	for (int i=global_variable->NumberOfSingle; i<global_variable->NumberOfParticle; i++) {
+	global_variable->NumberOfParticle = NumberOfParticle;
+	
+	for (int i=NumberOfSingle; i<NumberOfParticle; i++) {
 		NewPrimordialBinaries(i);
 	}
+	// global_variable->NumberOfParticle = NumberOfParticle;
+	global_variable->NewPID = NewPID;
 }
 
 void SetBinaries(std::vector<int>& ParticleList) {
@@ -116,31 +117,38 @@ void SetBinaries(std::vector<int>& ParticleList) {
 	Particle* ptcl;
 	Particle* NewCM;
 
-	int beforeNumberOfParticle = global_variable->NumberOfParticle;
-
 	for (int i=0; i<ParticleList.size(); i++) {
 		ptcl = &particles[ParticleList[i]];
 		if (ptcl->NewNumberOfNeighbor > 0) {
-			NewCM = &particles[global_variable->NumberOfParticle];
+			fprintf(stdout, "GAR. Num: %d\n", ptcl->NewNumberOfNeighbor + 1);
+			fprintf(stdout, "GAR. PID: %d\n", ptcl->PID);
+			NewCM = &particles[NumberOfParticle];
 			NewCM->clear();
 			for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++) {
 				NewCM->NewNeighbors[j] = ptcl->NewNeighbors[j];
+				fprintf(stdout, "GAR. PID: %d\n", particles[ptcl->NewNeighbors[j]].PID);
 			}
+			fflush(stdout);
 			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleOrder;
 			NewCM->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor + 1;
 
-			global_variable->NumberOfParticle++;
+			NumberOfParticle++;
 		}
 	}
 
-	if (beforeNumberOfParticle == global_variable->NumberOfParticle) return;
+	if (global_variable->NumberOfParticle == NumberOfParticle) return;
+
+	int beforeNumberOfParticle = global_variable->NumberOfParticle;
 
 	MergeGroups();	// Merge group candidates
 					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
-
-	for (int i=beforeNumberOfParticle; i<global_variable->NumberOfParticle; i++) {
+	global_variable->NumberOfParticle = NumberOfParticle;
+	
+	for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
 		NewFBInitialization(i);
 	}
+	// global_variable->NumberOfParticle = NumberOfParticle;
+	global_variable->NewPID = NewPID;
 	/*
 	for (int i=global_variable->NumberOfSingle; i<global_variable->NumberOfParticle; i++) {
 		Particle* members = &particles[i];
@@ -174,12 +182,12 @@ void MergeGroups() {
 
     while (merged) {
         merged = false;
-		for (int i = global_variable->NumberOfSingle; i < global_variable->NumberOfParticle; i++) {
+		for (int i = global_variable->NumberOfParticle; i < NumberOfParticle; i++) {
 
 			Particle* currentCM = &particles[i];
 			if (currentCM->NewNumberOfNeighbor == 0) continue; // Skip already deleted groups
 
-			for (int j = i + 1; j < global_variable->NumberOfParticle; j++) {
+			for (int j = i + 1; j < NumberOfParticle; j++) {
 
 				Particle* otherCM = &particles[j];
 				if (otherCM->NewNumberOfNeighbor == 0) continue; // Skip already deleted groups
@@ -207,9 +215,11 @@ void MergeGroups() {
 					merged = true;
 
                     // Mark otherGroup for deletion after the loop
-					particles[j] = particles[global_variable->NumberOfParticle]; // Eunwoo: is this right?
-					particles[global_variable->NumberOfParticle].clear();
-					global_variable->NumberOfParticle--;
+					if (j != NumberOfParticle-1) {
+						particles[j] = particles[NumberOfParticle-1];
+					}
+					particles[NumberOfParticle-1].clear();
+					NumberOfParticle--;
                 }
             }
         }
@@ -266,8 +276,8 @@ void NewPrimordialBinaries(int newOrder) {
 	ptclGroup->groupCM		= ptclCM;
 
 	ptclCM->ParticleOrder = newOrder;
-	ptclCM->PID = global_variable->NewPID;
-	global_variable->NewPID++;
+	ptclCM->PID = NewPID;
+	NewPID++;
 	ptclCM->isActive = true;
 
 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).

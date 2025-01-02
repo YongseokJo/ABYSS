@@ -11,7 +11,7 @@ void CalculateAcceleration23(Particle* ptcl1);
 
 void FBTermination(int Order){
 
-	assert(Order <= global_variable->NumberOfParticle-1);
+	assert(Order <= NumberOfParticle-1);
 
 	Particle* ptclCM = &particles[Order];
 
@@ -47,6 +47,7 @@ void FBTermination(int Order){
 		members->CurrentBlockReg	= ptclCM->CurrentBlockReg;
 		members->CurrentTimeIrr		= ptclCM->CurrentTimeIrr;
 		members->CurrentTimeReg		= ptclCM->CurrentTimeReg;
+		members->NewCurrentBlockIrr	= ptclCM->NewCurrentBlockIrr;
 
 		members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // Eunwoo: I think this is redundant.
 		members->TimeLevelReg		= ptclCM->TimeLevelReg; // Eunwoo: I think this is redundant.
@@ -101,7 +102,7 @@ void FBTermination(int Order){
 		*/
 	}
 
-	for (int i=0; i<global_variable->NumberOfParticle; i++) {
+	for (int i=0; i<NumberOfParticle; i++) {
 		Particle* ptcl = &particles[i];
 		auto newEnd = std::remove_if(
 			ptcl->Neighbors, 
@@ -159,14 +160,14 @@ void FBTermination(int Order){
 	delete ptclCM->GroupInfo;
 	ptclCM->clear();
 
-	if (Order != global_variable->NumberOfParticle-1) {
-		int beforeOrder = particles[global_variable->NumberOfParticle-1].ParticleOrder;
+	if (Order != NumberOfParticle-1) {
+		int beforeOrder = particles[NumberOfParticle-1].ParticleOrder;
 		int afterOrder = particles[Order].ParticleOrder;
 
-		std::swap(particles[Order], particles[global_variable->NumberOfParticle-1]);
+		std::swap(particles[Order], particles[NumberOfParticle-1]);
 		particles[Order].ParticleOrder = afterOrder;
-		global_variable->NumberOfParticle--;
-		for (int i=0; i<global_variable->NumberOfParticle; i++) {
+		NumberOfParticle--;
+		for (int i=0; i<NumberOfParticle; i++) {
 			Particle* ptcl = &particles[i];
 			
 			std::replace(
@@ -189,7 +190,7 @@ void FBTermination(int Order){
 // next_time: intended time to integrate
 void FBTermination2(int Order){
 
-	assert(Order <= global_variable->NumberOfParticle-1);
+	assert(Order <= NumberOfParticle-1);
 
 	Particle* ptclCM = &particles[Order];
 
@@ -225,6 +226,7 @@ void FBTermination2(int Order){
 			ptcl->CurrentBlockReg	= ptclCM->CurrentBlockReg;
 			ptcl->CurrentTimeIrr	= current_time; // This will be updated later.
 			ptcl->CurrentTimeReg	= ptclCM->CurrentTimeReg;
+			ptcl->NewCurrentBlockIrr = ptclCM->NewCurrentBlockIrr;
 
 			ptcl->TimeLevelIrr		= ptclCM->TimeLevelIrr;
 			ptcl->TimeLevelReg		= ptclCM->TimeLevelReg;
@@ -260,7 +262,7 @@ void FBTermination2(int Order){
 		}
 	}
 
-	for (int i=0; i<global_variable->NumberOfParticle; i++) {
+	for (int i=0; i<NumberOfParticle; i++) {
 		Particle* ptcl = &particles[i];
 		
 		std::replace(
@@ -308,15 +310,15 @@ void FBTermination2(int Order){
 
 	// Swap particle orders; last ptclCM <-> terminated ptclCM
 
-	if (Order != global_variable->NumberOfParticle-1) {
-		int beforeOrder = particles[global_variable->NumberOfParticle-1].ParticleOrder;
+	if (Order != NumberOfParticle-1) {
+		int beforeOrder = particles[NumberOfParticle-1].ParticleOrder;
 		int afterOrder = particles[Order].ParticleOrder;
 
-		// std::swap(&particles[Order], &particles[global_variable->NumberOfParticle-1]);
-		std::swap(particles[Order], particles[global_variable->NumberOfParticle-1]); // Eunwoo: is this right?
+		// std::swap(&particles[Order], &particles[NumberOfParticle-1]);
+		std::swap(particles[Order], particles[NumberOfParticle-1]); // Eunwoo: is this right?
 		particles[Order].ParticleOrder = afterOrder;
-		global_variable->NumberOfParticle--;
-		for (int i=0; i<global_variable->NumberOfParticle; i++) {
+		NumberOfParticle--;
+		for (int i=0; i<NumberOfParticle; i++) {
 			Particle* ptcl = &particles[i];
 			
 			std::replace(
