@@ -34,6 +34,8 @@ struct Group
 	double EvolutionTimeStep; // Myr
 #endif
 
+
+
 	// Constructor
 #ifdef SEVN
 	Group(void) 
@@ -71,6 +73,35 @@ struct Group
 #endif
 		return *this;
 	}
+
+	// custom initializer
+#ifdef SEVN
+	// this part needs to be fixed YS 2025.1.2
+	void initialize(void) 
+		: groupCMOrder(-1),
+		isTerminate(false),
+		isMerger(false),
+		CurrentTime(0.0),
+		sym_int(),
+		manager(),
+		useSEVN(false),
+		EvolutionTime(0.0),
+		EvolutionTimeStep(0.0)
+	{}
+#else
+	// initializer added YS 2025.1.2
+	void initialize(void)
+	{
+		groupCMOrder = -1;
+		isTerminate = false;
+		isMerger = false;
+		CurrentTime = 0.0;
+		new(&sym_int) AR::TimeTransformedSymplecticIntegrator<Particle, Particle, Perturber, Interaction, AR::Information<Particle,Particle>>();
+		new(&manager) AR::TimeTransformedSymplecticManager<Interaction>();
+	}
+#endif
+
+
 
 	void clear() {
 		groupCMOrder = -1;

@@ -942,17 +942,13 @@ void RootRoutines() {
 					return;
 				}
 #endif
-			fprintf(stdout, "here?3\n");
 			} // Irr
-			fprintf(stdout, "here?3-1\n");
 			delete skiplist;
 			skiplist = nullptr;
 			//exit(SUCCESS);
 
 
 			if (bin_termination || new_binaries) updateNextRegTime(RegularList);
-
-			fprintf(stdout, "here?4\n");
 
 #ifdef CUDA
 			{

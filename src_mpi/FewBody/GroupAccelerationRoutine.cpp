@@ -254,7 +254,9 @@ void NewPrimordialBinaries(int newOrder) {
 	ptclCM->isActive = true;
 	ptclCM->GroupOrder = ptclCM->ParticleOrder - NumberOfSingle + 1;
 
+
 	ptclGroup = &groups[ptclCM->ParticleOrder - NumberOfSingle + 1];
+	ptclGroup->initialize(); // by YS 2024.1.2
 	ptclGroup->groupCMOrder = ptclCM->ParticleOrder;
 
 #ifdef SEVN

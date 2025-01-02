@@ -133,6 +133,8 @@ void NewFBInitialization(int newOrder) {
 	ptclCM->GroupOrder = ptclCM->ParticleOrder - NumberOfSingle + 1;
 
 	ptclGroup = &groups[ptclCM->ParticleOrder - NumberOfSingle + 1];
+	// initializer added YS 2025.1.2
+	ptclGroup->initialize();
 	ptclGroup->groupCMOrder = ptclCM->ParticleOrder;
 
 	// Find member particle with the biggest CurrentTimeIrr
@@ -250,6 +252,7 @@ void NewFBInitialization(int newOrder) {
 			members->Velocity[dim] = vel[dim];
 		}
 		if (members->GroupOrder >= 0) {
+			// this part needs to be check , should I initialize or notr? by YS 2025.1.2 (Query)
 			Group* group2 = &groups[members->GroupOrder];
 			for (int dim=0; dim<Dim; dim++) {
 				group2->sym_int.particles.cm.Position[dim] = pos[dim];
@@ -262,6 +265,7 @@ void NewFBInitialization(int newOrder) {
 
 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
 
+	std::cout << "2" << std::endl;
 	ptclGroup->initialManager();
 	ptclGroup->initialIntegrator(NumberOfMembers); // Binary tree is made and CM particle is made automatically.
 
@@ -851,6 +855,7 @@ void NewFBInitialization3(Group* group) {
 	// Set ptclGroup members first; this will be very useful
 
 	ptclGroup = &groups[global_variable->NumberOfParticle - global_variable->NumberOfSingle];
+	ptclGroup->initialize(); // by YS 2025.1.2 (Query) should it be initialized?
 	Particle* ptclCM = &particles[group->groupCMOrder];
 
 	ptclGroup->groupCMOrder = group->groupCMOrder;
@@ -872,6 +877,7 @@ void NewFBInitialization3(Group* group) {
 	}
 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
 
+	std::cout << "3" << std::endl;
 	ptclGroup->initialManager();
 	ptclGroup->initialIntegrator(ptclCM->NewNumberOfNeighbor); // Binary tree is made and CM particle is made automatically.
 
