@@ -1,4 +1,4 @@
-//#define CUDA
+#define CUDA
 
 #define LoadBalance
 #define PerformanceTrace

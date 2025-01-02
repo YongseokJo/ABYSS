@@ -40,7 +40,7 @@ void WorkerRoutines() {
 
 		switch (task) {
 			case 0: // Irregular Acceleration
-#ifdef LoadBalance
+#ifdef NoLoadBalance
 				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Get_count(&status, MPI_INT, &size);
 				ptcl_id_vector.resize(size);
@@ -89,7 +89,7 @@ void WorkerRoutines() {
 
 			case 2: // Irregular Update Particle
 				//std::cout << "IrrUp Processor " << MyRank << std::endl;
-#ifdef LoadBalance
+#ifdef NoLoadBalance
 				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Get_count(&status, MPI_INT, &size);
 				ptcl_id_vector.resize(size);

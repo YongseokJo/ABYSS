@@ -425,7 +425,7 @@ void RootRoutines() {
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 				//std::cout << "TotalTask=" << total_tasks << std::endl;
 				//std::cout << std::endl;
-#ifdef LoadBalance
+#ifdef NoLoadBalance
 				// Calculate Irregular
 				task = 0;
 				completed_tasks = 0;
@@ -613,6 +613,8 @@ void RootRoutines() {
 				completed_tasks = 0;
 				total_tasks = ThisLevelNode->ParticleList.size();
 
+				std::cout << "TotalTask=" << total_tasks << std::endl;
+
 				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
 				InitialAssignmentOfTasks(ThisLevelNode->ParticleList, next_time, total_tasks, PTCL_TAG);
 				MPI_Waitall(NumberOfCommunication, requests, statuses);
@@ -761,7 +763,7 @@ void RootRoutines() {
 							else { // Terminate binary
 
 								ThisLevelNode->ParticleList[i] = groups[ptclCM->GroupOrder].sym_int.particles[0].ParticleOrder; // CM particle -> 1st binary member
-								ThisLevelNode->ParticleList.push_back(groups[ptclCM->GroupOrder].ym_int.particles[1].ParticleOrder); // push_back 2nd binary member
+								ThisLevelNode->ParticleList.push_back(groups[ptclCM->GroupOrder].sym_int.particles[1].ParticleOrder); // push_back 2nd binary member
 
 								FBTermination(ThisLevelNode->ParticleList[i]);
 								bin_termination = true;
@@ -810,6 +812,8 @@ void RootRoutines() {
 					for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
 						Particle* ptcl = &particles[i];
 						ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder);
+						fprintf(stdout, "PID(%d) is pushed back to the ParticleList\n", ptcl->PID);
+						fflush(stdout);
 					}
 				}
 
@@ -822,11 +826,14 @@ void RootRoutines() {
 					ThisLevelNode->ParticleList.end()
 				);
 
+				std::cout << "erase success" << std::endl;
+
 				//ParticleSynchronization();
 #endif
 				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++)
 					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
 
+				std::cout << "update success" << std::endl;
 				//skiplist->display();
 				/*
 				{
@@ -894,6 +901,7 @@ void RootRoutines() {
 				current_time_irr = particles[ThisLevelNode->ParticleList[0]].CurrentBlockIrr*time_step;
 				skiplist->deleteFirstNode();
 
+				std::cout << "deleteFirstNode success" << std::endl;
 				//ThisLevelNode = skiplist->getFirstNode();
 
 				/*
@@ -949,6 +957,7 @@ void RootRoutines() {
 
 
 			if (bin_termination || new_binaries) updateNextRegTime(RegularList);
+			std::cout << "updateNextRegTime done" << std::endl;
 
 #ifdef CUDA
 			{
@@ -1255,6 +1264,7 @@ void updateNextRegTime(std::vector<int>& RegularList) {
 
 	for (int i=0; i<NumberOfParticle; i++)
 	{
+		//std::cout << i << std::endl;
 		ptcl = &particles[i];
 		if (!ptcl->isActive)
 			continue;

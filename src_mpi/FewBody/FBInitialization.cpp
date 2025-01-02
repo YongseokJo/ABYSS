@@ -125,6 +125,7 @@ void NewFBInitialization(int newOrder) {
 	Particle* ptclCM;
 	Group* ptclGroup;
 
+	std::cout << "New particle index is" << newOrder << std::endl;
 	ptclCM = &particles[newOrder];
 	ptclCM->ParticleOrder	= newOrder;
 	ptclCM->PID             = NewPID;
