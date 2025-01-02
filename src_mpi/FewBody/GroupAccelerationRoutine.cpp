@@ -84,10 +84,10 @@ void SetPrimordialBinaries() {
 	Particle* ptcl;
 	Particle* NewCM;
 
-	for (int i=0; i<global_variable.NumberOfSingle; i++) {
+	for (int i=0; i<global_variable->NumberOfSingle; i++) {
 		ptcl = &particles[i];
 		if (ptcl->NewNumberOfNeighbor > 0) {
-			NewCM = &particles[global_variable.NumberOfParticle];
+			NewCM = &particles[global_variable->NumberOfParticle];
 			NewCM->clear();
 			for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++) {
 				NewCM->NewNeighbors[j] = ptcl->NewNeighbors[j];
@@ -95,18 +95,18 @@ void SetPrimordialBinaries() {
 			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleOrder;
 			NewCM->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor + 1;
 
-			global_variable.NumberOfParticle++;
+			global_variable->NumberOfParticle++;
 		}
 	}
 
-	if (global_variable.NumberOfSingle == global_variable.NumberOfParticle) return;
+	if (global_variable->NumberOfSingle == global_variable->NumberOfParticle) return;
 
 	MergeGroups();	// Merge group candidates
 					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
 
-	broadcastFromRoot(global_variable.NumberOfParticle);
+	broadcastFromRoot(global_variable->NumberOfParticle);
 
-	for (int i=global_variable.NumberOfSingle; i<global_variable.NumberOfParticle; i++) {
+	for (int i=global_variable->NumberOfSingle; i<global_variable->NumberOfParticle; i++) {
 		NewPrimordialBinaries(i);
 	}
 }
@@ -116,12 +116,12 @@ void SetBinaries(std::vector<int>& ParticleList) {
 	Particle* ptcl;
 	Particle* NewCM;
 
-	int beforeNumberOfParticle = global_variable.NumberOfParticle;
+	int beforeNumberOfParticle = global_variable->NumberOfParticle;
 
 	for (int i=0; i<ParticleList.size(); i++) {
 		ptcl = &particles[ParticleList[i]];
 		if (ptcl->NewNumberOfNeighbor > 0) {
-			NewCM = &particles[global_variable.NumberOfParticle];
+			NewCM = &particles[global_variable->NumberOfParticle];
 			NewCM->clear();
 			for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++) {
 				NewCM->NewNeighbors[j] = ptcl->NewNeighbors[j];
@@ -129,30 +129,30 @@ void SetBinaries(std::vector<int>& ParticleList) {
 			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleOrder;
 			NewCM->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor + 1;
 
-			global_variable.NumberOfParticle++;
+			global_variable->NumberOfParticle++;
 		}
 	}
 
-	if (beforeNumberOfParticle == global_variable.NumberOfParticle) return;
+	if (beforeNumberOfParticle == global_variable->NumberOfParticle) return;
 
 	MergeGroups();	// Merge group candidates
 					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
 
-	for (int i=beforeNumberOfParticle; i<global_variable.NumberOfParticle; i++) {
+	for (int i=beforeNumberOfParticle; i<global_variable->NumberOfParticle; i++) {
 		NewFBInitialization(i);
 	}
 	/*
-	for (int i=global_variable.NumberOfSingle; i<global_variable.NumberOfParticle; i++) {
+	for (int i=global_variable->NumberOfSingle; i<global_variable->NumberOfParticle; i++) {
 		Particle* members = &particles[i];
 
 		if (!members->GroupInfo) {
-			int beforeOrder = particles[global_variable.NumberOfParticle-1].ParticleOrder;
+			int beforeOrder = particles[global_variable->NumberOfParticle-1].ParticleOrder;
 			int afterOrder = members->ParticleOrder;
 
-			std::swap(particles[i], particles[global_variable.NumberOfParticle-1]);
+			std::swap(particles[i], particles[global_variable->NumberOfParticle-1]);
 			particles[i].ParticleOrder = afterOrder;
-			global_variable.NumberOfParticle--;
-			for (int j=0; j<global_variable.NumberOfParticle; j++) {
+			global_variable->NumberOfParticle--;
+			for (int j=0; j<global_variable->NumberOfParticle; j++) {
 				Particle* ptcl = &particles[j];
 				
 				std::replace(
@@ -174,12 +174,12 @@ void MergeGroups() {
 
     while (merged) {
         merged = false;
-		for (int i = global_variable.NumberOfSingle; i < global_variable.NumberOfParticle; i++) {
+		for (int i = global_variable->NumberOfSingle; i < global_variable->NumberOfParticle; i++) {
 
 			Particle* currentCM = &particles[i];
 			if (currentCM->NewNumberOfNeighbor == 0) continue; // Skip already deleted groups
 
-			for (int j = i + 1; j < global_variable.NumberOfParticle; j++) {
+			for (int j = i + 1; j < global_variable->NumberOfParticle; j++) {
 
 				Particle* otherCM = &particles[j];
 				if (otherCM->NewNumberOfNeighbor == 0) continue; // Skip already deleted groups
@@ -207,9 +207,9 @@ void MergeGroups() {
 					merged = true;
 
                     // Mark otherGroup for deletion after the loop
-					particles[j] = particles[global_variable.NumberOfParticle]; // Eunwoo: is this right?
-					particles[global_variable.NumberOfParticle].clear();
-					global_variable.NumberOfParticle--;
+					particles[j] = particles[global_variable->NumberOfParticle]; // Eunwoo: is this right?
+					particles[global_variable->NumberOfParticle].clear();
+					global_variable->NumberOfParticle--;
                 }
             }
         }
@@ -266,8 +266,8 @@ void NewPrimordialBinaries(int newOrder) {
 	ptclGroup->groupCM		= ptclCM;
 
 	ptclCM->ParticleOrder = newOrder;
-	ptclCM->PID = global_variable.NewPID;
-	global_variable.NewPID++;
+	ptclCM->PID = global_variable->NewPID;
+	global_variable->NewPID++;
 	ptclCM->isActive = true;
 
 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).

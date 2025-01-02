@@ -217,7 +217,7 @@ void WorkerRoutines() {
 
 			case 7: // Initialize Acceleration(01)
 				//std::cout << "Processor " << MyRank<< " initialization starts." << std::endl;
-				std::cout << "Processor " << MyRank<< ": NumPart= "<<global_variable.NumberOfParticle << std::endl;
+				//std::cout << "Processor " << MyRank<< ": NumPart= "<<global_variable->NumberOfParticle << std::endl;
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl_id = ptcl_id*LoadBalanceParticle;
 

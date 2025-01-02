@@ -70,15 +70,19 @@ int main(int argc, char *argv[]) {
 	// Write Particles
 	if (MyRank == ROOT && readData() == FAIL)
 		fprintf(stderr, "Read Data Failed!\n");
+	
 
-	global_variable.NumberOfParticle = NumberOfParticle;
-	global_variable.NumberOfSingle   = NumberOfSingle;
-	global_variable.NewPID           = NewPID;
+	//std::cout << "Processor " << MyRank<< ": NumPart= "<<global_variable.NumberOfParticle << std::endl;
+	//std::cout << "Processor " << MyRank<< ": NumSing= "<<global_variable.NumberOfSingle << std::endl;
 	//broadcastFromRoot(NumberOfParticle);
 	//broadcastFromRoot(NumberOfSingle);
 	//MPI_Win_fence(0, win);
 
 	if (MyRank == ROOT) {
+		global_variable->NumberOfParticle = NumberOfParticle;
+		global_variable->NumberOfSingle   = NumberOfSingle;
+		global_variable->NewPID           = NewPID;
+
 		RootRoutines();
 	} else {
 		WorkerRoutines();

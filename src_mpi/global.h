@@ -24,8 +24,8 @@ const int ROOT = 0;
 extern int NumberOfCommunication;
 extern MPI_Request requests[MaxNumberOfCommunication];
 extern MPI_Status statuses[MaxNumberOfCommunication];
-extern GlobalVariable global_variable;
-extern GlobalVariable global_variable_original;
+extern GlobalVariable *global_variable;
+extern GlobalVariable *global_variable_original;
 
 
 // the numer of particles for load balancing

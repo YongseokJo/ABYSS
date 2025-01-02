@@ -834,7 +834,7 @@ void RootRoutines() {
 
 
 				//broadcastFromRoot(NumberOfParticle);
-				global_variable.NumberOfParticle = NumberOfParticle;
+				global_variable->NumberOfParticle = NumberOfParticle;
 
 				//skiplist->display();
 				/*
@@ -1013,7 +1013,7 @@ void RootRoutines() {
 				int beforeNumberOfParticle = NumberOfParticle;
 				SetBinaries(RegularList);
 				if (beforeNumberOfParticle != NumberOfParticle)
-					global_variable.NumberOfParticle = NumberOfParticle;
+					global_variable->NumberOfParticle = NumberOfParticle;
 					//broadcastFromRoot(NumberOfParticle);
 			}
 			/*
