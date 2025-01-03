@@ -22,8 +22,8 @@ public:
     //! clear function
     void clear() {
         if (soft_pert!=NULL) {
-            assert(soft_pert->GroupInfo != nullptr);
-            soft_pert->GroupInfo = nullptr;
+            // assert(soft_pert->GroupInfo != nullptr);
+            // soft_pert->GroupInfo = nullptr;
             soft_pert = NULL;
         }
     }

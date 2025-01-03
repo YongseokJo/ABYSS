@@ -3,7 +3,7 @@
 #include <iomanip>
 #include "../def.h"
 #include "../particle.h"
-#include "Group.h"
+// #include "Group.h"
 
 //! Tidal tensor perterbation for AR
 class TidalTensor{
@@ -17,7 +17,7 @@ private:
 public:
     double Position[Dim];  // position of c.m.
     // REAL group_id; // indicate which group use the tensor // Eunwoo: or GroupInfo???
-    Group* GroupInfo;
+    // Group* GroupInfo;
 
 
     TidalTensor(): T1{0.0, 0.0, 0.0}, 
@@ -25,7 +25,8 @@ public:
 #ifdef TIDAL_TENSOR_3RD
                    T3{0.0, 0.0, 0.0,  0.0, 0.0, 0.0,  0.0, 0.0, 0.0,  0.0}, 
 #endif
-                   Position{0.0, 0.0, 0.0}, GroupInfo(nullptr) {}
+                //    Position{0.0, 0.0, 0.0}, GroupInfo(nullptr) {}
+                Position{0.0, 0.0, 0.0} {}
 
     void dump(FILE *fp){
         fwrite(this, sizeof(TidalTensor),1,fp);
@@ -46,7 +47,7 @@ public:
         for(int i=0; i<10; i++) T3[i] = 0;
 #endif
         Position[0] = Position[1] = Position[2] = 0.0;
-        GroupInfo = nullptr;
+        // GroupInfo = nullptr;
     }
 
     //! create tidal tensor measurement particles 
