@@ -254,6 +254,7 @@ void NewFBInitialization(int newOrder) {
 		}
 		if (members->GroupOrder >= 0) {
 			// this part needs to be check , should I initialize or notr? by YS 2025.1.2 (Query)
+			// This is for the existing group, so initialization is not necessary. by EW 2025.1.3 (Answer)
 			Group* group2 = &groups[members->GroupOrder];
 			for (int dim=0; dim<Dim; dim++) {
 				group2->sym_int.particles.cm.Position[dim] = pos[dim];
@@ -857,6 +858,7 @@ void NewFBInitialization3(Group* group) {
 
 	ptclGroup = &groups[global_variable->NumberOfParticle - global_variable->NumberOfSingle];
 	ptclGroup->initialize(); // by YS 2025.1.2 (Query) should it be initialized?
+							// Yes, this is a new group to be initialized. by EW 2025.1.3 (Answer)
 	Particle* ptclCM = &particles[group->groupCMOrder];
 
 	ptclGroup->groupCMOrder = group->groupCMOrder;

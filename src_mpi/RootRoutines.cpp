@@ -777,24 +777,24 @@ void RootRoutines() {
 				// Few-body group search
 				task            = 22;
 				completed_tasks = 0;
+				total_tasks = ThisLevelNode->ParticleList.size(); // total_tasks could be changed in the above; added by EW 2025.1.3
 
 				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
 				InitialAssignmentOfTasks(ThisLevelNode->ParticleList, total_tasks, PTCL_TAG);
 				MPI_Waitall(NumberOfCommunication, requests, statuses);
 				NumberOfCommunication = 0;
 
-				std::cout << "First round of tasks assignment is sent." << std::endl;
-
 
 				// further assignments
 				remaining_tasks = total_tasks-NumberOfWorker;
 				while (completed_tasks < total_tasks) {
 					// Check which worker is done
-					MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+					MPI_Irecv(&ptcl_id_return, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
 					MPI_Wait(&request, &status);
 					completed_rank = status.MPI_SOURCE;
+
 					if (remaining_tasks > 0) {
-						ptcl_id = NumberOfWorker + completed_tasks;
+						ptcl_id = ThisLevelNode->ParticleList[NumberOfWorker + completed_tasks];
 						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
 						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
 						//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
@@ -805,6 +805,7 @@ void RootRoutines() {
 					}
 					completed_tasks++;
 				}
+
 				int beforeNumberOfParticle = NumberOfParticle;
 				SetBinaries(ThisLevelNode->ParticleList);
 				if (beforeNumberOfParticle != NumberOfParticle) {
@@ -983,7 +984,7 @@ void RootRoutines() {
 				task            = 22;
 				completed_tasks = 0;
 				total_tasks = RegularList.size();
-
+#ifdef NoLoadBalance
 				AdaptiveLoadBalancing = (total_tasks+NumberOfWorker-1)/NumberOfWorker;
 				for (int i=0; i<NumberOfWorker; i++) {
 					if (i*AdaptiveLoadBalancing >= total_tasks) break;
@@ -1005,7 +1006,34 @@ void RootRoutines() {
 				}
 				MPI_Waitall(NumberOfCommunication, requests, statuses);
 				NumberOfCommunication = 0;
-				
+#else
+				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
+				InitialAssignmentOfTasks(RegularList, total_tasks, PTCL_TAG);
+				MPI_Waitall(NumberOfCommunication, requests, statuses);
+				NumberOfCommunication = 0;
+
+
+				// further assignments
+				remaining_tasks = total_tasks-NumberOfWorker;
+				while (completed_tasks < total_tasks) {
+					// Check which worker is done
+					MPI_Irecv(&ptcl_id_return, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
+					MPI_Wait(&request, &status);
+					completed_rank = status.MPI_SOURCE;
+
+					if (remaining_tasks > 0) {
+						ptcl_id = RegularList[NumberOfWorker + completed_tasks];
+						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+						//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
+						//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
+						remaining_tasks--;
+					} else {
+						//printf("Rank %d: No more tasks to assign\n", completed_rank);
+					}
+					completed_tasks++;
+				}
+#endif
 				SetBinaries(RegularList);
 			}
 			/*

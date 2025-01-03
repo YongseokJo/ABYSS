@@ -75,20 +75,6 @@ struct Group
 	}
 
 	// custom initializer
-#ifdef SEVN
-	// this part needs to be fixed YS 2025.1.2
-	void initialize(void) 
-		: groupCMOrder(-1),
-		isTerminate(false),
-		isMerger(false),
-		CurrentTime(0.0),
-		sym_int(),
-		manager(),
-		useSEVN(false),
-		EvolutionTime(0.0),
-		EvolutionTimeStep(0.0)
-	{}
-#else
 	// initializer added YS 2025.1.2
 	void initialize(void)
 	{
@@ -98,8 +84,12 @@ struct Group
 		CurrentTime = 0.0;
 		new(&sym_int) AR::TimeTransformedSymplecticIntegrator<Particle, Particle, Perturber, Interaction, AR::Information<Particle,Particle>>();
 		new(&manager) AR::TimeTransformedSymplecticManager<Interaction>();
-	}
+#ifdef SEVN // initializer for SEVN by EW 2024.1.3
+		useSEVN = false;
+		EvolutionTime = 0.0;
+		EvolutionTimeStep = 0.0;
 #endif
+	}
 
 
 

@@ -103,7 +103,7 @@ void WorkerRoutines() {
 						for (int i=0; i<ptcl->NumberOfNeighbor; i++)
 							groups[ptcl->GroupOrder].sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
 						bool int_normal = groups[ptcl->GroupOrder].ARIntegration(ptcl->NewCurrentBlockIrr*time_step);
-						if (!int_normal) break;
+						if (!int_normal) continue;
 					}
 					if (ptcl->NumberOfNeighbor != 0)
 						ptcl->updateParticle();
@@ -270,6 +270,7 @@ void WorkerRoutines() {
 				break;
 
 			case 21: // CheckBreak
+#ifdef NoLoadBalance
 				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Get_count(&status, MPI_INT, &size);
 				ptcl_id_vector.resize(size);
@@ -285,9 +286,21 @@ void WorkerRoutines() {
 							groups[ptcl->GroupOrder].isMerger = false;
 					}
 				}
+#else
+				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				ptcl = &particles[ptcl_id];
+
+				if (ptcl->GroupOrder >= 0) {
+					if (!groups[ptcl->GroupOrder].isMerger)
+						groups[ptcl->GroupOrder].isTerminate = groups[ptcl->GroupOrder].CheckBreak();
+					else if (groups[ptcl->GroupOrder].isMerger && !groups[ptcl->GroupOrder].isTerminate)
+						groups[ptcl->GroupOrder].isMerger = false;
+				}
+#endif
 				break;
 
 			case 22: // Few-body group search
+#ifdef NoLoadBalance
 				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Get_count(&status, MPI_INT, &size);
 				ptcl_id_vector.resize(size);
@@ -302,6 +315,14 @@ void WorkerRoutines() {
 					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
 						ptcl->checkNewGroup();
 				}
+#else
+				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				ptcl = &particles[ptcl_id];
+
+				ptcl->NewNumberOfNeighbor = 0;
+				if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
+					ptcl->checkNewGroup();
+#endif
 				break;
 
 			case 100: // Synchronize
