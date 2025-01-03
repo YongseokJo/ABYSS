@@ -641,12 +641,22 @@ void RootRoutines() {
 					//printf("Rank %d: Send operation completed (%d).\n",completed_rank, ptcl_id_return);
 
 					if (remaining_tasks > 0) {
-						ptcl_id = ThisLevelNode->ParticleList[NumberOfWorker + completed_tasks];
-						//printf("ptcl %d,  ",ptcl_id);
-						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-						MPI_Send(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
-						remaining_tasks--;
+						if (particles[ptcl_id_return].GroupOrder < 0) {
+							task = 23;
+							//printf("ptcl %d,  ",ptcl_id);
+							MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+							MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+							MPI_Send(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
+							MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+							task = 0;
+						} else {
+							ptcl_id = ThisLevelNode->ParticleList[NumberOfWorker + completed_tasks];
+							//printf("ptcl %d,  ",ptcl_id);
+							MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
+							MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
+							MPI_Send(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
+							remaining_tasks--;
+						}
 					} else {
 						//printf("Rank %d: No more tasks to assign\n", completed_rank);
 					}
