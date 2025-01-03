@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <map>
 #include <mpi.h>
 #include "global.h"
 #include "SkipList.h"
@@ -35,6 +36,9 @@ void RootRoutines() {
 	int task, task_recv, total_tasks;
 	int remaining_tasks=0, completed_tasks=0, completed_rank;
 	int flag=0;
+	std::map<int, int> CMPtcl_Worker_Map;
+	std::vector<int> CMPtclList;
+	std::vector<int> CMWorkerList;
 	
 
 	std::vector<int> RegularList;
@@ -141,6 +145,8 @@ void RootRoutines() {
 		// Primordial binary search
 		task            = 20;
 		completed_tasks = 0;
+		std::vector<int> BinaryList;
+
 
 		InitialAssignmentOfTasks(task, NumberOfParticle, TASK_TAG);
 		InitialAssignmentOfTasks(pid, NumberOfParticle, PTCL_TAG);
@@ -170,7 +176,14 @@ void RootRoutines() {
 			completed_tasks++;
 		}
 
-		SetPrimordialBinaries();
+
+		if (BinaryList.size() >	0) {
+			CMPtclList.push_back(PID);
+			CMWorkerList.push_back(rank);
+			CMPtcl_Worker_Map.insert(PID, rank);
+			SetPrimordialBinaries();
+
+		}
 
 		fprintf(stdout, "SetPrimordialBinaries ends... NumberOfParticle: %d\n", NumberOfParticle);
 		fflush(stdout);

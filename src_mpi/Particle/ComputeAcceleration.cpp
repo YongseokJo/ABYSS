@@ -45,12 +45,13 @@ void Particle::computeAccelerationIrr() {
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
 
 		ptcl = &particles[this->Neighbors[i]];
+
+
 		/*
 		if (ptcl->isCMptcl) {
 			fprintf(stderr, "my = %d , pid of cm = %d\n", this->PID, ptcl->PID);
 			fflush(stderr);
 		}
-
 
 	 if (ptcl->Position[0]!=ptcl->Position[0]) {
 			fprintf(stderr, "Nan occurs, %lf", ptcl->Position[0]);

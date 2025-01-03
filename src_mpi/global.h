@@ -9,8 +9,6 @@
 
 extern Particle *particles;
 extern Particle *particles_original;
-extern Group *groups;
-extern Group *groups_original;
 
 /* Communicators */
 extern MPI_Win win;

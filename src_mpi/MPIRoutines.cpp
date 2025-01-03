@@ -53,11 +53,9 @@ void initializeMPI(int argc, char *argv[]) {
 	if (shared_rank == 0) {
 		//MPI_Win_allocate_shared(sizeof(int), sizeof(int), MPI_INFO_NULL, shared_comm, &shared_mem, &win);
 		MPI_Win_allocate_shared(sizeof(Particle) * MaxNumberOfParticle, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles_original, &win);
-		MPI_Win_allocate_shared(sizeof(Group) * int(MaxNumberOfParticle/10), sizeof(Group), MPI_INFO_NULL, shared_comm, &groups_original, &win3);
 		MPI_Win_allocate_shared(sizeof(GlobalVariable), sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);
 	} else {
 		MPI_Win_allocate_shared(0, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles_original, &win);
-		MPI_Win_allocate_shared(0, sizeof(Group), MPI_INFO_NULL, shared_comm, &groups_original, &win3);
 		MPI_Win_allocate_shared(0, sizeof(GlobalVariable), MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);
 	}
 	// Query shared memory of rank 0
@@ -66,7 +64,6 @@ void initializeMPI(int argc, char *argv[]) {
 	int disp_unit;
 
 	MPI_Win_shared_query(win, 0, &size_bytes, &disp_unit, &particles);
-	MPI_Win_shared_query(win3, 0, &size_bytes, &disp_unit, &groups);
 	MPI_Win_shared_query(win2, 0, &size_bytes, &disp_unit, &global_variable);
 }
 

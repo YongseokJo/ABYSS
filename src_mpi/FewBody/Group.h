@@ -19,7 +19,7 @@ struct Particle;
 struct Group
 {
 
-	int groupCMOrder;
+	Particle* groupCM;
 	bool isTerminate; // For later use: I will use this when Binary Interrupt State is being used
 	bool isMerger; // True if merger happened
 
@@ -39,7 +39,7 @@ struct Group
 	// Constructor
 #ifdef SEVN
 	Group(void) 
-		: groupCMOrder(-1),
+		: groupCM(nullptr),
 		isTerminate(false),
 		isMerger(false),
 		CurrentTime(0.0),
@@ -51,7 +51,7 @@ struct Group
 	{}
 #else
 	Group(void) 
-		: groupCMOrder(-1),
+		: groupCM(nullptr),
 		isTerminate(false),
 		isMerger(false),
 		CurrentTime(0.0),
@@ -60,6 +60,14 @@ struct Group
 	{}
 #endif
 
+	~Group() {
+		sym_int.clear();
+		sym_int.particles.clear(); // This might be unnecessary by EW 2025.1.4
+		manager.step.clear();
+		groupCM = nullptr;
+	}
+
+/*
 	Group& operator = (const Group& other) {
 		groupCMOrder = other.groupCMOrder;
 		isTerminate = other.isTerminate;
@@ -73,7 +81,9 @@ struct Group
 #endif
 		return *this;
 	}
+*/
 
+/*
 	// custom initializer
 	// initializer added YS 2025.1.2
 	void initialize(void)
@@ -90,9 +100,9 @@ struct Group
 		EvolutionTimeStep = 0.0;
 #endif
 	}
+*/
 
-
-
+/*
 	void clear() {
 		groupCMOrder = -1;
 		isTerminate = false;
@@ -107,6 +117,7 @@ struct Group
 		EvolutionTimeStep = 0.0;
 #endif		
 	}
+*/
 
 	bool ARIntegration(double next_time);
 	bool CheckBreak();

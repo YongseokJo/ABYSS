@@ -55,8 +55,8 @@ struct Particle {
 	double dm; // Stellar mass which will be distributed to nearby gas cells
 	double time_check; // time to check next interrupt
 	long long int binary_state; // contain two parts, low bits (first BINARY_STATE_ID_SHIFT bits) is binary interrupt state and high bits are pair ID
-	int GroupOrder;
 	double a_spin[3]; // dimensionless spin parameter a
+	Group* GroupInfo;
 
 
 	Particle() {
@@ -98,7 +98,7 @@ struct Particle {
 		dm = 0.0;
 		time_check = NUMERIC_FLOAT_MAX;
 		binary_state = 0;
-		GroupOrder = -1;
+		GroupInfo = nullptr;
 	}
 
 	Particle& operator = (const Particle& other) {
@@ -150,7 +150,7 @@ struct Particle {
 		dm = other.dm;
 		time_check = other.time_check;
 		binary_state = other.binary_state;
-		GroupOrder = other.GroupOrder;
+		// GroupInfo = other.GroupInfo; // Eunwoo: this should be considered carefully
 
         return *this;
     }
@@ -187,7 +187,7 @@ struct Particle {
 		this->dm = 0.0;
 		this->time_check = NUMERIC_FLOAT_MAX;
 		this->binary_state = 0;
-		this->GroupOrder = -1;
+		this->GroupInfo = nullptr;
 		this->a_spin[0] = 0.;
 		this->a_spin[1] = 0.;
 		this->a_spin[2] = 0.;
@@ -257,7 +257,7 @@ struct Particle {
 		dm = 0.0;
 		time_check = NUMERIC_FLOAT_MAX;
 		binary_state = 0;
-		GroupOrder = -1;
+		GroupInfo = nullptr;
     }
 
 	void normalizeParticle() {

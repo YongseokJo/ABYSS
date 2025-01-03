@@ -11,6 +11,7 @@ void broadcastFromRoot(ULL &data);
 void broadcastFromRoot(int &data);
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
+void makeGroup(Particle* ptclCM);
 
 void WorkerRoutines() {
 
@@ -267,6 +268,7 @@ void WorkerRoutines() {
 					particles[ptcl_id+i].NewNumberOfNeighbor = 0;
 					particles[ptcl_id+i].checkNewGroup2();
 				}
+
 				break;
 
 			case 21: // CheckBreak
@@ -324,6 +326,16 @@ void WorkerRoutines() {
 					ptcl->checkNewGroup();
 #endif
 				break;
+
+			case 23: // Make a group in workers
+				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				ptcl = &particles[ptcl_id];
+
+				makeGroup(ptcl);
+
+				break;
+
+				
 
 			case 100: // Synchronize
 				MPI_Win_sync(win);  // Synchronize memory

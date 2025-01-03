@@ -79,7 +79,7 @@ bool AddNewGroupsToList2(std::vector<Particle*> &members, std::vector<Particle*>
 }
 */
 
-void SetPrimordialBinaries() {
+void formPrimordialBinaries() {
 
 	Particle* ptcl;
 	Particle* NewCM;
@@ -112,7 +112,7 @@ void SetPrimordialBinaries() {
 	global_variable->NewPID = NewPID;
 }
 
-void SetBinaries(std::vector<int>& ParticleList) {
+void formBinaries(std::vector<int>& ParticleList) {
 
 	Particle* ptcl;
 	Particle* NewCM;
@@ -241,23 +241,11 @@ bool isNeighborInsideGroup(Group* groupCandidate) {
 }
 */
 
-// Make CM particles for primordial binaries
-void NewPrimordialBinaries(int newOrder) {
+void makeGroup(Particle* ptclCM) {
 
-	Particle* ptclCM;
-	Group* ptclGroup;
+	Group* ptclGroup = new Group();
 
-	ptclCM = &particles[newOrder];
-	ptclCM->ParticleOrder = newOrder;
-	ptclCM->PID = NewPID;
-	NewPID++;
-	ptclCM->isActive = true;
-	ptclCM->GroupOrder = ptclCM->ParticleOrder - NumberOfSingle + 1;
-
-
-	ptclGroup = &groups[ptclCM->ParticleOrder - NumberOfSingle + 1];
-	ptclGroup->initialize(); // by YS 2024.1.2
-	ptclGroup->groupCMOrder = ptclCM->ParticleOrder;
+	ptclGroup->groupCM = ptclCM;
 
 #ifdef SEVN
 	ptclGroup->useSEVN = false;
@@ -338,11 +326,6 @@ void NewPrimordialBinaries(int newOrder) {
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
 
 
-	// Find neighbors for CM particle and calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately 
-	CalculateAcceleration01(ptclCM);
-	CalculateAcceleration23(ptclCM);
-
-
 // /* // Eunwoo test
 	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();
 	if (bin_root.semi>0.0) {
@@ -368,24 +351,9 @@ void NewPrimordialBinaries(int newOrder) {
 	}
 // */ // Eunwoo test
 
-	// Erase members in neighbors
-
-	for (int i=0; i<newOrder; i++) {
-		Particle* ptcl = &particles[i];
-		auto newEnd = std::remove_if(
-			ptcl->Neighbors, 
-			ptcl->Neighbors + ptcl->NumberOfNeighbor, 
-			[&particles](int j) {
-				return !particles[j].isActive;
-			}
-		);
-
-		if (newEnd != ptcl->Neighbors + ptcl->NumberOfNeighbor) {
-			ptcl->NumberOfNeighbor = newEnd - ptcl->Neighbors;
-			ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->ParticleOrder;
-			ptcl->NumberOfNeighbor++;
-		}
-	}
+	// Find neighbors for CM particle and calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately 
+	CalculateAcceleration01(ptclCM);
+	CalculateAcceleration23(ptclCM);
 
 	fprintf(binout, "\nResult of CM particle value calculation from function NewPrimordialBinaries\n");
 
@@ -407,4 +375,38 @@ void NewPrimordialBinaries(int newOrder) {
 
 	fprintf(binout, "------------------END-OF-NEW-PRIMORDIAL-BINARIES------------------\n\n");
 	fflush(binout);
+
+
+}
+
+// 
+void deleteNeighbors(int newOrder) {
+
+	Particle* ptclCM;
+
+	ptclCM = &particles[newOrder];
+	ptclCM->ParticleOrder = newOrder;
+	ptclCM->PID = NewPID;
+	NewPID++;
+	ptclCM->isActive = true;
+
+
+	// Erase members in neighbors
+
+	for (int i=0; i<newOrder; i++) {
+		Particle* ptcl = &particles[i];
+		auto newEnd = std::remove_if(
+			ptcl->Neighbors, 
+			ptcl->Neighbors + ptcl->NumberOfNeighbor, 
+			[&particles](int j) {
+				return !particles[j].isActive;
+			}
+		);
+
+		if (newEnd != ptcl->Neighbors + ptcl->NumberOfNeighbor) {
+			ptcl->NumberOfNeighbor = newEnd - ptcl->Neighbors;
+			ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->ParticleOrder;
+			ptcl->NumberOfNeighbor++;
+		}
+	}
 }
