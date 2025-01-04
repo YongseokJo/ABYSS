@@ -5,6 +5,7 @@
 #include <mpi.h>
 
 
+Worker *workers;
 Particle *particles_original;
 Particle *particles;
 

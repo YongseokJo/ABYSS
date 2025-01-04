@@ -4,6 +4,7 @@
 #include <mpi.h>
 #include "global.h"
 #include "SkipList.h"
+#include "WorkScheduler.h"
 
 
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
@@ -32,11 +33,12 @@ void RootRoutines() {
 
 	Particle* ptcl;
 	int min_time_level=0;
-	int workers=0, worker_rank;
+	//int worker_rank;
 	int task, task_recv, total_tasks;
 	int remaining_tasks=0, completed_tasks=0, completed_rank;
 	int flag=0;
 	std::map<int, int> CMPtcl_Worker_Map;
+	std::map<int, int> Worker_CPtcl_Map;
 	std::vector<int> CMPtclList;
 	std::vector<int> CMWorkerList;
 	
@@ -50,132 +52,49 @@ void RootRoutines() {
 	int sender_rank, sender_tag;
 	int ptcl_id;
 
+	workers = new Worker[NumberOfWorker];
+
+	for (int i=0; i<NumberOfWorker; i++) {
+		workers[i].MyRank = i+1;
+	}
+
+	WorkScheduler work_scheduler;
+
+	/* Particle loading Check */
+	/*
+	{
+		//, NextRegTime= %.3e Myr(%llu),
+		for (int i=0; i<NumberOfParticle; i++) {
+			ptcl = &particles[i];
+			fprintf(stdout, "PID=%d, pos=(%lf, %lf, %lf), vel=(%lf, %lf, %lf)\n",
+					ptcl->PID,
+					ptcl->Position[0],
+					ptcl->Position[1],
+					ptcl->Position[2],
+					ptcl->Velocity[0],
+					ptcl->Velocity[1],
+					ptcl->Velocity[2]
+					);
+		}
+		fflush(stdout);
+	}*/
 
 	/* Initialization */
 	{
+
+
 		std::cout << "Initialization of particles starts." << std::endl;
-		task            = 7;
-		completed_tasks = 0;
-		total_tasks = (NumberOfParticle+LoadBalanceParticle-1)/LoadBalanceParticle;
+		work_scheduler.initialize();
+		work_scheduler.doSimpleTask(7, NumberOfParticle);
+		work_scheduler.initialize();
+		work_scheduler.doSimpleTask(8, NumberOfParticle);
 
-		// Initial assignments
-    int pid[NumberOfWorker];  
-		for (int i = 0; i < NumberOfWorker; ++i) {
-			pid[i] = i;
-		}
-		/* Particle loading Check */
-		/*
-		{
-			//, NextRegTime= %.3e Myr(%llu),
-			for (int i=0; i<NumberOfParticle; i++) {
-				ptcl = &particles[i];
-				fprintf(stdout, "PID=%d, pos=(%lf, %lf, %lf), vel=(%lf, %lf, %lf)\n",
-						ptcl->PID,
-						ptcl->Position[0],
-						ptcl->Position[1],
-						ptcl->Position[2],
-						ptcl->Velocity[0],
-						ptcl->Velocity[1],
-						ptcl->Velocity[2]
-						);
-			}
-			fflush(stdout);
-		}*/
-
-		InitialAssignmentOfTasks(task, NumberOfParticle, TASK_TAG);
-		InitialAssignmentOfTasks(pid, NumberOfParticle, PTCL_TAG);
-		MPI_Waitall(NumberOfCommunication, requests, statuses);
-		NumberOfCommunication = 0;
-
-		std::cout << "First round of tasks assignment is sent." << std::endl;
-		std::cout << "total_tasks = "<< total_tasks << std::endl;
-
-		// further assignments
-		remaining_tasks = total_tasks-NumberOfWorker;
-		while (completed_tasks < total_tasks) {
-			// Check which worker is done
-			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-			MPI_Wait(&request, &status);
-			completed_rank = status.MPI_SOURCE;
-			if (remaining_tasks > 0) {
-				ptcl_id = NumberOfWorker + completed_tasks;
-				MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-				MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-				//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
-				//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
-				remaining_tasks--;
-			} else {
-				//printf("Rank %d: No more tasks to assign\n", completed_rank);
-			}
-			completed_tasks++;
-		}
-
-
-		task            = 8;
-		completed_tasks = 0;
-
-		InitialAssignmentOfTasks(task, NumberOfParticle, TASK_TAG);
-		InitialAssignmentOfTasks(pid, NumberOfParticle, PTCL_TAG);
-		MPI_Waitall(NumberOfCommunication, requests, statuses);
-		NumberOfCommunication = 0;
-
-		std::cout << "First round of tasks assignment is sent." << std::endl;
-
-
-		// further assignments
-		remaining_tasks = total_tasks-NumberOfWorker;
-		while (completed_tasks < total_tasks) {
-			// Check which worker is done
-			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-			MPI_Wait(&request, &status);
-			completed_rank = status.MPI_SOURCE;
-			if (remaining_tasks > 0) {
-				ptcl_id = NumberOfWorker + completed_tasks;
-				MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-				MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-				//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
-				//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
-				remaining_tasks--;
-			} else {
-				//printf("Rank %d: No more tasks to assign\n", completed_rank);
-			}
-			completed_tasks++;
-		}
 
 		// Primordial binary search
-		task            = 20;
-		completed_tasks = 0;
 		std::vector<int> BinaryList;
 
-
-		InitialAssignmentOfTasks(task, NumberOfParticle, TASK_TAG);
-		InitialAssignmentOfTasks(pid, NumberOfParticle, PTCL_TAG);
-		MPI_Waitall(NumberOfCommunication, requests, statuses);
-		NumberOfCommunication = 0;
-
-		std::cout << "First round of tasks assignment is sent." << std::endl;
-
-
-		// further assignments
-		remaining_tasks = total_tasks-NumberOfWorker;
-		while (completed_tasks < total_tasks) {
-			// Check which worker is done
-			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-			MPI_Wait(&request, &status);
-			completed_rank = status.MPI_SOURCE;
-			if (remaining_tasks > 0) {
-				ptcl_id = NumberOfWorker + completed_tasks;
-				MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-				MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-				//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
-				//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
-				remaining_tasks--;
-			} else {
-				//printf("Rank %d: No more tasks to assign\n", completed_rank);
-			}
-			completed_tasks++;
-		}
-
+		work_scheduler.initialize();
+		work_scheduler.doSimpleTask(20, NumberOfParticle);
 
 		if (BinaryList.size() >	0) {
 			CMPtclList.push_back(PID);
@@ -184,41 +103,13 @@ void RootRoutines() {
 			SetPrimordialBinaries();
 
 		}
-
 		fprintf(stdout, "SetPrimordialBinaries ends... NumberOfParticle: %d\n", NumberOfParticle);
 		fflush(stdout);
 
+
 		// Initialize Time Step
-		task            = 9;
-		completed_tasks = 0;
-
-		InitialAssignmentOfTasks(task, NumberOfParticle, TASK_TAG);
-		InitialAssignmentOfTasks(pid, NumberOfParticle, PTCL_TAG);
-		MPI_Waitall(NumberOfCommunication, requests, statuses);
-		NumberOfCommunication = 0;
-
-		std::cout << "First round of tasks assignment is sent." << std::endl;
-
-
-		// further assignments
-		remaining_tasks = total_tasks-NumberOfWorker;
-		while (completed_tasks < total_tasks) {
-			// Check which worker is done
-			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-			MPI_Wait(&request, &status);
-			completed_rank = status.MPI_SOURCE;
-			if (remaining_tasks > 0) {
-				ptcl_id = NumberOfWorker + completed_tasks;
-				MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-				MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-				//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
-				//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
-				remaining_tasks--;
-			} else {
-				//printf("Rank %d: No more tasks to assign\n", completed_rank);
-			}
-			completed_tasks++;
-		}
+		work_scheduler.initialize();
+		work_scheduler.doSimpleTask(9, NumberOfParticle);
 	}
 
 
@@ -660,7 +551,6 @@ void RootRoutines() {
 							MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
 							MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
 							MPI_Send(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
-							MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
 							task = 0;
 						} else {
 							ptcl_id = ThisLevelNode->ParticleList[NumberOfWorker + completed_tasks];
