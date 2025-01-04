@@ -26,6 +26,8 @@ void FBTermination(int Order);
 void FBTermination2(int Order);
 void SetBinaries(std::vector<int>& ParticleList);
 
+void formPrimordialBinaries(int& beforeNumberOfParticle);
+
 
 void RootRoutines() {
 
@@ -38,9 +40,12 @@ void RootRoutines() {
 	int remaining_tasks=0, completed_tasks=0, completed_rank;
 	int flag=0;
 	std::map<int, int> CMPtcl_Worker_Map;
-	std::map<int, int> Worker_CPtcl_Map;
+	std::map<int, int> Worker_CMPtcl_Map;
 	std::vector<int> CMPtclList;
 	std::vector<int> CMWorkerList;
+
+	std::vector<int> existingCMPtclIndexList; // by EW 2025.1.4
+	std::vector<int> terminatedCMPtclIndexList; // by EW 2025.1.4
 	
 
 	std::vector<int> RegularList;
@@ -95,6 +100,27 @@ void RootRoutines() {
 
 		work_scheduler.initialize();
 		work_scheduler.doSimpleTask(20, NumberOfParticle);
+
+		// Example codes by EW 2025.1.4
+		int beforeNumberOfParticle = NumberOfParticle;
+		formPrimordialBinaries(beforeNumberOfParticle);
+		assert(beforeNumberOfParticle >= NumberOfParticle); // for debugging by EW 2025.1.4
+		assert(existingCMPtclIndexList.empty()); // for debugging by EW 2025.1.4
+		if (beforeNumberOfParticle != NumberOfParticle) {
+			Particle* ptcl;
+			for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
+				// i is ParticleOrder
+				ptcl = &particles[i];
+				existingCMPtclIndexList.push_back(i); // this contains ParticleOrders by EW 2025.1.4
+				CMPtclList.push_back(ptcl->PID); // this contains PIDs by EW 2025.1.4
+				CMWorkerList.push_back(rank); // this contains ranks by EW 2025.1.4
+				CMPtcl_Worker_Map.insert(ptcl->PID, rank); // this maps between PIDs and ranks by EW 2025.1.4
+			}
+
+			work_scheduler.doSimpleTask(23, NumberOfParticle - beforeNumberOfParticle);
+			// rank and CMPtcl might not be matched correctly inside work_scheduler by this simple code by EW 2025.1.4
+		}
+		// Example codes by EW 2025.1.4
 
 		if (BinaryList.size() >	0) {
 			CMPtclList.push_back(PID);
@@ -264,7 +290,7 @@ void RootRoutines() {
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
 
-			if (!ptcl->isActive) // Eunwoo: If I'm correct, there should be no isActive=false particle here!
+			if (!ptcl->isActive)
 				continue;
 			fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"\
 					"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"\

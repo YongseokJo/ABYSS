@@ -69,7 +69,7 @@ void Group::initialIntegrator(int NumMembers) {
 			sym_int.particles.addMemberAndAddress(*members);
 			fprintf(binout, " %d", sym_int.particles[i].PID);
 		}
-		else {
+		else { // This group should be deleted before NewFBInitialization! by EW 2025.1.4
 			for (int j=0; j < groups[members->GroupOrder].sym_int.particles.getSize(); j++) {
 				sym_int.particles.addMemberAndAddress(groups[members->GroupOrder].sym_int.particles[j]);
 				fprintf(binout, " %d", sym_int.particles[i].PID);
@@ -120,24 +120,17 @@ void Group::initialIntegrator(int NumMembers) {
 
 
 // Initialize new Few body group
-void NewFBInitialization(int newOrder) {
+void NewFBInitialization(Particle* ptclCM) {
 
-	Particle* ptclCM;
-	Group* ptclGroup;
+	Group* ptclGroup = new Group();
 
-	std::cout << "New particle index is" << newOrder << std::endl;
-	ptclCM = &particles[newOrder];
-	ptclCM->ParticleOrder	= newOrder;
-	ptclCM->PID             = NewPID;
-	NewPID++;
-	ptclCM->isActive = true;
-	ptclCM->GroupOrder = ptclCM->ParticleOrder - NumberOfSingle + 1;
-
+	ptclGroup->groupCM = ptclCM;
+/*
 	ptclGroup = &groups[ptclCM->ParticleOrder - NumberOfSingle + 1];
 	// initializer added YS 2025.1.2
 	ptclGroup->initialize();
 	ptclGroup->groupCMOrder = ptclCM->ParticleOrder;
-
+*/
 	// Find member particle with the biggest CurrentTimeIrr
 	Particle* ptcl = &particles[ptclCM->NewNeighbors[0]];
 	int NumberOfMembers=0;
@@ -147,7 +140,7 @@ void NewFBInitialization(int newOrder) {
 		if (members->CurrentTimeIrr > ptcl->CurrentTimeIrr) {
         	ptcl = members;
     	}
-		if (members->GroupOrder < 0)
+		if (!members->isCMptcl)
 			NumberOfMembers++;
 		else
 			NumberOfMembers += groups[members->GroupOrder].sym_int.particles.getSize();
@@ -248,20 +241,24 @@ void NewFBInitialization(int newOrder) {
 		double dt = ptcl->CurrentTimeIrr - members->CurrentTimeIrr;
 		double pos[Dim], vel[Dim];
 		members->predictParticleSecondOrder(dt, pos, vel);
-		for (int dim=0; dim<Dim; dim++) {
-			members->Position[dim] = pos[dim];
-			members->Velocity[dim] = vel[dim];
-		}
-		if (members->GroupOrder >= 0) {
-			// this part needs to be check , should I initialize or notr? by YS 2025.1.2 (Query)
-			// This is for the existing group, so initialization is not necessary. by EW 2025.1.3 (Answer)
-			Group* group2 = &groups[members->GroupOrder];
-			for (int dim=0; dim<Dim; dim++) {
-				group2->sym_int.particles.cm.Position[dim] = pos[dim];
-                group2->sym_int.particles.cm.Velocity[dim] = vel[dim];
+		
+		if (members->isCMptcl) {
+			Particle* members_members;
+
+			for (int j=0; j<members->NewNumberOfNeighbor; j++) {
+				members_members = &particles[members->NewNeighbors[j]];
+
+				for (int dim=0; dim<Dim; dim++) {
+					members_members->Position[dim] += pos[dim] - members->Position[dim];
+					members_members->Velocity[dim] += vel[dim] - members->Velocity[dim];
+				}
 			}
-			group2->sym_int.particles.shiftToOriginFrame();
-			group2->sym_int.particles.template writeBackMemberAll<Particle>();
+		}
+		else {
+			for (int dim=0; dim<Dim; dim++) {
+				members->Position[dim] = pos[dim];
+				members->Velocity[dim] = vel[dim];
+			}
 		}
 	}
 
@@ -359,10 +356,8 @@ void NewFBInitialization(int newOrder) {
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[ptclCM->NewNeighbors[i]];
 
-		if (members->GroupOrder >= 0) {
+		if (members->isCMptcl)
 			members->clear();
-			groups[members->GroupOrder].clear();
-		}
 	}
 
 	// Find neighbors for CM particle and calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately 
@@ -385,6 +380,7 @@ void NewFBInitialization(int newOrder) {
 
 	// ptclCM->calculateTimeStepIrr(ptclCM->a_tot, ptclCM->a_irr); // fiducial
 	ptclCM->calculateTimeStepIrr(); // Eunwoo: This can make errors because NewCurrentBlockIrr is not set yet.
+	// ptclCM->calculateTimeStepIrr2(); // by EW 2025.1.4
 /*
 	while (ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr <= global_time_irr 
 			&& ptclCM->TimeLevelIrr <= ptcl->TimeLevelIrr) { //first condition guarantees that ptclcm is small than ptcl
@@ -436,28 +432,6 @@ void NewFBInitialization(int newOrder) {
 		fprintf(binout, "r_break_crit: %e pc\n", ptclGroup->sym_int.info.r_break_crit*position_unit);
 	}
 // */ // Eunwoo test
-
-
-	// Erase members in neighbors
-
-	for (int i=0; i<newOrder; i++) {
-		Particle* ptcl = &particles[i];
-		auto newEnd = std::remove_if(
-			ptcl->Neighbors,
-			ptcl->Neighbors + ptcl->NumberOfNeighbor, 
-			[&particles](int j) {
-				return !particles[j].isActive;
-			}
-		);
-
-		if (newEnd != ptcl->Neighbors + ptcl->NumberOfNeighbor) {
-			ptcl->NumberOfNeighbor = newEnd - ptcl->Neighbors;
-			ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->ParticleOrder;
-			ptcl->NumberOfNeighbor++;
-		}
-	}
-
-	// UpdateNextRegTime(particle);
 
 
 	fprintf(binout, "\nFBInitialization.cpp: result of CM particle value calculation from function NewFBInitialization\n");

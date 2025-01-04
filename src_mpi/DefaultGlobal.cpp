@@ -27,7 +27,6 @@ int LoadBalanceParticle;
 GlobalVariable *global_variable;
 GlobalVariable *global_variable_original;
 int NumberOfParticle;
-int NumberOfSingle;
 int NewPID;
 
 // Task

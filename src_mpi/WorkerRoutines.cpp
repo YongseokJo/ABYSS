@@ -11,7 +11,9 @@ void broadcastFromRoot(ULL &data);
 void broadcastFromRoot(int &data);
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
-void makeGroup(Particle* ptclCM);
+void makePrimordialGroup(Particle* ptclCM);
+void NewFBInitialization(Particle* ptclCM);
+void deleteGroup(Particle* ptclCM);
 
 void WorkerRoutines() {
 
@@ -327,15 +329,66 @@ void WorkerRoutines() {
 #endif
 				break;
 
-			case 23: // Make a group in workers
+			case 23: // Make a primordial group
+#ifdef NoLoadBalance
+				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Get_count(&status, MPI_INT, &size);
+				ptcl_id_vector.resize(size);
+				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+
+				for (int i=0; i<size; i++) {
+					ptcl = &particles[ptcl_id_vector[i]];
+
+					makePrimordialGroup(ptcl);
+				}
+#else
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
-				makeGroup(ptcl);
-
+				makePrimordialGroup(ptcl);
+#endif
 				break;
 
-				
+			case 24: // Make a group
+#ifdef NoLoadBalance
+				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Get_count(&status, MPI_INT, &size);
+				ptcl_id_vector.resize(size);
+				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+
+				for (int i=0; i<size; i++) {
+					ptcl = &particles[ptcl_id_vector[i]];
+
+					NewFBInitialization(ptcl);
+				}
+#else
+				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				ptcl = &particles[ptcl_id];
+
+				NewFBInitialization(ptcl);
+#endif
+				break;
+			
+				case 25: // Delete a Group struct
+#ifdef NoLoadBalance
+				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Get_count(&status, MPI_INT, &size);
+				ptcl_id_vector.resize(size);
+				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+
+				for (int i=0; i<size; i++) {
+					ptcl = &particles[ptcl_id_vector[i]];
+
+					deleteGroup(ptcl);
+				}
+#else
+				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				ptcl = &particles[ptcl_id];
+
+				deleteGroup(ptcl);
+#endif
+				break;
+
 
 			case 100: // Synchronize
 				MPI_Win_sync(win);  // Synchronize memory

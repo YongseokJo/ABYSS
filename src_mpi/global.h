@@ -33,7 +33,6 @@ extern GlobalVariable *global_variable_original;
 extern int LoadBalanceParticle; 
 
 extern int NumberOfParticle;
-extern int NumberOfSingle;
 extern int NewPID;
 
 // Task

@@ -25,7 +25,6 @@ int readData() {
 	}
 
 	NumberOfParticle = getLineNumber();
-	NumberOfSingle = NumberOfParticle;
 	NewPID = NumberOfParticle;
 
 	// Declaration

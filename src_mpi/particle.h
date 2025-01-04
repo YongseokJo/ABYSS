@@ -57,6 +57,7 @@ struct Particle {
 	long long int binary_state; // contain two parts, low bits (first BINARY_STATE_ID_SHIFT bits) is binary interrupt state and high bits are pair ID
 	double a_spin[3]; // dimensionless spin parameter a
 	Group* GroupInfo;
+	bool isCMptcl;
 
 
 	Particle() {
@@ -99,6 +100,7 @@ struct Particle {
 		time_check = NUMERIC_FLOAT_MAX;
 		binary_state = 0;
 		GroupInfo = nullptr;
+		isCMptcl = false;
 	}
 
 	Particle& operator = (const Particle& other) {
@@ -151,6 +153,7 @@ struct Particle {
 		time_check = other.time_check;
 		binary_state = other.binary_state;
 		// GroupInfo = other.GroupInfo; // Eunwoo: this should be considered carefully
+		isCMptcl = other.isCMptcl;
 
         return *this;
     }
@@ -188,6 +191,7 @@ struct Particle {
 		this->time_check = NUMERIC_FLOAT_MAX;
 		this->binary_state = 0;
 		this->GroupInfo = nullptr;
+		this->isCMptcl = false;
 		this->a_spin[0] = 0.;
 		this->a_spin[1] = 0.;
 		this->a_spin[2] = 0.;
@@ -258,6 +262,7 @@ struct Particle {
 		time_check = NUMERIC_FLOAT_MAX;
 		binary_state = 0;
 		GroupInfo = nullptr;
+		isCMptcl = false;
     }
 
 	void normalizeParticle() {

@@ -10,81 +10,16 @@ void MergeGroups();
 void NewPrimordialBinaries(int newOrder);
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
-void broadcastFromRoot(int &data);
 
-/*
-bool AddNewGroupsToList(std::vector<Particle*> &particle) {
 
-	assert(GroupCandidateList.empty()); // Let's check GroupCandidateList is initially empty!
-
-	for (Particle *ptcl : particle) {
-        // if (ptcl->isCMptcl) continue; // Eunwoo: test
-		// ptcl->isFBCandidate();
-
-        // Eunwoo test
-        if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > tbin) // fiducial: 1e-5 but for rbin = 0.00025 pc, 1e-6 Myr seems good
-            continue;
-        // Eunwoo test
-        
-        ptcl->checkNewGroup();
-	}
-
-	if (GroupCandidateList.empty()) return true;
-
-	MergeGroups(GroupCandidateList);	// Merge GroupCandidateList
-										// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
-
-	for (Group *groupCandidate : GroupCandidateList) {
-
-        // if (isNeighborInsideGroup(groupCandidate)) continue;    // Don't make a real group if it has no neighbor.
-                                                                // Its TimeStepIrr will be so big and it can raise errors.
-
-        NewFBInitialization(groupCandidate, particle);
-				
-	}
-	GroupCandidateList.clear();
-	GroupCandidateList.shrink_to_fit();
-
-	return true;
-}
-*/
-/*
-bool AddNewGroupsToList2(std::vector<Particle*> &members, std::vector<Particle*> &particle) {
-
-	assert(GroupCandidateList.empty()); // Let's check GroupCandidateList is initially empty!
-
-	for (Particle *ptcl : members) {
-        // if (ptcl->isCMptcl) continue; // Eunwoo: test
-		// ptcl->isFBCandidate();
-        ptcl->checkNewGroup2();
-	}
-
-	if (GroupCandidateList.empty()) return true;
-
-	MergeGroups(GroupCandidateList);	// Merge GroupCandidateList
-										// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
-
-	for (Group *groupCandidate : GroupCandidateList) {
-
-        // if (isNeighborInsideGroup(groupCandidate)) continue;    // Don't make a real group if it has no neighbor.
-                                                                // Its TimeStepIrr will be so big and it can raise errors.
-
-        NewFBInitialization2(groupCandidate, particle);
-				
-	}
-	GroupCandidateList.clear();
-	GroupCandidateList.shrink_to_fit();
-
-	return true;
-}
-*/
-
-void formPrimordialBinaries() {
+void formPrimordialBinaries(int& beforeNumberOfParticle) {
 
 	Particle* ptcl;
 	Particle* NewCM;
 
-	for (int i=0; i<NumberOfSingle; i++) {
+	beforeNumberOfParticle = NumberOfParticle;
+
+	for (int i=0; i<NumberOfParticle; i++) {
 		ptcl = &particles[i];
 		if (ptcl->NewNumberOfNeighbor > 0) {
 			NewCM = &particles[NumberOfParticle];
@@ -99,16 +34,15 @@ void formPrimordialBinaries() {
 		}
 	}
 
-	if (NumberOfSingle == NumberOfParticle) return;
+	if (beforeNumberOfParticle == NumberOfParticle) return;
 
-	MergeGroups();	// Merge group candidates
+	mergeGroupCandidates();	// Merge group candidates
 					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
 	global_variable->NumberOfParticle = NumberOfParticle;
 	
-	for (int i=NumberOfSingle; i<NumberOfParticle; i++) {
-		NewPrimordialBinaries(i);
+	for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
+		deleteNeighbors(i);
 	}
-	// global_variable->NumberOfParticle = NumberOfParticle;
 	global_variable->NewPID = NewPID;
 }
 
@@ -140,43 +74,19 @@ void formBinaries(std::vector<int>& ParticleList) {
 
 	int beforeNumberOfParticle = global_variable->NumberOfParticle;
 
-	MergeGroups();	// Merge group candidates
+	mergeGroupCandidates();	// Merge group candidates
 					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
 	global_variable->NumberOfParticle = NumberOfParticle;
 
 	for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
-		NewFBInitialization(i);
+		// NewFBInitialization(i); // This should be parallelized by EW 2025.1.4
+		deleteNeighbors(i);
 	}
-	// global_variable->NumberOfParticle = NumberOfParticle;
 	global_variable->NewPID = NewPID;
-	/*
-	for (int i=global_variable->NumberOfSingle; i<global_variable->NumberOfParticle; i++) {
-		Particle* members = &particles[i];
-
-		if (!members->GroupInfo) {
-			int beforeOrder = particles[global_variable->NumberOfParticle-1].ParticleOrder;
-			int afterOrder = members->ParticleOrder;
-
-			std::swap(particles[i], particles[global_variable->NumberOfParticle-1]);
-			particles[i].ParticleOrder = afterOrder;
-			global_variable->NumberOfParticle--;
-			for (int j=0; j<global_variable->NumberOfParticle; j++) {
-				Particle* ptcl = &particles[j];
-				
-				std::replace(
-					ptcl->Neighbors,
-					ptcl->Neighbors + ptcl->NumberOfNeighbor,
-					beforeOrder,
-					afterOrder
-				);
-			}
-		}
-	}
-	*/
 }
 
 
-void MergeGroups() {
+void mergeGroupCandidates() {
 
     bool merged = true;
 
@@ -226,22 +136,48 @@ void MergeGroups() {
     }
 }
 
-/*
-bool isNeighborInsideGroup(Group* groupCandidate) {
-    // Check if every neighbor of 'member' is also inside groupMembers
-    for (Particle* member : groupCandidate->Members) {
-        for (Particle* neighbor : member->ACList) {
-            if (std::find(groupCandidate->Members.begin(), groupCandidate->Members.end(), neighbor) == groupCandidate->Members.end()) {
-                // Found a neighbor that is not in groupMembers
-                return false;
-            }
-        }
-    }
-    return true; // All neighbors are inside groupMembers
-}
-*/
 
-void makeGroup(Particle* ptclCM) {
+void deleteNeighbors(int newOrder) {
+
+	Particle* ptclCM;
+
+	std::cout << "New particle index is" << newOrder << std::endl;
+	ptclCM = &particles[newOrder];
+	ptclCM->ParticleOrder = newOrder;
+	ptclCM->PID = NewPID;
+	NewPID++;
+	ptclCM->isActive = true;
+	ptclCM->isCMptcl = true;
+
+	Particle* members;
+
+	for (int i=0; i<ptclCM->NewNumberOfNeighbor; i++) {
+		members = &particles[ptclCM->NewNeighbors[i]];
+		members->isActive = false;
+	}
+
+	// Erase members and put CM particle in neighbors
+	for (int i=0; i<newOrder; i++) {
+		Particle* ptcl = &particles[i];
+		auto newEnd = std::remove_if(
+			ptcl->Neighbors, 
+			ptcl->Neighbors + ptcl->NumberOfNeighbor, 
+			[&particles](int j) {
+				return !particles[j].isActive;
+			}
+		);
+
+		if (newEnd != ptcl->Neighbors + ptcl->NumberOfNeighbor) {
+			ptcl->NumberOfNeighbor = newEnd - ptcl->Neighbors;
+			ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->ParticleOrder;
+			ptcl->NumberOfNeighbor++;
+		}
+	}
+}
+
+void makePrimordialGroup(Particle* ptclCM) {
+
+	Particle* ptclCM;
 
 	Group* ptclGroup = new Group();
 
@@ -375,38 +311,103 @@ void makeGroup(Particle* ptclCM) {
 
 	fprintf(binout, "------------------END-OF-NEW-PRIMORDIAL-BINARIES------------------\n\n");
 	fflush(binout);
-
-
 }
 
-// 
-void deleteNeighbors(int newOrder) {
+void deleteGroup(Particle* ptclCM) {
 
-	Particle* ptclCM;
+	Group* ptclGroup = ptclCM->GroupInfo;
 
-	ptclCM = &particles[newOrder];
-	ptclCM->ParticleOrder = newOrder;
-	ptclCM->PID = NewPID;
-	NewPID++;
-	ptclCM->isActive = true;
+	ptclCM->NewNumberOfNeighbor = ptclGroup->sym_int.particles.getSize();
 
+	assert(!ptclGroup->sym_int.particles.isOriginFrame); // for debugging by EW 2025.1.4
 
-	// Erase members in neighbors
+	for (int i=0; i < ptclGroup->sym_int.particles.getSize(); i++) {
+		Particle* members = &ptclGroup->sym_int.particles[i];
+		ptclCM->NewNeighbors[i] = members->ParticleOrder;
 
-	for (int i=0; i<newOrder; i++) {
-		Particle* ptcl = &particles[i];
-		auto newEnd = std::remove_if(
-			ptcl->Neighbors, 
-			ptcl->Neighbors + ptcl->NumberOfNeighbor, 
-			[&particles](int j) {
-				return !particles[j].isActive;
-			}
-		);
-
-		if (newEnd != ptcl->Neighbors + ptcl->NumberOfNeighbor) {
-			ptcl->NumberOfNeighbor = newEnd - ptcl->Neighbors;
-			ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->ParticleOrder;
-			ptcl->NumberOfNeighbor++;
+		for (int dim=0; dim<Dim; dim++) {
+			&particles[members->ParticleOrder]->Position[dim] = ptclCM->Position[dim] + members->Position[dim];
+			&particles[members->ParticleOrder]->Velocity[dim] = ptclCM->Velocity[dim] + members->Velocity[dim];
 		}
+		&particles[members->ParticleOrder]->Mass = members->Mass;
 	}
+
+/* // original version; this might take so much time by EW 2025.1.4
+	for (int dim=0; dim<Dim; dim++) {
+		ptclGroup->sym_int.particles.cm.Position[dim] = ptclCM->Position[dim];
+		ptclGroup->sym_int.particles.cm.Velocity[dim] = ptclCM->Velocity[dim];
+	}
+	ptclGroup->sym_int.particles.shiftToOriginFrame();
+	group2->sym_int.particles.template writeBackMemberAll<Particle>();
+*/
+
+	delete ptclGroup;
 }
+
+
+/*
+bool AddNewGroupsToList(std::vector<Particle*> &particle) {
+
+	assert(GroupCandidateList.empty()); // Let's check GroupCandidateList is initially empty!
+
+	for (Particle *ptcl : particle) {
+        // if (ptcl->isCMptcl) continue; // Eunwoo: test
+		// ptcl->isFBCandidate();
+
+        // Eunwoo test
+        if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 > tbin) // fiducial: 1e-5 but for rbin = 0.00025 pc, 1e-6 Myr seems good
+            continue;
+        // Eunwoo test
+        
+        ptcl->checkNewGroup();
+	}
+
+	if (GroupCandidateList.empty()) return true;
+
+	MergeGroups(GroupCandidateList);	// Merge GroupCandidateList
+										// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
+
+	for (Group *groupCandidate : GroupCandidateList) {
+
+        // if (isNeighborInsideGroup(groupCandidate)) continue;    // Don't make a real group if it has no neighbor.
+                                                                // Its TimeStepIrr will be so big and it can raise errors.
+
+        NewFBInitialization(groupCandidate, particle);
+				
+	}
+	GroupCandidateList.clear();
+	GroupCandidateList.shrink_to_fit();
+
+	return true;
+}
+*/
+/*
+bool AddNewGroupsToList2(std::vector<Particle*> &members, std::vector<Particle*> &particle) {
+
+	assert(GroupCandidateList.empty()); // Let's check GroupCandidateList is initially empty!
+
+	for (Particle *ptcl : members) {
+        // if (ptcl->isCMptcl) continue; // Eunwoo: test
+		// ptcl->isFBCandidate();
+        ptcl->checkNewGroup2();
+	}
+
+	if (GroupCandidateList.empty()) return true;
+
+	MergeGroups(GroupCandidateList);	// Merge GroupCandidateList
+										// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
+
+	for (Group *groupCandidate : GroupCandidateList) {
+
+        // if (isNeighborInsideGroup(groupCandidate)) continue;    // Don't make a real group if it has no neighbor.
+                                                                // Its TimeStepIrr will be so big and it can raise errors.
+
+        NewFBInitialization2(groupCandidate, particle);
+				
+	}
+	GroupCandidateList.clear();
+	GroupCandidateList.shrink_to_fit();
+
+	return true;
+}
+*/
