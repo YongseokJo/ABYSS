@@ -39,13 +39,13 @@ void RootRoutines() {
 	int task, task_recv, total_tasks;
 	int remaining_tasks=0, completed_tasks=0, completed_rank;
 	int flag=0;
-	std::map<int, int> CMPtcl_Worker_Map;
-	std::map<int, int> Worker_CMPtcl_Map;
-	std::vector<int> CMPtclList;
-	std::vector<int> CMWorkerList;
+	// std::map<int, int> CMPtcl_Worker_Map; // commented out by EW 2025.1.5
+	// std::map<int, int> Worker_CMPtcl_Map; // commented out by EW 2025.1.5
+	// std::vector<int> CMPtclList; // commented out by EW 2025.1.5
+	// std::vector<int> CMWorkerList; // commented out by EW 2025.1.5
 
-	std::vector<int> existingCMPtclIndexList; // by EW 2025.1.4
-	std::vector<int> terminatedCMPtclIndexList; // by EW 2025.1.4
+	std::map<int, int> existingCMPtcl_Worker_Map; // by EW 2025.1.4
+	std::map<int, int> terminatedCMPtcl_Worker_Map; // by EW 2025.1.4
 	
 
 	std::vector<int> RegularList;
@@ -111,12 +111,8 @@ void RootRoutines() {
 			for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
 				// i is ParticleOrder
 				ptcl = &particles[i];
-				existingCMPtclIndexList.push_back(i); // this contains ParticleOrders by EW 2025.1.4
-				CMPtclList.push_back(ptcl->PID); // this contains PIDs by EW 2025.1.4
-				CMWorkerList.push_back(rank); // this contains ranks by EW 2025.1.4
-				CMPtcl_Worker_Map.insert(ptcl->PID, rank); // this maps between PIDs and ranks by EW 2025.1.4
+				existingCMPtcl_Worker_Map.insert({ptcl->ParticleOrder, existingCMPtcl_Worker_Map.size() % NumberOfWorker + 1});
 			}
-
 			work_scheduler.doSimpleTask(23, NumberOfParticle - beforeNumberOfParticle);
 			// rank and CMPtcl might not be matched correctly inside work_scheduler by this simple code by EW 2025.1.4
 		}
