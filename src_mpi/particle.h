@@ -50,14 +50,15 @@ struct Particle {
 
 	// For SDAR
 	bool isActive;
-	int ParticleOrder;
+	bool isUpdateToDate;
+	int ParticleOrder; // (Query) please change it to index when you get a chance
 	double radius;
 	double dm; // Stellar mass which will be distributed to nearby gas cells
 	double time_check; // time to check next interrupt
 	long long int binary_state; // contain two parts, low bits (first BINARY_STATE_ID_SHIFT bits) is binary interrupt state and high bits are pair ID
 	double a_spin[3]; // dimensionless spin parameter a
 	Group* GroupInfo;
-	bool isCMptcl;
+	bool isCMptcl; // do we need this? (Query) we can simply use if GroupInfo == nullptr right?
 
 
 	Particle() {
@@ -100,7 +101,9 @@ struct Particle {
 		time_check = NUMERIC_FLOAT_MAX;
 		binary_state = 0;
 		GroupInfo = nullptr;
-		isCMptcl = false;
+		isCMptcl = false; //(Query)
+		isUpdateToDate = true;
+
 	}
 
 	Particle& operator = (const Particle& other) {
