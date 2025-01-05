@@ -109,6 +109,7 @@ public:
 
         for (int i=0; i<_ParticleList.size(); i++) {
             pid_tmp = _ParticleList[i];
+            particles[pid_tmp].isUpdateToDate = false;
             if (particles[pid_tmp].GroupInfo == nullptr)
             {
                 SingleParticleList.push_back(pid_tmp);
@@ -126,9 +127,21 @@ public:
                 // NumberOfCommunication = 0;
                 _checkCompletion(return_value);
                 /* we can do something here */
-                _Callback();
+                _WorkerTmp = _Callback();
                 _completed_tasks++;
-                // I have to add that if the worker is a CMworker, I should run SDAR integration
+                // I have to add that if the worker is a CMworker, I should run SDAR integration (Query to myself)
+                if (particles[_WorkerTmp->PID].GroupInfo != nullptr  && _WorkerTmp->isCMWorker) 
+                {
+                    _ptcl = &particles[_WorkerTmp->PID];
+                   // check if all the neighbors of the CM particle are updated to date
+                    for (int j = 0; j < _ptcl->NumberOfNeighbor; j++)
+                    {
+                        if (particles[_ptcl->Neighbors[j]].isUpdateToDate == false)
+                            break;
+                    }
+                    // all neighbors are up to date.
+                    // (Query) I have to add the code for the SDAR execution.
+                }
             }
 
             if (_FreeWorkers.size() != 0 && _assigned_tasks < _total_tasks)
@@ -212,7 +225,7 @@ public:
     }
 
 
-    void _Callback() {
+    Worker* _Callback() {
         MPI_Wait(&_request, &_status);
         int rank = _status.MPI_SOURCE;
         if (!workers[rank-1].onDuty) {
@@ -221,6 +234,7 @@ public:
         }
         workers[rank-1].onDuty = false;
         _FreeWorkers.push_back(&workers[rank-1]);
+        return &workers[rank-1];
     }
 
 
