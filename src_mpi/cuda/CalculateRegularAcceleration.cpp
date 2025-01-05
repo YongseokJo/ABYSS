@@ -6,6 +6,7 @@
 #include <mpi.h>
 #include "../def.h"
 #include "../global.h"
+#include "../WorkScheduler.h"
 #include "cuda_functions.h"
 
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
@@ -21,7 +22,7 @@ void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, doub
  *  Date    : 2024.01.18  by Seoyoung Kim
  *
  */
-void calculateRegAccelerationOnGPU(std::vector<int> RegularList){
+void calculateRegAccelerationOnGPU(std::vector<int> RegularList, WorkScheduler &ws){
 
 
 
@@ -138,220 +139,53 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList){
 #endif
 */
 
-	//UpdateNextRegTime(particle);
-
-	//for (Particle* ptcl: RegularList)
-		//ptcl->calculateTimeStepIrr(ptcl->a_tot,ptcl->a_irr);
-	//std::cout <<  "Calculation On Device Done ..." << std::endl;
-
-
-
-	// Regular Gravity
-	int task = 4;
-	int completed_tasks = 0;
-	double next_time = NextRegTimeBlock*time_step;
-	int remaining_tasks, ptcl_id, completed_rank;
-	int AdaptiveLoadBalancing = (RegularList.size()+NumberOfWorker-1)/NumberOfWorker;
-	int total_tasks = RegularList.size();
-	int size = 0;
-
-
-
-	MPI_Request request;  // Pointer to the request handle
-	MPI_Status status;    // Pointer to the status object
-	
-
-				/*
-				std::cout << "RegularList, PID= ";
-				for (int i=0; i<total_tasks; i++) {
-					std::cout << RegularList[i]<< ", ";
-				}*/
-				//std::cout << std::endl;
-
-	//InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
-	//InitialAssignmentOfTasks(AdaptiveLoadBalancing, total_tasks, ANY_TAG);
-	//InitialAssignmentOfTasks(RegularList, next_time, total_tasks, PTCL_TAG);
-	for (int i=0; i<NumberOfWorker; i++) {
-		if (i*AdaptiveLoadBalancing >= total_tasks) break;
-		MPI_Isend(&task, 1, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
-	  size = RegularList.size() - i*AdaptiveLoadBalancing;
-		//size = (size == 0) ? 1 : size;
-		size = (size < AdaptiveLoadBalancing) ? size : AdaptiveLoadBalancing;
-		//MPI_Isend(&size,                            1, MPI_INT,
-			 	//i+1, 8, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		MPI_Isend(&RegularList[i*AdaptiveLoadBalancing],            size, MPI_INT,
-			 	i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		MPI_Isend(&NumNeighborReceive[i*AdaptiveLoadBalancing],        size, MPI_INT,
-			 	i+1, 10, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		MPI_Isend(&ACListReceive[AdaptiveLoadBalancing*i*NumNeighborMax], NumNeighborMax*size, MPI_INT,
-			 	i+1, 11, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		MPI_Isend(&AccRegReceive[i*AdaptiveLoadBalancing][0], 3*size, MPI_DOUBLE,
-			 	i+1, 12, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		MPI_Isend(&AccRegDotReceive[i*AdaptiveLoadBalancing][0], 3*size, MPI_DOUBLE,
-			 	i+1, 13, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		/*
-		for (int dim=0; dim<Dim; dim++)
-			fprintf(stderr, "Root: new_a=%.3e", AccRegReceive[i][dim]);
-		fprintf(stderr, "\n");
-		*/
-	}
-	MPI_Waitall(NumberOfCommunication, requests, statuses);
-	NumberOfCommunication = 0;
-
-	for (int i=0; i<NumberOfWorker; i++) {
-		if (i*AdaptiveLoadBalancing >= total_tasks) break;
-		MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-	}
-	MPI_Waitall(NumberOfCommunication, requests, statuses);
-	NumberOfCommunication = 0;
-
 
 	/*
-	// further assignments
-	int j=0;
-	remaining_tasks = total_tasks-NumberOfWorker;
-	while (completed_tasks < total_tasks) {
-		// Check which worker is done
-		MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-		// Poll until send completes
+	std::cout << "RegularList, PID= ";
+	for (int i=0; i<total_tasks; i++) {
+		std::cout << RegularList[i]<< ", ";
+	}*/
 
-		MPI_Wait(&request, &status);
-		completed_rank = status.MPI_SOURCE;
-		//printf("Rank %d: Send operation completed (%d).\n",completed_rank, ptcl_id_return);
+	// std::cout << std::endl;
 
-		if (remaining_tasks > 0) {
-			j = NumberOfWorker + completed_tasks;
-			ptcl_id = RegularList[j];
-			MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD,
-				 	&requests[NumberOfCommunication++]);
-			MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD,
-				 	&requests[NumberOfCommunication++]);
 
-			MPI_Isend(&NumNeighborReceive[j] ,                     1, MPI_INT,
-					completed_rank, 10, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-			MPI_Isend(&ACListReceive[j*NumNeighborMax], NumNeighborReceive[j], MPI_INT,
-					completed_rank, 11, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-			MPI_Isend(&AccRegReceive[j][0]   ,                     3, MPI_DOUBLE,
-					completed_rank, 12, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-			MPI_Isend(&AccRegDotReceive[j][0],                     3, MPI_DOUBLE,
-					completed_rank, 13, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
 
-			MPI_Waitall(NumberOfCommunication, requests, statuses);
-			NumberOfCommunication = 0;
+	// Adjust Regular Gravity
+	ws.initialize();
+	int return_value, i = 0;
+	ws._setTask(4);
+	ws._total_tasks = RegularList.size();
+	ws._completed_tasks = 0;
 
-			remaining_tasks--;
+	do
+	{
+		if (ws._FreeWorkers.size() == 0 || ws._assigned_tasks == ws._total_tasks)
+		{
+			// have to add check all the sends are recved.
+			// MPI_Waitall(NumberOfCommunication, requests, statuses);
+			// NumberOfCommunication = 0;
+			ws._checkCompletion(return_value);
+			/* we can do something here */
+			ws._Callback();
+			ws._completed_tasks++;
 		}
-		completed_tasks++;
-	}
-	*/
-
-
-
-	// Update Regular Gravity 
-	task = 5;
-	//completed_tasks = 0;
-
-
-	//std::cout << "TotalTask=" << total_tasks << std::endl;
-
-				/*
-				std::cout << "RegularList, PID= ";
-				for (int i=0; i<total_tasks; i++) {
-					std::cout << RegularList[i]<< ", ";
-				}*/
-				//std::cout << std::endl;
-
-	//InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
-	//InitialAssignmentOfTasks(AdaptiveLoadBalancing, total_tasks, ANY_TAG);
-	//InitialAssignmentOfTasks(RegularList, next_time, total_tasks, PTCL_TAG);
-	for (int i=0; i<NumberOfWorker; i++) {
-		if (i*AdaptiveLoadBalancing >= total_tasks) break;
-		MPI_Isend(&task, 1, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		
-		//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
-	  size = RegularList.size() - i*AdaptiveLoadBalancing;
-		//size = (size == 0) ? 1 : size;
-		size = (size < AdaptiveLoadBalancing) ? size : AdaptiveLoadBalancing;
-		//MPI_Isend(&size,                            1, MPI_INT,
-			 	//i+1, 8, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		MPI_Isend(&RegularList[i*AdaptiveLoadBalancing],            size, MPI_INT,
-			 	i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		//MPI_Isend(&RegularList[i*AdaptiveLoadBalancing],            size, MPI_INT,
-			 	//i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		//MPI_Isend(NumNeighborReceive+i*AdaptiveLoadBalancing,        size, MPI_INT,
-			 	//i+1, 10, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		//MPI_Isend(ACListReceive+AdaptiveLoadBalancing*i*NumNeighborMax, NumNeighborMax*size, MPI_INT,
-			 	//i+1, 11, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		/*
-		for (int dim=0; dim<Dim; dim++)
-			fprintf(stderr, "Root: new_a=%.3e", AccRegReceive[i][dim]);
-		fprintf(stderr, "\n");
-		*/
-	}
-
-	MPI_Waitall(NumberOfCommunication, requests, statuses);
-	NumberOfCommunication = 0;
-
-	for (int i=0; i<NumberOfWorker; i++) {
-		if (i*AdaptiveLoadBalancing >= total_tasks) break;
-		MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-	}
-	MPI_Waitall(NumberOfCommunication, requests, statuses);
-	NumberOfCommunication = 0;
-
-
-
-	/*
-	InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
-	InitialAssignmentOfTasks(RegularList, next_time, total_tasks, PTCL_TAG);
-	for (int i=0; i<NumberOfWorker; i++) {
-		if (i >= total_tasks) break;
-		MPI_Isend(&NumNeighborReceive[i] ,                     1, MPI_INT,
-				i+1, 10, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		MPI_Isend(&ACListReceive[i*NumNeighborMax], NumNeighborReceive[i], MPI_INT,
-				i+1, 11, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-	}
-	MPI_Waitall(NumberOfCommunication, requests, statuses);
-	NumberOfCommunication = 0;
-
-
-	// further assignments
-	j=0;
-	remaining_tasks = total_tasks-NumberOfWorker;
-	while (completed_tasks < total_tasks) {
-		// Check which worker is done
-		MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-		// Poll until send completes
-			 flag=0;
-			 while (!flag) {
-			 MPI_Test(&request, &flag, &status);
-		// Perform other work while waiting
+		if (ws._FreeWorkers.size() != 0 && ws._assigned_tasks < ws._total_tasks)
+		{
+			ws._WorkerTmp = ws._FreeWorkers.back();
+			ws._FreeWorkers.pop_back();
+			MPI_Send(&ws._WorkerTmp->task, 1, MPI_INT, ws._WorkerTmp->MyRank, TASK_TAG, MPI_COMM_WORLD);
+			MPI_Send(&RegularList[i], 1, MPI_INT, ws._WorkerTmp->MyRank, PTCL_TAG, MPI_COMM_WORLD);
+			MPI_Send(&NumNeighborReceive[i], 1, MPI_INT, ws._WorkerTmp->MyRank, 10, MPI_COMM_WORLD);
+			MPI_Send(&ACListReceive[i * NumNeighborMax], NumNeighborReceive[i], MPI_INT, ws._WorkerTmp->MyRank, 11, MPI_COMM_WORLD);
+			MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, ws._WorkerTmp->MyRank, 12, MPI_COMM_WORLD);
+			MPI_Send(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, ws._WorkerTmp->MyRank, 13, MPI_COMM_WORLD);
+			ws._WorkerTmp->onDuty = true;
+			ws._assigned_tasks++;
+			//fprintf(stdout, "assigned_tasks = %d/%d, number of free worker = %d pid = %d rank = %d\n",
+					//ws._assigned_tasks, ws._total_tasks, ws._FreeWorkers.size(), RegularList[i], ws._WorkerTmp->MyRank);
 		}
-		MPI_Wait(&request, &status);
-		completed_rank = status.MPI_SOURCE;
-		//printf("Rank %d: Send operation completed (%d).\n",completed_rank, ptcl_id_return);
-
-		if (remaining_tasks > 0) {
-			j = NumberOfWorker + completed_tasks;
-			ptcl_id = RegularList[j];
-			MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD,
-				 	&requests[NumberOfCommunication++]);
-			MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD,
-				 	&requests[NumberOfCommunication++]);
-			MPI_Isend(&NumNeighborReceive[j] ,                     1, MPI_INT,
-					completed_rank, 10, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-			MPI_Isend(&ACListReceive[j*NumNeighborMax], NumNeighborReceive[j], MPI_INT,
-					completed_rank, 11, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-			MPI_Waitall(NumberOfCommunication, requests, statuses);
-			NumberOfCommunication = 0;
-			remaining_tasks--;
-		}
-		completed_tasks++;
-	}
-	*/
-
-
+		i++;
+	} while (ws._completed_tasks < ws._total_tasks);
 
 	delete[] IndexList;
 

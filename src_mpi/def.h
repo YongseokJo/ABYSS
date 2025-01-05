@@ -27,7 +27,7 @@
 #define tbin 1e-6 // Myr
 #define NormalStar 1
 #define Blackhole 32
-#define SingleParticle 64
+#define SingleStar 64 // what is a single particle?
 
 
 #define MIN_LEVEL_BUFFER 30

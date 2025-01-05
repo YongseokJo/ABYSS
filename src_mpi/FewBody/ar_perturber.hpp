@@ -1,4 +1,6 @@
-#pragma once
+#ifndef AR_PERTURBER
+#define AR_PERTURBER
+#ifdef FEWBODY
 
 #include "Common/list.h"
 // #include "Hermite/hermite_particle.h"
@@ -92,3 +94,5 @@ public:
     } 
 
 };
+#endif
+#endif

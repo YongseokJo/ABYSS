@@ -1,3 +1,4 @@
+#ifdef FEWBODY
 #define ASSERT(x) assert(x)
 
 #include <iostream>
@@ -341,3 +342,4 @@ bool Group::ARIntegration(double next_time){
     CurrentTime = next_time;
     return true; 
 }
+#endif

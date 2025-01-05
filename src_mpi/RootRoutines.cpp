@@ -19,7 +19,7 @@ void updateNextRegTime(std::vector<int>& RegularList);
 bool createSkipList(SkipList *skiplist);
 bool updateSkipList(SkipList *skiplist, int ptcl_id);
 int writeParticle(double current_time, int outputNum);
-void calculateRegAccelerationOnGPU(std::vector<int> RegularList);
+void calculateRegAccelerationOnGPU(std::vector<int> RegularList, WorkScheduler &ws);
 
 void SetPrimordialBinaries();
 void FBTermination(int Order);
@@ -28,6 +28,7 @@ void SetBinaries(std::vector<int>& ParticleList);
 
 void formPrimordialBinaries(int& beforeNumberOfParticle);
 
+Worker* workers;
 
 void RootRoutines() {
 
@@ -65,6 +66,14 @@ void RootRoutines() {
 
 	WorkScheduler work_scheduler;
 
+	std::vector<int> PIDs;
+	PIDs.reserve(NumberOfParticle);
+	PIDs.resize(NumberOfParticle);
+	for (int i = 0; i < NumberOfParticle; i++)
+	{
+		PIDs[i] = i;
+	}
+
 	/* Particle loading Check */
 	/*
 	{
@@ -86,15 +95,14 @@ void RootRoutines() {
 
 	/* Initialization */
 	{
-
-
 		std::cout << "Initialization of particles starts." << std::endl;
 		work_scheduler.initialize();
-		work_scheduler.doSimpleTask(7, NumberOfParticle);
+		work_scheduler.doSimpleTask(7, PIDs);
+
 		work_scheduler.initialize();
-		work_scheduler.doSimpleTask(8, NumberOfParticle);
+		work_scheduler.doSimpleTask(8, PIDs);
 
-
+#ifdef FEWBODY
 		// Primordial binary search
 		std::vector<int> BinaryList;
 
@@ -127,18 +135,17 @@ void RootRoutines() {
 		}
 		fprintf(stdout, "SetPrimordialBinaries ends... NumberOfParticle: %d\n", NumberOfParticle);
 		fflush(stdout);
-
+#endif
 
 		// Initialize Time Step
 		work_scheduler.initialize();
-		work_scheduler.doSimpleTask(9, NumberOfParticle);
+		work_scheduler.doSimpleTask(9, PIDs);
 	}
 
 
 
 	/* synchronization */
 	//ParticleSynchronization();
-
 
 	/* timestep correction */
 	{
@@ -184,28 +191,48 @@ void RootRoutines() {
 		std::cout << "Time Step done." << std::endl;
 	}
 
+		for (int i=0; i<NumberOfParticle; i++) {
+			ptcl = &particles[i];
+			if (ptcl->isActive) // Eunwoo: If I'm correct, there should be no isActive=false particle here!
+				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
+								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
+								"NumNeighbor= %d\n",
+						ptcl->PID,
+						ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->CurrentBlockIrr,
+						ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->CurrentBlockReg,
+						// NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
+						// NextRegTimeBlock,
+						ptcl->TimeStepIrr * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->TimeStepReg * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->TimeBlockIrr,
+						ptcl->TimeLevelIrr,
+						ptcl->TimeBlockReg,
+						ptcl->TimeLevelReg,
+						ptcl->NumberOfNeighbor);
+		}
+
 	/* timestep variable synchronization */
 	{
 		std::cout << "Time Step synchronization." << std::endl;
 		task=10;
 		completed_tasks = 0; total_tasks = NumberOfWorker;
 		InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
-		MPI_Waitall(NumberOfCommunication, requests, statuses);
-		NumberOfCommunication = 0;
+		//MPI_Waitall(NumberOfCommunication, requests, statuses);
+		//NumberOfCommunication = 0;
 		broadcastFromRoot(time_block);
 		broadcastFromRoot(block_max);
 		broadcastFromRoot(time_step);
-		// Synchronize all processes before reading from the shared memory
-		//MPI_Win_fence(0, win);
-		MPI_Win_sync(win);  // Synchronize memory
-		MPI_Barrier(shared_comm);
+		//MPI_Win_sync(win);  // Synchronize memory
+		//MPI_Barrier(shared_comm);
 		while (completed_tasks < total_tasks) {
 			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
 			MPI_Wait(&request, &status);
 			completed_tasks++;
 		}
-		//fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
-		//fflush(stderr);
+		fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
+		fflush(stderr);
 	}
 
 	/* Particle Initialization Check */
@@ -285,27 +312,24 @@ void RootRoutines() {
 		//, NextRegTime= %.3e Myr(%llu),
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
-
-			if (!ptcl->isActive)
-				continue;
-			fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"\
-					"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"\
-					"NumNeighbor= %d\n",
-					ptcl->PID,
-					ptcl->CurrentTimeIrr*EnzoTimeStep*1e10/1e6,
-					ptcl->CurrentBlockIrr,
-					ptcl->CurrentTimeReg*EnzoTimeStep*1e10/1e6,
-					ptcl->CurrentBlockReg,
-					//NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
-					//NextRegTimeBlock,
-					ptcl->TimeStepIrr*EnzoTimeStep*1e10/1e6,
-					ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6,
-					ptcl->TimeBlockIrr,
-					ptcl->TimeLevelIrr,
-					ptcl->TimeBlockReg,
-					ptcl->TimeLevelReg,
-					ptcl->NumberOfNeighbor
-					);
+			if (ptcl->isActive) // Eunwoo: If I'm correct, there should be no isActive=false particle here!
+				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
+								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
+								"NumNeighbor= %d\n",
+						ptcl->PID,
+						ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->CurrentBlockIrr,
+						ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->CurrentBlockReg,
+						// NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
+						// NextRegTimeBlock,
+						ptcl->TimeStepIrr * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->TimeStepReg * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->TimeBlockIrr,
+						ptcl->TimeLevelIrr,
+						ptcl->TimeBlockReg,
+						ptcl->TimeLevelReg,
+						ptcl->NumberOfNeighbor);
 		}
 	}
 
@@ -349,248 +373,13 @@ void RootRoutines() {
 				ThisLevelNode = skiplist->getFirstNode();
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
-				//std::cout << "TotalTask=" << total_tasks << std::endl;
-				//std::cout << std::endl;
-#ifdef NoLoadBalance
-				// Calculate Irregular
-				task = 0;
-				completed_tasks = 0;
-				total_tasks = ThisLevelNode->ParticleList.size();
-				//total_tasks = (ThisLevelNode->ParticleList.size()+LoadBalanceParticle-1)/LoadBalanceParticle;
 
-				AdaptiveLoadBalancing = (total_tasks+NumberOfWorker-1)/NumberOfWorker;
-				for (int i=0; i<NumberOfWorker; i++) {
-					if (i*AdaptiveLoadBalancing >= total_tasks) break;
-					//std::cout << "=" << RegularList[0] << std::endl;
-					MPI_Isend(&task, 1, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-					//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
-					size = total_tasks - i*AdaptiveLoadBalancing;
-					size = (size < AdaptiveLoadBalancing) ? size : AdaptiveLoadBalancing;
-
-					MPI_Isend(&ThisLevelNode->ParticleList[i*AdaptiveLoadBalancing], size, MPI_INT,
-							i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-					MPI_Isend(&next_time                                           ,     1, MPI_DOUBLE,
-							i+1, TIME_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				}
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-				for (int i=0; i<NumberOfWorker; i++) {
-					if (i*AdaptiveLoadBalancing >= total_tasks) break;
-					MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				}
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-				task = 2;
-				completed_tasks = 0;
-				for (int i=0; i<NumberOfWorker; i++) {
-					if (i*AdaptiveLoadBalancing >= total_tasks) break;
-					//std::cout << "=" << RegularList[0] << std::endl;
-					MPI_Isend(&task, 1, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-					//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
-					size = total_tasks - i*AdaptiveLoadBalancing;
-					size = (size < AdaptiveLoadBalancing) ? size : AdaptiveLoadBalancing;
-
-					MPI_Isend(&ThisLevelNode->ParticleList[i*AdaptiveLoadBalancing], size, MPI_INT,
-							i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				}
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-				for (int i=0; i<NumberOfWorker; i++) {
-					if (i*AdaptiveLoadBalancing >= total_tasks) break;
-					MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				}
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-				task = 21;
-				completed_tasks = 0;
-				for (int i=0; i<NumberOfWorker; i++) {
-					if (i*AdaptiveLoadBalancing >= total_tasks) break;
-					//std::cout << "=" << RegularList[0] << std::endl;
-					MPI_Isend(&task, 1, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-					//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
-					size = total_tasks - i*AdaptiveLoadBalancing;
-					size = (size < AdaptiveLoadBalancing) ? size : AdaptiveLoadBalancing;
-
-					MPI_Isend(&ThisLevelNode->ParticleList[i*AdaptiveLoadBalancing], size, MPI_INT,
-							i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				}
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-				for (int i=0; i<NumberOfWorker; i++) {
-					if (i*AdaptiveLoadBalancing >= total_tasks) break;
-					MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				}
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-				int OriginalSize = ThisLevelNode->ParticleList.size();
-				for (int i=0; i<OriginalSize; i++) {
-					Particle* ptclCM = &particles[ThisLevelNode->ParticleList[i]];
-					if (ptclCM->GroupOrder < 0) continue;
-
-					if (groups[ptclCM->GroupOrder].isTerminate) {
-						if (groups[ptclCM->GroupOrder].isMerger) {
-							for (int i=0; i<groups[ptclCM->GroupOrder].sym_int.particles.getSize(); i++) {
-								Particle* ptcl = &particles[groups[ptclCM->GroupOrder].sym_int.particles[i].ParticleOrder];
-								if (ptcl->Mass != 0.0)
-									ThisLevelNode->ParticleList[i] = ptcl->ParticleOrder;
-							}
-							FBTermination2(ThisLevelNode->ParticleList[i]);
-							bin_termination = true;
-						}
-						else {
-							if (groups[ptclCM->GroupOrder].sym_int.particles.getSize() > 2) { // Terminate many-body (> 2) group
-
-								ThisLevelNode->ParticleList[i] = groups[ptclCM->GroupOrder].sym_int.particles[0].ParticleOrder; // CM particle -> 1st group member
-								for (int i=1; i<groups[ptclCM->GroupOrder].sym_int.particles.getSize(); i++) {
-									Particle* ptcl = &particles[groups[ptclCM->GroupOrder].sym_int.particles[i].ParticleOrder]; 
-									ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder); // push_back other group members
-								}
-								/* Eunwoo: This might be needed later!
-								std::vector<Particle*> members = ptcl->GroupInfo->Members;
-								FBTermination(ThisLevelNode->ParticleList[i]);
-								AddNewGroupsToList2(members, particle);
-								members.clear();
-								*/
-								FBTermination(ThisLevelNode->ParticleList[i]);
-								bin_termination = true;
-							}
-							else { // Terminate binary
-
-								ThisLevelNode->ParticleList[i] = groups[ptclCM->GroupOrder].sym_int.particles[0].ParticleOrder; // CM particle -> 1st binary member
-								ThisLevelNode->ParticleList.push_back(groups[ptclCM->GroupOrder].sym_int.particles[1].ParticleOrder); // push_back 2nd binary member
-
-								FBTermination(ThisLevelNode->ParticleList[i]);
-								bin_termination = true;
-							}
-						}
-					}
-				}
-				if (bin_termination)
-					global_variable->NumberOfParticle = NumberOfParticle;
-
-				fprintf(stdout, "Irregular list: ");
-				Particle* ptcl;
-				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
-					ptcl = &particles[ThisLevelNode->ParticleList[i]];
-					fprintf(stdout, "%d ", ptcl->PID);
-				}
-				fprintf(stdout, "\n");
-
-				fprintf(stdout, "Irregular group search\n");
-				fflush(stdout);
-
-				task = 22;
-				completed_tasks = 0;
-				total_tasks = ThisLevelNode->ParticleList.size();
-				//total_tasks = (ThisLevelNode->ParticleList.size()+LoadBalanceParticle-1)/LoadBalanceParticle;
-
-				AdaptiveLoadBalancing = (total_tasks+NumberOfWorker-1)/NumberOfWorker;
-				for (int i=0; i<NumberOfWorker; i++) {
-					if (i*AdaptiveLoadBalancing >= total_tasks) break;
-					//std::cout << "=" << RegularList[0] << std::endl;
-					MPI_Isend(&task, 1, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-					//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
-					size = total_tasks - i*AdaptiveLoadBalancing;
-					size = (size < AdaptiveLoadBalancing) ? size : AdaptiveLoadBalancing;
-
-					MPI_Isend(&ThisLevelNode->ParticleList[i*AdaptiveLoadBalancing], size, MPI_INT,
-							i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				}
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-				for (int i=0; i<NumberOfWorker; i++) {
-					if (i*AdaptiveLoadBalancing >= total_tasks) break;
-					MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				}
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-				int beforeNumberOfParticle = NumberOfParticle;
-				SetBinaries(ThisLevelNode->ParticleList);
-				if (beforeNumberOfParticle != NumberOfParticle) {
-					new_binaries = true;
-					for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
-						Particle* ptcl = &particles[i];
-						ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder);
-						fprintf(stdout, "PID(%d) is pushed back to the ParticleList\n", ptcl->PID);
-						fflush(stdout);
-					}
-				}
-
-				ThisLevelNode->ParticleList.erase(
-					std::remove_if(
-							ThisLevelNode->ParticleList.begin(), 
-							ThisLevelNode->ParticleList.end(),
-							[&particles](int i) { return !particles[i].isActive; }
-					),
-					ThisLevelNode->ParticleList.end()
-				);
-
-#else
-				// Irregular Gravity
-				task = 0;
-				completed_tasks = 0;
-				total_tasks = ThisLevelNode->ParticleList.size();
-
-				std::cout << "TotalTask=" << total_tasks << std::endl;
-
-				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
-				InitialAssignmentOfTasks(ThisLevelNode->ParticleList, next_time, total_tasks, PTCL_TAG);
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-
-				// further assignments
-				remaining_tasks = total_tasks-NumberOfWorker;
-				//std::cout << "further assignments, Remaining tasks=" << remaining_tasks << std::endl;
-				while (completed_tasks < total_tasks) {
-					//std::cout << "in while" << std::endl;
-					// Check which worker is done
-					MPI_Irecv(&ptcl_id_return, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-					// Poll until send completes
-					/*
-					flag=0;
-					while (!flag) {
-						MPI_Test(&request, &flag, &status);
-						// Perform other work while waiting
-					}
-					*/
-					MPI_Wait(&request, &status);
-					completed_rank = status.MPI_SOURCE;
-					//printf("Rank %d: Send operation completed (%d).\n",completed_rank, ptcl_id_return);
-
-					if (remaining_tasks > 0) {
-						if (particles[ptcl_id_return].GroupOrder < 0) {
-							task = 23;
-							//printf("ptcl %d,  ",ptcl_id);
-							MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-							MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-							MPI_Send(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
-							task = 0;
-						} else {
-							ptcl_id = ThisLevelNode->ParticleList[NumberOfWorker + completed_tasks];
-							//printf("ptcl %d,  ",ptcl_id);
-							MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-							MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-							MPI_Send(&next_time, 1, MPI_DOUBLE, completed_rank, TIME_TAG, MPI_COMM_WORLD);
-							remaining_tasks--;
-						}
-					} else {
-						//printf("Rank %d: No more tasks to assign\n", completed_rank);
-					}
-					//updateSkipList(skiplist, ptcl_id_return);
-					completed_tasks++;
-				}
-
+				// Irregular Force
+				work_scheduler.initialize();
+				work_scheduler.doIrregularForce(ThisLevelNode->ParticleList, next_time);
 
 				//ParticleSynchronization();
+
 
 				// if remaining, further sorting
 				/*
@@ -601,68 +390,16 @@ void RootRoutines() {
 					*/
 
 				// Irregular Update
-				//ParticleSynchronization();
-				task = 2;
-				completed_tasks = 0;
-
-				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
-				InitialAssignmentOfTasks(ThisLevelNode->ParticleList, total_tasks, PTCL_TAG);
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
+				work_scheduler.initialize();
+				work_scheduler.doSimpleTask(2, ThisLevelNode->ParticleList);
 
 
-				// further assignments
-				remaining_tasks = total_tasks-NumberOfWorker;
-				while (completed_tasks < total_tasks) {
-					// Check which worker is done
-					MPI_Irecv(&ptcl_id_return, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-					MPI_Wait(&request, &status);
-					completed_rank = status.MPI_SOURCE;
-
-					if (remaining_tasks > 0) {
-						ptcl_id = ThisLevelNode->ParticleList[NumberOfWorker + completed_tasks];
-						//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
-						//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
-						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-						remaining_tasks--;
-					} else {
-						//printf("Rank %d: No more tasks to assign\n", completed_rank);
-					}
-					completed_tasks++;
-				}
-
+#ifdef FEWBODY
 				// Check few-body groups should be broken or not
-				task = 21;
-				completed_tasks = 0;
+				work_scheduler.initialize();
+				work_scheduler.doSimpleTask(21, ThisLevelNode->ParticleList);
 
-				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
-				InitialAssignmentOfTasks(ThisLevelNode->ParticleList, total_tasks, PTCL_TAG);
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-
-				// further assignments
-				remaining_tasks = total_tasks-NumberOfWorker;
-				while (completed_tasks < total_tasks) {
-					// Check which worker is done
-					MPI_Irecv(&ptcl_id_return, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-					MPI_Wait(&request, &status);
-					completed_rank = status.MPI_SOURCE;
-
-					if (remaining_tasks > 0) {
-						ptcl_id = ThisLevelNode->ParticleList[NumberOfWorker + completed_tasks];
-						//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
-						//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
-						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-						remaining_tasks--;
-					} else {
-						//printf("Rank %d: No more tasks to assign\n", completed_rank);
-					}
-					completed_tasks++;
-				}
-
+                // Check fewbody termination
 				int OriginalSize = ThisLevelNode->ParticleList.size();
 				for (int i=0; i<OriginalSize; i++) {
 					Particle* ptclCM = &particles[ThisLevelNode->ParticleList[i]];
@@ -710,36 +447,8 @@ void RootRoutines() {
 					global_variable->NumberOfParticle = NumberOfParticle;
 
 				// Few-body group search
-				task            = 22;
-				completed_tasks = 0;
-				total_tasks = ThisLevelNode->ParticleList.size(); // total_tasks could be changed in the above; added by EW 2025.1.3
-
-				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
-				InitialAssignmentOfTasks(ThisLevelNode->ParticleList, total_tasks, PTCL_TAG);
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-
-				// further assignments
-				remaining_tasks = total_tasks-NumberOfWorker;
-				while (completed_tasks < total_tasks) {
-					// Check which worker is done
-					MPI_Irecv(&ptcl_id_return, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-					MPI_Wait(&request, &status);
-					completed_rank = status.MPI_SOURCE;
-
-					if (remaining_tasks > 0) {
-						ptcl_id = ThisLevelNode->ParticleList[NumberOfWorker + completed_tasks];
-						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-						//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
-						//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
-						remaining_tasks--;
-					} else {
-						//printf("Rank %d: No more tasks to assign\n", completed_rank);
-					}
-					completed_tasks++;
-				}
+				work_scheduler.initialize();
+				work_scheduler.doSimpleTask(22, ThisLevelNode->ParticleList);
 
 				int beforeNumberOfParticle = NumberOfParticle;
 				SetBinaries(ThisLevelNode->ParticleList);
@@ -763,9 +472,8 @@ void RootRoutines() {
 				);
 
 				std::cout << "erase success" << std::endl;
-
-				//ParticleSynchronization();
 #endif
+
 				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++)
 					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
 
@@ -891,18 +599,25 @@ void RootRoutines() {
 			skiplist = nullptr;
 			//exit(SUCCESS);
 
-
-			if (bin_termination || new_binaries) updateNextRegTime(RegularList);
+#ifdef FEWBODY
+			if (bin_termination || new_binaries)
+				updateNextRegTime(RegularList);
 			std::cout << "updateNextRegTime done" << std::endl;
+#endif
 
 #ifdef CUDA
 			{
 				//total_tasks = RegularList.size();
 				next_time = NextRegTimeBlock*time_step;
 
-				fprintf(stdout, "Regular starts\n");
-				fflush(stdout);
-				calculateRegAccelerationOnGPU(RegularList);
+				//fprintf(stdout, "Regular starts\n");
+				calculateRegAccelerationOnGPU(RegularList, work_scheduler);
+
+				// Update Regular
+				work_scheduler.initialize();
+				work_scheduler.doSimpleTask(5, RegularList);
+				//fprintf(stdout, "Regular done\n");
+#ifdef FEWBODY
 
 				fprintf(stdout, "Regular list: ");
 				fflush(stdout);
@@ -916,60 +631,11 @@ void RootRoutines() {
 				fprintf(stdout, "Regular group search\n");
 				fflush(stdout);
 				// Few-body group search
-				task            = 22;
-				completed_tasks = 0;
-				total_tasks = RegularList.size();
-#ifdef NoLoadBalance
-				AdaptiveLoadBalancing = (total_tasks+NumberOfWorker-1)/NumberOfWorker;
-				for (int i=0; i<NumberOfWorker; i++) {
-					if (i*AdaptiveLoadBalancing >= total_tasks) break;
-					//std::cout << "=" << RegularList[0] << std::endl;
-					MPI_Isend(&task, 1, MPI_INT, i+1, TASK_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-					//std::cout << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
-					size = total_tasks - i*AdaptiveLoadBalancing;
-					size = (size < AdaptiveLoadBalancing) ? size : AdaptiveLoadBalancing;
+				work_scheduler.initialize();
+				work_scheduler.doSimpleTask(22, RegularList);
 
-					MPI_Isend(&RegularList[i*AdaptiveLoadBalancing], size, MPI_INT,
-							i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				}
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-				for (int i=0; i<NumberOfWorker; i++) {
-					if (i*AdaptiveLoadBalancing >= total_tasks) break;
-					MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-				}
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-#else
-				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
-				InitialAssignmentOfTasks(RegularList, total_tasks, PTCL_TAG);
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
-
-
-				// further assignments
-				remaining_tasks = total_tasks-NumberOfWorker;
-				while (completed_tasks < total_tasks) {
-					// Check which worker is done
-					MPI_Irecv(&ptcl_id_return, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-					MPI_Wait(&request, &status);
-					completed_rank = status.MPI_SOURCE;
-
-					if (remaining_tasks > 0) {
-						ptcl_id = RegularList[NumberOfWorker + completed_tasks];
-						MPI_Send(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD);
-						MPI_Send(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD);
-						//MPI_Isend(&task,      1, MPI_INT, completed_rank, TASK_TAG, MPI_COMM_WORLD, &request);
-						//MPI_Isend(&ptcl_id,   1, MPI_INT, completed_rank, PTCL_TAG, MPI_COMM_WORLD, &request);
-						remaining_tasks--;
-					} else {
-						//printf("Rank %d: No more tasks to assign\n", completed_rank);
-					}
-					completed_tasks++;
-				}
-#endif
 				SetBinaries(RegularList);
+#endif
 			}
 			/*
 				{
@@ -1204,8 +870,8 @@ void RootRoutines() {
 			if (global_time >= 1) {
 				task=-100;
 				InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
-				MPI_Waitall(NumberOfCommunication, requests, statuses);
-				NumberOfCommunication = 0;
+				//MPI_Waitall(NumberOfCommunication, requests, statuses);
+				//NumberOfCommunication = 0;
 				std::cout << EnzoTimeStep << std::endl;
 				std::cout << "Simulation Done!" << std::endl;
 				return;

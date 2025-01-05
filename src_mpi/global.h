@@ -2,13 +2,11 @@
 #define GLOBAL_H
 #include "def.h"
 #include "particle.h"
-#include "WorkScheduler.h"
 #include "GlobalVariable.h"
 #include "./FewBody/Group.h"
 #include "performance.h"
 #include <mpi.h>
 
-extern Worker *workers;
 
 extern Particle *particles;
 extern Particle *particles_original;
@@ -23,8 +21,6 @@ extern int NumberOfProcessor;
 extern int NumberOfWorker;
 const int ROOT = 0;
 extern int NumberOfCommunication;
-extern MPI_Request requests[MaxNumberOfCommunication];
-extern MPI_Status statuses[MaxNumberOfCommunication];
 extern GlobalVariable *global_variable;
 extern GlobalVariable *global_variable_original;
 
@@ -76,6 +72,7 @@ extern double outputTimeStep;
 
 extern FILE* binout;
 extern FILE* mergerout;
+
 
 #ifdef PerformanceTrace
 // Performance trace

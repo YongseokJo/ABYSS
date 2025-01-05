@@ -1,4 +1,7 @@
-#pragma once
+#ifndef TIDAL_TENSOR
+#define TIDAL_TENSOR
+#ifdef FEWBODY
+
 #include <iostream>
 #include <iomanip>
 #include "../def.h"
@@ -505,3 +508,5 @@ public:
              <<std::endl;
     }
 };
+#endif
+#endif

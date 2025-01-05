@@ -1,3 +1,4 @@
+#ifdef FEWBODY
 #include "../global.h"
 #include "ar_interaction.hpp"
 
@@ -437,3 +438,4 @@ bool Group::CheckBreak() {
     return false;
 
 }
+#endif

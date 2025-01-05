@@ -1,5 +1,6 @@
-#pragma once
-
+#ifndef GR_ENERGY_LOST
+#define GR_ENERGY_LOST
+#ifdef FEWBODY
 #include <cmath>
 
 #include "Common/Float.h"
@@ -250,3 +251,5 @@ inline void GR_energy_loss_iter(AR::InterruptBinary<Particle>& _bin_interrupt, A
         }
     }
 }
+#endif
+#endif

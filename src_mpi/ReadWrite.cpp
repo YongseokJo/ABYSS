@@ -203,32 +203,41 @@ int writeParticle(double current_time, int outputNum) {
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
 			ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
-			if (ptcl->GroupOrder >= 0)  { // Eunwoo edited
-				for (int dim=0; dim<Dim; dim++) {
+#ifdef FEWBODY
+			if (ptcl->GroupOrder >= 0)
+			{ // Eunwoo edited
+				for (int dim = 0; dim < Dim; dim++)
+				{
 					groups[ptcl->GroupOrder].sym_int.particles.cm.Position[dim] = ptcl->Position[dim];
 					groups[ptcl->GroupOrder].sym_int.particles.cm.Velocity[dim] = ptcl->Velocity[dim];
 				}
 				groups[ptcl->GroupOrder].sym_int.particles.shiftToOriginFrame();
 				groups[ptcl->GroupOrder].sym_int.particles.template writeBackMemberAll<Particle>();
-				for (int j=0; j < groups[ptcl->GroupOrder].sym_int.particles.getSize(); j++) {
-					Particle* members = &groups[ptcl->GroupOrder].sym_int.particles[j];
+				for (int j = 0; j < groups[ptcl->GroupOrder].sym_int.particles.getSize(); j++)
+				{
+					Particle *members = &groups[ptcl->GroupOrder].sym_int.particles[j];
 					write_out_group(outputFile, ptcl, members, pos, vel);
 				}
 				groups[ptcl->GroupOrder].sym_int.particles.shiftToCenterOfMassFrame();
 			}
-			else {
+			else
+			{
 				write_out(outputFile, ptcl, pos, vel);
-				//write_neighbor(output_nn, ptcl);
+				// write_neighbor(output_nn, ptcl);
 			}
-    }
+#else
+			write_out(outputFile, ptcl, pos, vel);
+// write_neighbor(output_nn, ptcl);
+#endif
+		}
 
-    // Close the file
-    outputFile.close();
-    //output_nn.close();
+		// Close the file
+		outputFile.close();
+		// output_nn.close();
 
-    std::cout << "Data written to output.txt successfully!" << std::endl;
+		std::cout << "Data written to output.txt successfully!" << std::endl;
 
-    return 0;
+		return 0;
 
 }
 

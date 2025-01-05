@@ -1,3 +1,6 @@
+#ifndef PERTURBER
+#define PERTURBER
+#ifdef FEWBODY
 #pragma once
 #include <iostream>
 
@@ -40,3 +43,5 @@ public:
 
 };
 
+#endif
+#endif

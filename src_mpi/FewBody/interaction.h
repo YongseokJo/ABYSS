@@ -1,3 +1,7 @@
+#ifndef INTERACTION
+#define INTERACTION
+#ifdef FEWBODY
+
 #pragma once
 
 #define ASSERT(x) assert(x)
@@ -436,3 +440,6 @@ public:
     }    
 };
 
+
+#endif
+#endif

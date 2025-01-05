@@ -80,7 +80,6 @@ int main(int argc, char *argv[]) {
 
 	if (MyRank == ROOT) {
 		global_variable->NumberOfParticle = NumberOfParticle;
-		global_variable->NumberOfSingle   = NumberOfSingle;
 		global_variable->NewPID           = NewPID;
 
 		RootRoutines();

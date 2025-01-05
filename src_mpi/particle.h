@@ -200,12 +200,12 @@ struct Particle {
 		this->ParticleType = NormalStar+SingleParticle;
 #else
 		if (this->Mass*1e9 > 8) {
-			this->ParticleType = Blackhole+SingleParticle;
+			this->ParticleType = Blackhole+SingleStar;
 			this->radius = 6*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // innermost stable circular orbit around a Schwartzshild BH = 3 * R_sch
 			// initialBHspin(this);
 		}
 		else {
-			this->ParticleType = NormalStar+SingleParticle;
+			this->ParticleType = NormalStar+SingleStar;
 			this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // stellar radius in code unit
 		}
 #endif
@@ -215,7 +215,7 @@ struct Particle {
     void clear() {
         PID = -1;
         // ParticleType = 0;
-		ParticleType = NormalStar+SingleParticle;
+		ParticleType = NormalStar+SingleStar;
         for (int i = 0; i < 3; ++i) {
             Position[i] = 0.0;
             Velocity[i] = 0.0;
@@ -322,7 +322,7 @@ struct Particle {
 	void calculateTimeStepIrr2();
 	void calculateTimeStepReg();
 
-	void updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeighbor, double *new_a, double *new_adot, int index);
+	void updateRegularParticleCuda(int *NewNeighbors, int NewNumberOfNeighbor, double *new_a, double *new_adot);
 
 	// SDAR
 	void checkNewGroup();
