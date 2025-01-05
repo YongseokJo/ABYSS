@@ -1,3 +1,4 @@
+#ifdef FEWBODY
 #include <iostream>
 #include "../global.h"
 #include "../def.h"
@@ -411,3 +412,4 @@ bool AddNewGroupsToList2(std::vector<Particle*> &members, std::vector<Particle*>
 	return true;
 }
 */
+#endif

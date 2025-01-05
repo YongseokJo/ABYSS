@@ -1,3 +1,4 @@
+#ifdef FEWBODY
 #include "stdio.h"
 #include <vector>
 #include <iostream>
@@ -335,3 +336,4 @@ void FBTermination2(int Order){
 	fprintf(binout,"--------------------------------------\n");
 	fflush(binout);
 }
+#endif

@@ -5,7 +5,7 @@
 #include <mpi.h>
 
 
-Worker *workers;
+
 Particle *particles_original;
 Particle *particles;
 
@@ -17,8 +17,6 @@ int MyRank;
 int NumberOfProcessor;
 int NumberOfWorker;
 int NumberOfCommunication;
-MPI_Request requests[MaxNumberOfCommunication];
-MPI_Status statuses[MaxNumberOfCommunication];
 
 
 int LoadBalanceParticle;

@@ -70,7 +70,8 @@ void initializeMPI(int argc, char *argv[]) {
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG) {
 	for (int i=0; i<NumberOfWorker; i++) {
 		if (i >= NumTask) break;
-		MPI_Isend(&data[i],   1, MPI_INT,    i+1, TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+		//MPI_Isend(&data[i],   1, MPI_INT,    i+1, TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+		MPI_Send(&data[i],   1, MPI_INT,    i+1, TAG, MPI_COMM_WORLD);
 	}
 }
 
@@ -78,8 +79,11 @@ void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG) {
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG) {
 	for (int i=0; i<NumberOfWorker; i++) {
 		if (i >= NumTask) break;
-		MPI_Isend(&data[i],   1, MPI_INT,    i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
-		MPI_Isend(&next_time, 1, MPI_DOUBLE, i+1, TIME_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+		//MPI_Isend(&data[i],   1, MPI_INT,    i+1, PTCL_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+		//MPI_Isend(&next_time, 1, MPI_DOUBLE, i+1, TIME_TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+
+		MPI_Send(&data[i],   1, MPI_INT,    i+1, PTCL_TAG, MPI_COMM_WORLD);
+		MPI_Send(&next_time, 1, MPI_DOUBLE, i+1, TIME_TAG, MPI_COMM_WORLD);
 	}
 }
 
@@ -87,7 +91,8 @@ void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumT
 void InitialAssignmentOfTasks(int* data, int NumTask, int TAG) {
 	for (int i=0; i<NumberOfWorker; i++) {
 		if (i >= NumTask) break;
-		MPI_Isend(&data[i], 1, MPI_INT, i+1, TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+		//MPI_Isend(&data[i], 1, MPI_INT, i+1, TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+		MPI_Send(&data[i], 1, MPI_INT, i+1, TAG, MPI_COMM_WORLD);
 	}
 }
 
@@ -96,7 +101,8 @@ void InitialAssignmentOfTasks(int data, int NumTask, int TAG) {
 		//std::cerr << "InitialAssignmentOfTasks out of" << NumTask<< ": " << i << std::endl;
 		if (i >= NumTask)
 			break;
-		MPI_Isend(&data, 1, MPI_INT, i+1, TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+		//MPI_Isend(&data, 1, MPI_INT, i+1, TAG, MPI_COMM_WORLD, &requests[NumberOfCommunication++]);
+		MPI_Send(&data, 1, MPI_INT, i+1, TAG, MPI_COMM_WORLD);
 	}
 	//fprintf(stderr, "Number of tasks assigned = %d\n", i);
 	//fflush(stderr);

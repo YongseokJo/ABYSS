@@ -1,5 +1,6 @@
 #ifndef AR_INTERACTION_H
 #define AR_INTERACTION_H
+#ifdef FEWBODY
 //#pragma once
 #include <cmath>
 #include <random>
@@ -678,26 +679,26 @@ public:
 
         Float radius = 0.0;
 #ifdef SEVN
-        if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
+        if (p1->ParticleType == (Blackhole+SingleStar) && p2->ParticleType == (Blackhole+SingleStar)) {
             radius = (p1->radius > p2->radius) ? 3*p1->radius : 3*p2->radius; // r_ISCO == 3 * Schwartzschild raiuds
         }
-        else if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+        else if (p1->ParticleType == (Blackhole+SingleStar) && p2->ParticleType == (NormalStar+SingleStar)) {
             radius = 1.3*pow((p1->Mass + p2->Mass)/p2->Mass, 1./3)*p2->radius; // TDE radius
         }
-        else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
+        else if (p1->ParticleType == (NormalStar+SingleStar) && p2->ParticleType == (Blackhole+SingleStar)) {
             radius = 1.3*pow((p1->Mass + p2->Mass)/p1->Mass, 1./3)*p1->radius; // TDE radius
         }
-        else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+        else if (p1->ParticleType == (NormalStar+SingleStar) && p2->ParticleType == (NormalStar+SingleStar)) {
             radius = p1->radius + p2->radius; // Sum of two stellar radius
         }
 #else
-        if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
+        if (p1->ParticleType == (Blackhole+SingleStar) && p2->ParticleType == (Blackhole+SingleStar)) {
             radius = (p1->radius > p2->radius) ? p1->radius : p2->radius; // r_ISCO == 3 * Schwartzschild raiuds
         }
-        else if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+        else if (p1->ParticleType == (Blackhole+SingleStar) && p2->ParticleType == (NormalStar+SingleStar)) {
             radius = 1.3*pow((p1->Mass + p2->Mass)/p2->Mass, 1./3)*p2->radius; // TDE radius
         }
-        else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+        else if (p1->ParticleType == (NormalStar+SingleStar) && p2->ParticleType == (NormalStar+SingleStar)) {
             radius = p1->radius + p2->radius; // Sum of two stellar radius
         }
 #endif
@@ -715,7 +716,7 @@ public:
 
         Float radius = mergerRadius(p1, p2);
 
-        if (p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle)) {
+        if (p1->ParticleType == (Blackhole+SingleStar) && p2->ParticleType == (Blackhole+SingleStar)) {
             // radius = (p1->radius > p2->radius) ? p1->radius : p2->radius; // r_ISCO == 3 * Schwartzschild raiuds
             // fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
             // fprintf(mergerout, "peri: %e pc\n", _bin.semi*(1 - _bin.ecc)*position_unit);
@@ -757,11 +758,11 @@ public:
             fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
             fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
         }
-        else if ((p1->ParticleType == (Blackhole+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) ||
-                (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (Blackhole+SingleParticle))) {
+        else if ((p1->ParticleType == (Blackhole+SingleStar) && p2->ParticleType == (NormalStar+SingleStar)) ||
+                (p1->ParticleType == (NormalStar+SingleStar) && p2->ParticleType == (Blackhole+SingleStar))) {
             // radius = 1.3*pow((p1->Mass + p2->Mass)/p2->Mass, 1./3)*p2->radius; // TDE radius
 
-            if (p2->ParticleType == (Blackhole+SingleParticle)) 
+            if (p2->ParticleType == (Blackhole+SingleStar)) 
                 std::swap(p1, p2); // p1 should be BH
 
             // fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
@@ -796,7 +797,7 @@ public:
             fprintf(mergerout, "Mass (Msol) - %e, \n", p1->Mass*mass_unit);
             fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
         }
-        else if (p1->ParticleType == (NormalStar+SingleParticle) && p2->ParticleType == (NormalStar+SingleParticle)) {
+        else if (p1->ParticleType == (NormalStar+SingleStar) && p2->ParticleType == (NormalStar+SingleStar)) {
             // radius = p1->radius + p2->radius; // Sum of two stellar radius
             // fprintf(mergerout, "Separation: %e pc\n", dist(p1->Position, p2->Position)*position_unit);
             // fprintf(mergerout, "peri: %e pc\n", _bin.semi*(1 - _bin.ecc)*position_unit);
@@ -1208,4 +1209,5 @@ public:
     }
     
 };
+#endif
 #endif

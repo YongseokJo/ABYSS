@@ -1,3 +1,4 @@
+#ifdef FEWBODY
 #include <vector>
 #include <iostream>
 #include <cmath>
@@ -946,3 +947,4 @@ void NewFBInitialization3(Group* group) {
 	fprintf(binout, "---------------------END-OF-NEW-GROUP---------------------\n\n");
 	fflush(binout);
 }
+#endif

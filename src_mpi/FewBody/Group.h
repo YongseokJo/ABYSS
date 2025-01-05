@@ -1,5 +1,6 @@
 #ifndef GROUP_H
 #define GROUP_H
+#ifdef FEWBODY
 
 #include <vector>
 #include <iostream>
@@ -125,4 +126,5 @@ struct Group
 	void initialIntegrator(int NumMembers);
 
 };
+#endif
 #endif

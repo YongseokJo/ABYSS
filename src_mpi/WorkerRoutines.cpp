@@ -23,13 +23,12 @@ void WorkerRoutines() {
 	MPI_Status status;
 	MPI_Request request;
 	int ptcl_id;
-	std::vector<int> ptcl_id_vector;
 	double next_time;
-	int *NewNumberOfNeighbor;
-	int *NewNeighbors;
+	int NewNumberOfNeighbor;
+	int NewNeighbors[NumNeighborMax];
 	int size=0;
-	double *new_a;
-	double *new_adot;
+	double new_a[Dim];
+	double new_adot[Dim];
 	Particle *ptcl;
 	std::chrono::high_resolution_clock::time_point start_point;
 	std::chrono::high_resolution_clock::time_point end_point;
@@ -43,40 +42,22 @@ void WorkerRoutines() {
 
 		switch (task) {
 			case 0: // Irregular Acceleration
-#ifdef NoLoadBalance
-				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Get_count(&status, MPI_INT, &size);
-				ptcl_id_vector.resize(size);
-				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Recv(&next_time,      1   , MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
-
-				for (int i=0; i<size; i++) {
-					ptcl = &particles[ptcl_id_vector[i]];
-
-#ifdef PerformanceTrace
-					start_point = std::chrono::high_resolution_clock::now();
-					ptcl->computeAccelerationIrr();
-					end_point = std::chrono::high_resolution_clock::now();
-					performance.IrregularForce +=
-						std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
-#else
-					ptcl->computeAccelerationIrr();
-#endif
-
-					ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
-					ptcl->calculateTimeStepIrr();
-					ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
-				}
-#else
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
-
+#ifdef PerformanceTrace
 				ptcl = &particles[ptcl_id];
+				start_point = std::chrono::high_resolution_clock::now();
 				ptcl->computeAccelerationIrr();
+				end_point = std::chrono::high_resolution_clock::now();
+				performance.IrregularForce +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
+#else
+				ptcl->computeAccelerationIrr();
+#endif
+
 				ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 				ptcl->calculateTimeStepIrr();
 				ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
-#endif
 				//std::cout << "IrrCal done " << MyRank << std::endl;
 				break;
 
@@ -92,45 +73,21 @@ void WorkerRoutines() {
 
 			case 2: // Irregular Update Particle
 				//std::cout << "IrrUp Processor " << MyRank << std::endl;
-#ifdef NoLoadBalance
-				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Get_count(&status, MPI_INT, &size);
-				ptcl_id_vector.resize(size);
-				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-
-				for (int i=0; i<size; i++) {
-					ptcl = &particles[ptcl_id_vector[i]];
-
-					if (ptcl->GroupOrder >= 0) {
-						groups[ptcl->GroupOrder].sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
-						for (int i=0; i<ptcl->NumberOfNeighbor; i++)
-							groups[ptcl->GroupOrder].sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
-						bool int_normal = groups[ptcl->GroupOrder].ARIntegration(ptcl->NewCurrentBlockIrr*time_step);
-						if (!int_normal) continue;
-					}
-					if (ptcl->NumberOfNeighbor != 0)
-						ptcl->updateParticle();
-					ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
-					ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
-					//std::cout << "pid=" << ptcl_id << ", CurrentBlockIrr=" << particles[ptcl_id].CurrentBlockIrr << std::endl;
-				}
-#else
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-
 				ptcl = &particles[ptcl_id];
-
-				if (ptcl->GroupOrder >= 0) {
+#ifdef FEWBODY
+				if (ptcl->GroupInfo >= 0) {
 					groups[ptcl->GroupOrder].sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
 					for (int i=0; i<ptcl->NumberOfNeighbor; i++)
 						groups[ptcl->GroupOrder].sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
 					bool int_normal = groups[ptcl->GroupOrder].ARIntegration(ptcl->NewCurrentBlockIrr*time_step);
 					if (!int_normal) break;
 				}
-				if (ptcl->NumberOfNeighbor != 0) // IAR modified
+#endif
+				if (ptcl->NumberOfNeighbor != 0) // IAR modified, (Query) what do you mean? 2025.01.04
 					ptcl->updateParticle();
 				ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
 				ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
-#endif
 				//std::cout << "pid=" << ptcl_id << ", CurrentBlockIrr=" << particles[ptcl_id].CurrentBlockIrr << std::endl;
 				//std::cout << "IrrUp end " << MyRank << std::endl;
 				break;
@@ -158,64 +115,41 @@ void WorkerRoutines() {
 					ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
 				}
 				ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
-																																				 //std::cout << "RegUp end " << MyRank << std::endl;
 				break;
 
 			case 4: // Update Regular Particle CUDA
 				//MPI_Recv(&size               , 1                  , MPI_INT, ROOT, ANY_TAG, MPI_COMM_WORLD, &status);
 				// Probe to find the size of the incoming message
-				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Get_count(&status, MPI_INT, &size);
-				ptcl_id_vector.resize(size);
-				MPI_Recv(ptcl_id_vector.data(), size                    , MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-				NewNeighbors        = new int[size*NumNeighborMax];
-				NewNumberOfNeighbor = new int[size];
-				new_a               = new double[size*3];
-				new_adot            = new double[size*3];
-				MPI_Recv(NewNumberOfNeighbor , size                    , MPI_INT, ROOT, 10, MPI_COMM_WORLD, &status);
-				MPI_Recv(NewNeighbors         , size*NumNeighborMax     , MPI_INT, ROOT, 11, MPI_COMM_WORLD, &status);
-				MPI_Recv(new_a                , size*3                  , MPI_DOUBLE, ROOT, 12, MPI_COMM_WORLD, &status);
-				MPI_Recv(new_adot             , size*3                  , MPI_DOUBLE, ROOT, 13, MPI_COMM_WORLD, &status);
-				//MPI_Waitall(NumberOfCommunication, requests, statuses);
-				//NumberOfCommunication = 0;
-				for (int i=0; i<size; i++) {
-					ptcl = &particles[ptcl_id_vector[i]];
-					ptcl->updateRegularParticleCuda(NewNeighbors, NewNumberOfNeighbor[i], new_a, new_adot, i);
-				}
-				delete NewNeighbors;
-				delete NewNumberOfNeighbor;
-				delete new_a;
-				delete new_adot;
+				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				MPI_Recv(&NewNumberOfNeighbor, 1, MPI_INT, ROOT, 10, MPI_COMM_WORLD, &status);
+				MPI_Recv(NewNeighbors, NewNumberOfNeighbor, MPI_INT, ROOT, 11, MPI_COMM_WORLD, &status);
+				MPI_Recv(new_a, 3, MPI_DOUBLE, ROOT, 12, MPI_COMM_WORLD, &status);
+				MPI_Recv(new_adot, 3, MPI_DOUBLE, ROOT, 13, MPI_COMM_WORLD, &status);
+				particles[ptcl_id].updateRegularParticleCuda(NewNeighbors, NewNumberOfNeighbor, new_a, new_adot);
 				break;
 
 			case 5: // Update Regular Particle CUDA II
-				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Get_count(&status, MPI_INT, &size);
-				ptcl_id_vector.resize(size);
-				MPI_Recv(ptcl_id_vector.data(), size                    , MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				ptcl = &particles[ptcl_id];
 
+				for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++)
+					ptcl->Neighbors[j] = ptcl->NewNeighbors[j];
+				ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
 
-				for (int i=0; i<size; i++) {
-					ptcl = &particles[ptcl_id_vector[i]];
-
-					for (int j=0; j<ptcl->NewNumberOfNeighbor; j++)
-						ptcl->Neighbors[j] = ptcl->NewNeighbors[j];
-					ptcl->NumberOfNeighbor = ptcl->NewNumberOfNeighbor;
-
-					ptcl->updateParticle();
-					ptcl->CurrentBlockReg = ptcl->CurrentBlockReg+ptcl->TimeBlockReg;
-					ptcl->CurrentTimeReg  = ptcl->CurrentBlockReg*time_step;
-					ptcl->calculateTimeStepReg();
-					ptcl->calculateTimeStepIrr();
-					/* // IAR original
-					if (ptcl->NumberOfNeighbor == 0) {
-						ptcl->CurrentBlockIrr = ptcl->CurrentBlockReg;
-						ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
-					}
-					*/ // IAR original
-					ptcl->updateRadius();
-					ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of ptcl particle
+				ptcl->updateParticle();
+				ptcl->CurrentBlockReg = ptcl->CurrentBlockReg + ptcl->TimeBlockReg;
+				ptcl->CurrentTimeReg = ptcl->CurrentBlockReg * time_step;
+				ptcl->calculateTimeStepReg();
+				ptcl->calculateTimeStepIrr();
+				/* // IAR original
+				if (ptcl->NumberOfNeighbor == 0) {
+					ptcl->CurrentBlockIrr = ptcl->CurrentBlockReg;
+					ptcl->CurrentTimeIrr = ptcl->CurrentBlockReg*time_step;
 				}
+				*/
+				// IAR original
+				ptcl->updateRadius();
+				ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of ptcl particle
 				break;
 
 			case 7: // Initialize Acceleration(01)
@@ -255,13 +189,13 @@ void WorkerRoutines() {
 				broadcastFromRoot(time_block);
 				broadcastFromRoot(block_max);
 				broadcastFromRoot(time_step);
-				MPI_Win_sync(win);  // Synchronize memory
-				MPI_Barrier(shared_comm);
+				//MPI_Win_sync(win);  // Synchronize memory
+				//MPI_Barrier(shared_comm);
 				//MPI_Win_fence(0, win);
-				//fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
-				//fflush(stderr);
+				fprintf(stderr, "(%d) nbody+:time_block = %d, EnzoTimeStep=%e\n", MyRank, time_block, EnzoTimeStep);
+				fflush(stderr);
 				break;
-
+#ifdef FEWBOY
 			case 20: // Primordial binary search
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl_id = ptcl_id*LoadBalanceParticle;
@@ -388,7 +322,7 @@ void WorkerRoutines() {
 				deleteGroup(ptcl);
 #endif
 				break;
-
+#endif // FewBody
 
 			case 100: // Synchronize
 				MPI_Win_sync(win);  // Synchronize memory

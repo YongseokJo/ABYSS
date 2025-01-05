@@ -390,7 +390,7 @@ void Particle::computeAccelerationReg() {
 
 
 
-void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNeighborGPU, double *new_a, double *new_adot, int index) {
+void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNeighborGPU, double *new_a, double *new_adot) {
 
 	/*
 	std::cerr <<  "in here!" << std::endl;
@@ -433,7 +433,7 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 	for (int i=0; i<size; i++) {
 		if (i < NewNumberOfNeighborGPU) {
-			hashTableNew.insert({NewNeighborsGPU[NumNeighborMax*index+i], i});
+			hashTableNew.insert({NewNeighborsGPU[i], i});
 		}
 		if (i < this->NumberOfNeighbor) {
 			hashTableOld.insert({this->Neighbors[i], i});
@@ -485,7 +485,7 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 
 		if ( i < NewNumberOfNeighborGPU ) {
-			ptcl = &particles[NewNeighborsGPU[index*NumNeighborMax+i]];
+			ptcl = &particles[NewNeighborsGPU[i]];
 
 			if (ptcl->NumberOfNeighbor == 0)
 				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
@@ -509,7 +509,7 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 			}
 
 			// neighbor in new but not in old
-			if ( hashTableOld.find(NewNeighborsGPU[index*NumNeighborMax+i]) == hashTableOld.end() ) {
+			if ( hashTableOld.find(NewNeighborsGPU[i]) == hashTableOld.end() ) {
 				//fprintf(stderr, "in new, not in old = %d\n",this->Neighbors[i]);
 				//std::cerr <<  "in new, not in old =" <<  NewNeighbors[i] << std::endl;
 				for (int dim=0; dim<Dim; dim++){
@@ -546,8 +546,8 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 	//fprintf(stdout, "PID=%d\n", ptcl->PID);
 	for (int dim=0; dim<Dim; dim++) {
-		da_dt2  = (this->a_reg[dim][0] - new_a[3*index+dim]   - a_tmp[dim]    ) / dt2;
-		adot_dt = (this->a_reg[dim][1] + new_adot[3*index+dim] + adot_tmp[dim]) / dt;
+		da_dt2  = (this->a_reg[dim][0] - new_a[dim]   - a_tmp[dim]    ) / dt2;
+		adot_dt = (this->a_reg[dim][1] + new_adot[dim] + adot_tmp[dim]) / dt;
 
 
 		a2 =  -6*da_dt2 - 2*adot_dt - 2*this->a_reg[dim][1]/dt;
@@ -581,13 +581,13 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 	fflush(stdout);
 
 	for (int i=0; i<NewNumberOfNeighborGPU; i++)
-		this->NewNeighbors[i] = NewNeighborsGPU[index*NumNeighborMax+i];
+		this->NewNeighbors[i] = NewNeighborsGPU[i];
 	this->NewNumberOfNeighbor = NewNumberOfNeighborGPU;
 
 
 	for (int dim=0; dim<Dim; dim++) {
-		this->a_reg[dim][0] = new_a[3*index+dim];
-		this->a_reg[dim][1] = new_adot[3*index+dim];
+		this->a_reg[dim][0] = new_a[dim];
+		this->a_reg[dim][1] = new_adot[dim];
 		this->a_tot[dim][0] = this->a_reg[dim][0] + this->a_irr[dim][0];
 		this->a_tot[dim][1] = this->a_reg[dim][1] + this->a_irr[dim][1];
 		if (this->NewNumberOfNeighbor == 0) {
