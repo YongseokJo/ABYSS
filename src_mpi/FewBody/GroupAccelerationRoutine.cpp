@@ -28,7 +28,7 @@ void formPrimordialBinaries(int& beforeNumberOfParticle) {
 			for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++) {
 				NewCM->NewNeighbors[j] = ptcl->NewNeighbors[j];
 			}
-			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleOrder;
+			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 			NewCM->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor + 1;
 
 			NumberOfParticle++;
@@ -47,7 +47,7 @@ void formPrimordialBinaries(int& beforeNumberOfParticle) {
 	global_variable->NewPID = NewPID;
 }
 
-void formBinaries(std::vector<int>& ParticleList) {
+void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::map<int,int>& existing, std::map<int,int>& terminated) {
 
 	Particle* ptcl;
 	Particle* NewCM;
@@ -64,7 +64,7 @@ void formBinaries(std::vector<int>& ParticleList) {
 				fprintf(stdout, "GAR. PID: %d\n", particles[ptcl->NewNeighbors[j]].PID);
 			}
 			fflush(stdout);
-			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleOrder;
+			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 			NewCM->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor + 1;
 
 			NumberOfParticle++;
@@ -73,16 +73,43 @@ void formBinaries(std::vector<int>& ParticleList) {
 
 	if (global_variable->NumberOfParticle == NumberOfParticle) return;
 
-	int beforeNumberOfParticle = global_variable->NumberOfParticle;
-
 	mergeGroupCandidates();	// Merge group candidates
-					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
-	global_variable->NumberOfParticle = NumberOfParticle;
+					// ex) A & B form a group and B & C form a group --> Merge so that A & B & C become one group!
 
-	for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
-		// NewFBInitialization(i); // This should be parallelized by EW 2025.1.4
+	int afterNumberOfParticle = NumberOfParticle;
+
+	for (int i = global_variable->NumberOfParticle; i < NumberOfParticle; i++) {
+		if (terminated.empty()) {
+			existing.insert({i, existingCMPtcl_Worker_Map.size() % NumberOfWorker + 1});
+			newCMptcls.push_back(i);
+		}
+		else {
+			afterNumberOfParticle--;
+
+			Particle* ptcl = &particles[i];
+			auto it = terminated.begin();
+			&particles[it->first]->copyNewNeighbor(ptcl);
+
+			existing.insert({it->first, it->second});
+			terminated.erase(it);
+			newCMptcls.push_back(it->first);
+		}
+	}
+
+	global_variable->NumberOfParticle = afterNumberOfParticle;
+
+	for (int i; newCMptcls) {
 		deleteNeighbors(i);
 	}
+	ParticleList.erase(
+		std::remove_if(
+				ParticleList.begin(), 
+				ParticleList.end(),
+				[](int i) { return !particles[i].isActive; }
+		),
+		ParticleList.end()
+	);
+	ParticleList.insert(ParticleList.end(), newCMptcls.begin(), newCMptcls.end())
 	global_variable->NewPID = NewPID;
 }
 
@@ -144,7 +171,7 @@ void deleteNeighbors(int newOrder) {
 
 	std::cout << "New particle index is" << newOrder << std::endl;
 	ptclCM = &particles[newOrder];
-	ptclCM->ParticleOrder = newOrder;
+	ptclCM->ParticleIndex = newOrder;
 	ptclCM->PID = NewPID;
 	NewPID++;
 	ptclCM->isActive = true;
@@ -170,7 +197,7 @@ void deleteNeighbors(int newOrder) {
 
 		if (newEnd != ptcl->Neighbors + ptcl->NumberOfNeighbor) {
 			ptcl->NumberOfNeighbor = newEnd - ptcl->Neighbors;
-			ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->ParticleOrder;
+			ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->ParticleIndex;
 			ptcl->NumberOfNeighbor++;
 		}
 	}
@@ -313,38 +340,6 @@ void makePrimordialGroup(Particle* ptclCM) {
 	fprintf(binout, "------------------END-OF-NEW-PRIMORDIAL-BINARIES------------------\n\n");
 	fflush(binout);
 }
-
-void deleteGroup(Particle* ptclCM) {
-
-	Group* ptclGroup = ptclCM->GroupInfo;
-
-	ptclCM->NewNumberOfNeighbor = ptclGroup->sym_int.particles.getSize();
-
-	assert(!ptclGroup->sym_int.particles.isOriginFrame); // for debugging by EW 2025.1.4
-
-	for (int i=0; i < ptclGroup->sym_int.particles.getSize(); i++) {
-		Particle* members = &ptclGroup->sym_int.particles[i];
-		ptclCM->NewNeighbors[i] = members->ParticleOrder;
-
-		for (int dim=0; dim<Dim; dim++) {
-			&particles[members->ParticleOrder]->Position[dim] = ptclCM->Position[dim] + members->Position[dim];
-			&particles[members->ParticleOrder]->Velocity[dim] = ptclCM->Velocity[dim] + members->Velocity[dim];
-		}
-		&particles[members->ParticleOrder]->Mass = members->Mass;
-	}
-
-/* // original version; this might take so much time by EW 2025.1.4
-	for (int dim=0; dim<Dim; dim++) {
-		ptclGroup->sym_int.particles.cm.Position[dim] = ptclCM->Position[dim];
-		ptclGroup->sym_int.particles.cm.Velocity[dim] = ptclCM->Velocity[dim];
-	}
-	ptclGroup->sym_int.particles.shiftToOriginFrame();
-	group2->sym_int.particles.template writeBackMemberAll<Particle>();
-*/
-
-	delete ptclGroup;
-}
-
 
 /*
 bool AddNewGroupsToList(std::vector<Particle*> &particle) {

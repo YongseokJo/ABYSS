@@ -76,7 +76,7 @@ void CalculateAcceleration01(Particle* ptcl1) {
 				ptcl1->a_irr[dim][0] += m_r3*x[dim];
 				ptcl1->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 			}
-			ptcl1->Neighbors[ptcl1->NumberOfNeighbor]=ptcl2->ParticleOrder; // Eunwoo: PID -> ParticleOrder
+			ptcl1->Neighbors[ptcl1->NumberOfNeighbor]=ptcl2->ParticleIndex; // Eunwoo: PID -> ParticleIndex
 			ptcl1->NumberOfNeighbor++;
 			//fprintf(stdout, "pid=%d, nn=%d\n", ptcl1->PID, ptcl1->NumberOfNeighbor);
 	Particle *ptcl2;

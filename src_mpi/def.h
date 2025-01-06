@@ -20,6 +20,7 @@
 #define FixNumNeighbor 500
 //#define NumNeighborMax 100
 #define NumNeighborMax 5000
+#define ACRadius 0.11
 
 
 // SDAR

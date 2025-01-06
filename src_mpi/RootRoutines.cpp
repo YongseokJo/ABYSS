@@ -27,6 +27,8 @@ void FBTermination2(int Order);
 void SetBinaries(std::vector<int>& ParticleList);
 
 void formPrimordialBinaries(int& beforeNumberOfParticle);
+void insertNeighbors(int Order);
+void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::map<int, int>& existing, std::map<int, int>& terminated);
 
 Worker* workers;
 
@@ -47,6 +49,7 @@ void RootRoutines() {
 
 	std::map<int, int> existingCMPtcl_Worker_Map; // by EW 2025.1.4
 	std::map<int, int> terminatedCMPtcl_Worker_Map; // by EW 2025.1.4
+	std::vector<int> newCMptcls; // by EW 2025.1.6
 	
 
 	std::vector<int> RegularList;
@@ -117,22 +120,14 @@ void RootRoutines() {
 		if (beforeNumberOfParticle != NumberOfParticle) {
 			Particle* ptcl;
 			for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
-				// i is ParticleOrder
+				// i is ParticleIndex
 				ptcl = &particles[i];
-				existingCMPtcl_Worker_Map.insert({ptcl->ParticleOrder, existingCMPtcl_Worker_Map.size() % NumberOfWorker + 1});
+				existingCMPtcl_Worker_Map.insert({ptcl->ParticleIndex, existingCMPtcl_Worker_Map.size() % NumberOfWorker + 1});
 			}
-			work_scheduler.doSimpleTask(23, NumberOfParticle - beforeNumberOfParticle);
-			// rank and CMPtcl might not be matched correctly inside work_scheduler by this simple code by EW 2025.1.4
+			work_scheduler.doSimpleTask(23, NumberOfParticle - beforeNumberOfParticle); // wrong code by EW 2025.1.6
+			// Let's use existingCMPtcl_Worker_Map; it is containing all the data needed by EW 2025.1.6
 		}
-		// Example codes by EW 2025.1.4
 
-		if (BinaryList.size() >	0) {
-			CMPtclList.push_back(PID);
-			CMWorkerList.push_back(rank);
-			CMPtcl_Worker_Map.insert(PID, rank);
-			SetPrimordialBinaries();
-
-		}
 		fprintf(stdout, "SetPrimordialBinaries ends... NumberOfParticle: %d\n", NumberOfParticle);
 		fflush(stdout);
 #endif
@@ -176,7 +171,7 @@ void RootRoutines() {
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
 
-			if (!ptcl->isActive) // Eunwoo: If I'm correct, there should be no isActive=false particle here!
+			if (!ptcl->isActive)
 				continue;
 
 			ptcl->TimeBlockIrr = static_cast<ULL>(pow(2, ptcl->TimeLevelIrr-time_block));
@@ -193,7 +188,7 @@ void RootRoutines() {
 
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
-			if (ptcl->isActive) // Eunwoo: If I'm correct, there should be no isActive=false particle here!
+			if (ptcl->isActive)
 				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
 								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
 								"NumNeighbor= %d\n",
@@ -312,7 +307,7 @@ void RootRoutines() {
 		//, NextRegTime= %.3e Myr(%llu),
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
-			if (ptcl->isActive) // Eunwoo: If I'm correct, there should be no isActive=false particle here!
+			if (ptcl->isActive)
 				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
 								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
 								"NumNeighbor= %d\n",
@@ -340,14 +335,14 @@ void RootRoutines() {
 		int max_level = 5;
 		double prob = 0.5;
 		SkipList *skiplist;
-		int update_idx;
+		// int update_idx; // commented out by EW 2025.1.6
 		Node* ThisLevelNode;
-		flag = 0;
+		// flag = 0; // commented out by EW 2025.1.6
 		double current_time_irr=0;
 		double next_time=0;
-		int ptcl_id_return;
-		int AdaptiveLoadBalancing;
-		int size=0;
+		// int ptcl_id_return; // commented out by EW 2025.1.6
+		// int AdaptiveLoadBalancing; // commented out by EW 2025.1.6
+		// int size=0; // commented out by EW 2025.1.6
 
 		//ParticleSynchronization();
 		while (1) {
@@ -369,7 +364,7 @@ void RootRoutines() {
 
 			// Irregular
 			while ( skiplist->getFirstNode() != nullptr) {
-				update_idx=0;
+				// update_idx=0; // commented out by EW 2025.1.6
 				ThisLevelNode = skiplist->getFirstNode();
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
@@ -393,83 +388,57 @@ void RootRoutines() {
 				work_scheduler.initialize();
 				work_scheduler.doSimpleTask(2, ThisLevelNode->ParticleList);
 
-
 #ifdef FEWBODY
-				// Check few-body groups should be broken or not
-				work_scheduler.initialize();
-				work_scheduler.doSimpleTask(21, ThisLevelNode->ParticleList);
-
-                // Check fewbody termination
 				int OriginalSize = ThisLevelNode->ParticleList.size();
-				for (int i=0; i<OriginalSize; i++) {
-					Particle* ptclCM = &particles[ThisLevelNode->ParticleList[i]];
-					if (ptclCM->GroupOrder < 0) continue;
+				Particle* ptcl;
+				for (int i=0; i<OriginalSize; i++ ){
+					if (ptcl->isCMptcl && !ptcl->isActive) {
 
-					if (groups[ptclCM->GroupOrder].isTerminate) {
-						if (groups[ptclCM->GroupOrder].isMerger) {
-							for (int i=0; i<groups[ptclCM->GroupOrder].sym_int.particles.getSize(); i++) {
-								Particle* ptcl = &particles[groups[ptclCM->GroupOrder].sym_int.particles[i].ParticleOrder];
-								if (ptcl->Mass != 0.0)
-									ThisLevelNode->ParticleList[i] = ptcl->ParticleOrder;
-							}
-							FBTermination2(ThisLevelNode->ParticleList[i]);
-							bin_termination = true;
-						}
-						else {
-							if (groups[ptclCM->GroupOrder].sym_int.particles.getSize() > 2) { // Terminate many-body (> 2) group
+						terminatedCMPtcl_Worker_Map.insert({ptcl->ParticleIndex, existingCMPtcl_Worker_Map[ptcl->ParticleIndex]});
+						existingCMPtcl_Worker_Map.erase(ptcl->ParticleIndex);
 
-								ThisLevelNode->ParticleList[i] = groups[ptclCM->GroupOrder].sym_int.particles[0].ParticleOrder; // CM particle -> 1st group member
-								for (int i=1; i<groups[ptclCM->GroupOrder].sym_int.particles.getSize(); i++) {
-									Particle* ptcl = &particles[groups[ptclCM->GroupOrder].sym_int.particles[i].ParticleOrder]; 
-									ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder); // push_back other group members
-								}
-								/* Eunwoo: This might be needed later!
-								std::vector<Particle*> members = ptcl->GroupInfo->Members;
-								FBTermination(ThisLevelNode->ParticleList[i]);
-								AddNewGroupsToList2(members, particle);
-								members.clear();
-								*/
-								FBTermination(ThisLevelNode->ParticleList[i]);
-								bin_termination = true;
-							}
-							else { // Terminate binary
+						insertNeighbors(ptcl->ParticleIndex); // Proper function should be used here by EW 2025.1.6
 
-								ThisLevelNode->ParticleList[i] = groups[ptclCM->GroupOrder].sym_int.particles[0].ParticleOrder; // CM particle -> 1st binary member
-								ThisLevelNode->ParticleList.push_back(groups[ptclCM->GroupOrder].sym_int.particles[1].ParticleOrder); // push_back 2nd binary member
-
-								FBTermination(ThisLevelNode->ParticleList[i]);
-								bin_termination = true;
-							}
-						}
+						ThisLevelNode->ParticleList.insert(
+							ThisLevelNode->ParticleList.end(), 
+							ptcl->NewNeighbors.begin(), 
+							ptcl->NewNeighbors.end()
+						);
+						bin_termination = true;
 					}
 				}
-				if (bin_termination)
-					global_variable->NumberOfParticle = NumberOfParticle;
+
+				// Erase terminated CM particles by EW 2025.1.6
+				ThisLevelNode->ParticleList.erase(
+					std::remove_if(ThisLevelNode->ParticleList.begin(), ThisLevelNode->ParticleList.end(),
+						[](int i) {
+						return !particles[i].isActive;
+						}
+					),
+					ThisLevelNode->ParticleList.end()
+				);
 
 				// Few-body group search
 				work_scheduler.initialize();
 				work_scheduler.doSimpleTask(22, ThisLevelNode->ParticleList);
 
-				int beforeNumberOfParticle = NumberOfParticle;
-				SetBinaries(ThisLevelNode->ParticleList);
-				if (beforeNumberOfParticle != NumberOfParticle) {
+				int beforeParticleListSize = ThisLevelNode->ParticleList.size();
+
+				formBinaries(ThisLevelNode->ParticleList, newCMptcls, existingCMPtcl_Worker_Map, terminatedCMPtcl_Worker_Map);
+				if (beforeParticleListSize != ThisLevelNode->ParticleList.size()) {
 					new_binaries = true;
-					for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
-						Particle* ptcl = &particles[i];
-						ThisLevelNode->ParticleList.push_back(ptcl->ParticleOrder);
-						fprintf(stdout, "PID(%d) is pushed back to the ParticleList\n", ptcl->PID);
+					for (int i=beforeParticleListSize; i<ThisLevelNode->ParticleList.size(); i++) {
+						Particle* ptcl = &particles[ThisLevelNode->ParticleList[i]];
+						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
 						fflush(stdout);
 					}
+					work_scheduler.doSimpleTask(24, newCMptcls); 
+					// This should be fixed by EW 2025.1.6
+					// First, delete CM particle inside NewNeighbors using void deleteGroup(Particle* ptclCM) // task 25?
+					// Should adjust existingCMPtcl_Worker_Map & terminatedCMPtcl_Worker_Map
+					// Then, use task 24
 				}
-
-				ThisLevelNode->ParticleList.erase(
-					std::remove_if(
-							ThisLevelNode->ParticleList.begin(), 
-							ThisLevelNode->ParticleList.end(),
-							[&particles](int i) { return !particles[i].isActive; }
-					),
-					ThisLevelNode->ParticleList.end()
-				);
+				newCMptcls.clear();
 
 				std::cout << "erase success" << std::endl;
 #endif
@@ -619,22 +588,27 @@ void RootRoutines() {
 				//fprintf(stdout, "Regular done\n");
 #ifdef FEWBODY
 
-				fprintf(stdout, "Regular list: ");
-				fflush(stdout);
-				Particle* ptcl;
-				for (int i=0; i<RegularList.size(); i++) {
-					ptcl = &particles[RegularList[i]];
-					fprintf(stdout, "%d ", ptcl->PID);
-				}
-				fprintf(stdout, "\n");
-
-				fprintf(stdout, "Regular group search\n");
-				fflush(stdout);
 				// Few-body group search
 				work_scheduler.initialize();
 				work_scheduler.doSimpleTask(22, RegularList);
 
-				SetBinaries(RegularList);
+				int beforeRegularListSize = RegularList.size();
+
+				formBinaries(RegularList, newCMptcls, existingCMPtcl_Worker_Map, terminatedCMPtcl_Worker_Map);
+				if (beforeRegularListSize != RegularList.size()) {
+					for (int i=beforeRegularListSize; i<RegularList.size(); i++) {
+						Particle* ptcl = &particles[RegularList[i]];
+						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
+						fflush(stdout);
+					}
+					work_scheduler.doSimpleTask(24, newCMptcls); // This is wrong by EW 2025.1.6
+					// This should be fixed by EW 2025.1.6
+					// First, delete CM particle inside NewNeighbors using void deleteGroup(Particle* ptclCM) // task 25?
+					// Then, use task 24
+				}
+				newCMptcls.clear();
+
+				std::cout << "erase success" << std::endl;
 #endif
 			}
 			/*
@@ -907,7 +881,7 @@ void updateNextRegTime(std::vector<int>& RegularList) {
 				RegularList.clear();
 				time = time_tmp;
 			}
-			RegularList.push_back(ptcl->ParticleOrder);
+			RegularList.push_back(ptcl->ParticleIndex);
 		}
 	}
 	NextRegTimeBlock = time;
@@ -944,8 +918,8 @@ bool createSkipList(SkipList *skiplist) {
 		// if ((ptcl->NumberOfNeighbor != 0) && (ptcl->NextBlockIrr <= NextRegTimeBlock)) { // IAR original
 		if (ptcl->isActive && ptcl->NextBlockIrr <= NextRegTimeBlock) {	// IAR modified
 			//fprintf(stdout, "PID=%d, NBI=%llu\n", ptcl->PID, ptcl->NextBlockIrr);
-			if (!skiplist->search(ptcl->NextBlockIrr, ptcl->ParticleOrder))
-				skiplist->insert(ptcl->NextBlockIrr, ptcl->ParticleOrder);
+			if (!skiplist->search(ptcl->NextBlockIrr, ptcl->ParticleIndex))
+				skiplist->insert(ptcl->NextBlockIrr, ptcl->ParticleIndex);
 		}
 	}
 
@@ -1003,8 +977,8 @@ bool updateSkipList(SkipList *skiplist, int ptcl_id) {
 	if (ptcl->NextBlockIrr > NextRegTimeBlock)
 		return true;
 
-	if (!skiplist->search(ptcl->NextBlockIrr, ptcl->ParticleOrder))
-		skiplist->insert(ptcl->NextBlockIrr, ptcl->ParticleOrder);
+	if (!skiplist->search(ptcl->NextBlockIrr, ptcl->ParticleIndex))
+		skiplist->insert(ptcl->NextBlockIrr, ptcl->ParticleIndex);
 
 	if (debug) {
 	}

@@ -75,15 +75,7 @@ void WorkerRoutines() {
 				//std::cout << "IrrUp Processor " << MyRank << std::endl;
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
-#ifdef FEWBODY
-				if (ptcl->GroupInfo >= 0) {
-					groups[ptcl->GroupOrder].sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
-					for (int i=0; i<ptcl->NumberOfNeighbor; i++)
-						groups[ptcl->GroupOrder].sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
-					bool int_normal = groups[ptcl->GroupOrder].ARIntegration(ptcl->NewCurrentBlockIrr*time_step);
-					if (!int_normal) break;
-				}
-#endif
+
 				if (ptcl->NumberOfNeighbor != 0) // IAR modified, (Query) what do you mean? 2025.01.04
 					ptcl->updateParticle();
 				ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
@@ -156,33 +148,29 @@ void WorkerRoutines() {
 				//std::cout << "Processor " << MyRank<< " initialization starts." << std::endl;
 				//std::cout << "Processor " << MyRank<< ": NumPart= "<<global_variable->NumberOfParticle << std::endl;
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				ptcl_id = ptcl_id*LoadBalanceParticle;
+				ptcl = &particles[ptcl_id];
 
-				for (int i=0; i<LoadBalanceParticle; i++) {
-					//std::cerr << ptcl_id+i << std::endl;
-					CalculateAcceleration01(&particles[ptcl_id+i]);
-				}
+				//std::cerr << ptcl_id+i << std::endl;
+				CalculateAcceleration01(ptcl);
+
 				//std::cout << "Processor " << MyRank<< " done." << std::endl;
 				break;
 
 			case 8: // Initialize Acceleration(23)
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				ptcl_id = ptcl_id*LoadBalanceParticle;
+				ptcl = &particles[ptcl_id];
 
-				for (int i=0; i<LoadBalanceParticle; i++) {
-					CalculateAcceleration23(&particles[ptcl_id+i]);
-				}
+				CalculateAcceleration23(ptcl);
+
 				break;
 
 			case 9: // Initialize Time Step
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				ptcl_id = ptcl_id*LoadBalanceParticle;
+				ptcl = &particles[ptcl_id];
 
-				for (int i=0; i<LoadBalanceParticle; i++) {
-					if (!particles[ptcl_id+i].isActive)
-						continue;
-					particles[ptcl_id+i].initializeTimeStep();
-				}
+				if (ptcl->isActive)
+					ptcl->initializeTimeStep();
+
 				break;
 
 			case 10: // Initialize Timestep variables
@@ -198,33 +186,14 @@ void WorkerRoutines() {
 #ifdef FEWBOY
 			case 20: // Primordial binary search
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				ptcl_id = ptcl_id*LoadBalanceParticle;
+				ptcl = &particles[ptcl_id];
 
-				for (int i=0; i<LoadBalanceParticle; i++) {
-					particles[ptcl_id+i].NewNumberOfNeighbor = 0;
-					particles[ptcl_id+i].checkNewGroup2();
-				}
+				particles[ptcl_id+i].NewNumberOfNeighbor = 0;
+				particles[ptcl_id+i].checkNewGroup2();
 
 				break;
-
+/* // No more used by EW 2025.1.6
 			case 21: // CheckBreak
-#ifdef NoLoadBalance
-				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Get_count(&status, MPI_INT, &size);
-				ptcl_id_vector.resize(size);
-				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-
-				for (int i=0; i<size; i++) {
-					ptcl = &particles[ptcl_id_vector[i]];
-
-					if (ptcl->GroupOrder >= 0) {
-						if (!groups[ptcl->GroupOrder].isMerger)
-							groups[ptcl->GroupOrder].isTerminate = groups[ptcl->GroupOrder].CheckBreak();
-						else if (groups[ptcl->GroupOrder].isMerger && !groups[ptcl->GroupOrder].isTerminate)
-							groups[ptcl->GroupOrder].isMerger = false;
-					}
-				}
-#else
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
@@ -234,93 +203,73 @@ void WorkerRoutines() {
 					else if (groups[ptcl->GroupOrder].isMerger && !groups[ptcl->GroupOrder].isTerminate)
 						groups[ptcl->GroupOrder].isMerger = false;
 				}
-#endif
+
 				break;
-
+*/
 			case 22: // Few-body group search
-#ifdef NoLoadBalance
-				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Get_count(&status, MPI_INT, &size);
-				ptcl_id_vector.resize(size);
-				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-
-				for (int i=0; i<size; i++) {
-					ptcl = &particles[ptcl_id_vector[i]];
-				
-					// fprintf(stdout, "(rank=%d) PID: %d\n", MyRank, ptcl->PID);
-					// fflush(stdout);
-					ptcl->NewNumberOfNeighbor = 0;
-					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
-						ptcl->checkNewGroup();
-				}
-#else
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
 				ptcl->NewNumberOfNeighbor = 0;
-				if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
-					ptcl->checkNewGroup();
-#endif
+				if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin) {
+					if (ptcl->binary_state = -1)
+						ptcl->checkNewGroup2();
+					else
+						ptcl->checkNewGroup();
+					ptcl->binary_state = 0;
+				}
+
 				break;
 
 			case 23: // Make a primordial group
-#ifdef NoLoadBalance
-				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Get_count(&status, MPI_INT, &size);
-				ptcl_id_vector.resize(size);
-				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-
-				for (int i=0; i<size; i++) {
-					ptcl = &particles[ptcl_id_vector[i]];
-
-					makePrimordialGroup(ptcl);
-				}
-#else
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
 				makePrimordialGroup(ptcl);
-#endif
+
 				break;
 
 			case 24: // Make a group
-#ifdef NoLoadBalance
-				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Get_count(&status, MPI_INT, &size);
-				ptcl_id_vector.resize(size);
-				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-
-				for (int i=0; i<size; i++) {
-					ptcl = &particles[ptcl_id_vector[i]];
-
-					NewFBInitialization(ptcl);
-				}
-#else
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
 				NewFBInitialization(ptcl);
-#endif
+
 				break;
 			
-				case 25: // Delete a Group struct
-#ifdef NoLoadBalance
-				MPI_Probe(ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				MPI_Get_count(&status, MPI_INT, &size);
-				ptcl_id_vector.resize(size);
-				MPI_Recv(ptcl_id_vector.data(), size, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-
-				for (int i=0; i<size; i++) {
-					ptcl = &particles[ptcl_id_vector[i]];
-
-					deleteGroup(ptcl);
-				}
-#else
+			case 25: // Delete a Group struct
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
 				deleteGroup(ptcl);
-#endif
+
+				break;
+
+			case 26: // Irregular Acceleration for CM Particle (example code)
+				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
+				ptcl = &particles[ptcl_id];
+
+				ptcl->computeAccelerationIrr();
+				ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+				ptcl->calculateTimeStepIrr();
+				ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+
+				Group* group;
+				
+				group->sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
+				for (int i=0; i<ptcl->NumberOfNeighbor; i++)
+					group->sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
+				
+				group->ARIntegration(next_time);
+				if (!group->isMerger)
+					group->isTerminate = group->CheckBreak();
+				else if (group->isMerger && !group->isTerminate)
+					group->isMerger = false;
+
+				if (!group->isMerger && group->isTerminate)
+					FBTermination(group);
+
 				break;
 #endif // FewBody
 

@@ -258,7 +258,7 @@ void Particle::computeAccelerationReg() {
 
 		//std::cout << "PIDs=" <<  this->Neighbors[j] << ', ' << ptcl->PID << NumberOfNeighbor<< std::endl;
 		//if (this->Neighbors[j] == ptcl->PID) {
-		if (j < this->NumberOfNeighbor && this->Neighbors[j] == ptcl->ParticleOrder) {
+		if (j < this->NumberOfNeighbor && this->Neighbors[j] == ptcl->ParticleIndex) {
 			//std::cout << this->PID << ", PIDs=" <<  this->Neighbors[j] << ", " << ptcl->PID << std::endl;
 			j++;
 		} 
@@ -271,7 +271,7 @@ void Particle::computeAccelerationReg() {
 
 
 		if (r2 < this->RadiusOfNeighbor) {
-			this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->ParticleOrder;
+			this->NewNeighbors[this->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 			this->NewNumberOfNeighbor++;
 			for (int dim=0; dim<Dim; dim++){
 				this->a_irr[dim][0] += m_r3*x[dim];

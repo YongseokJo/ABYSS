@@ -51,7 +51,7 @@ struct Particle {
 	// For SDAR
 	bool isActive;
 	bool isUpdateToDate;
-	int ParticleOrder; // (Query) please change it to index when you get a chance
+	int ParticleIndex; // (Query) please change it to index when you get a chance
 	double radius;
 	double dm; // Stellar mass which will be distributed to nearby gas cells
 	double time_check; // time to check next interrupt
@@ -59,6 +59,7 @@ struct Particle {
 	double a_spin[3]; // dimensionless spin parameter a
 	Group* GroupInfo;
 	bool isCMptcl; // do we need this? (Query) we can simply use if GroupInfo == nullptr right?
+	int CMPtclIndex; // added for write_out_group function by EW 2025.1.6
 
 
 	Particle() {
@@ -95,7 +96,7 @@ struct Particle {
 			a_spin[i] = 0.;
 		}
 		isActive = true;
-		ParticleOrder = -1;
+		ParticleIndex = -1;
 		radius = 0.;
 		dm = 0.0;
 		time_check = NUMERIC_FLOAT_MAX;
@@ -103,10 +104,11 @@ struct Particle {
 		GroupInfo = nullptr;
 		isCMptcl = false; //(Query)
 		isUpdateToDate = true;
+		CMPtclIndex = -1;
 
 	}
 
-	Particle& operator = (const Particle& other) {
+	Particle& operator = (const Particle& other) { // This seems unnecessary now by EW 2025.1.6
 
         PID = other.PID;
         ParticleType = other.ParticleType;
@@ -150,7 +152,7 @@ struct Particle {
         RadiusOfNeighbor = other.RadiusOfNeighbor;
 
         isActive = other.isActive;
-		ParticleOrder = other.ParticleOrder;
+		ParticleIndex = other.ParticleIndex;
 		radius = other.radius;
 		dm = other.dm;
 		time_check = other.time_check;
@@ -182,14 +184,14 @@ struct Particle {
 		//this->NextParticleInEnzo = NextParticleInEnzo;
 		this->CurrentTimeReg		= 0;
 		this->CurrentTimeIrr		= 0;
-		this->RadiusOfNeighbor		= 0.11*0.11;
+		this->RadiusOfNeighbor		= ACRadius*ACRadius;
 		//this->RadiusOfNeighbor	= 1;
 		//this->RadiusOfNeighbor	= 0;
 		this->NumberOfNeighbor		= 0;
 		this->NewNumberOfNeighbor	= 0;
 
 		this->isActive				= true;
-		this->ParticleOrder			= PID;
+		this->ParticleIndex			= PID;
 		this->dm = 0.0;
 		this->time_check = NUMERIC_FLOAT_MAX;
 		this->binary_state = 0;
@@ -198,6 +200,7 @@ struct Particle {
 		this->a_spin[0] = 0.;
 		this->a_spin[1] = 0.;
 		this->a_spin[2] = 0.;
+		this->CMptclIndex = -1;
 
 #ifdef SEVN
 		this->ParticleType = NormalStar+SingleParticle;
@@ -256,16 +259,17 @@ struct Particle {
             BackgroundAcceleration[i] = 0.0;
 			a_spin[i] = 0.0;
         }
-        RadiusOfNeighbor = 0.11*0.11;
+        RadiusOfNeighbor = ACRadius*ACRadius;
 
         isActive = false;
-		ParticleOrder = -1;
+		ParticleIndex = -1;
 		radius = 0.;
 		dm = 0.0;
 		time_check = NUMERIC_FLOAT_MAX;
 		binary_state = 0;
 		GroupInfo = nullptr;
 		isCMptcl = false;
+		CMPtclIndex = -1;
     }
 
 	void normalizeParticle() {
@@ -387,6 +391,13 @@ struct Particle {
 			<<std::setw(_width)<<Velocity[2]
 			<<std::setw(_width)<<radius
 			<<std::setw(_width)<<PID;
+	}
+
+	// made by EW 2025.1.6
+	void copyNewNeighbor(Particle* ptcl) {
+		ptcl->NewNumberOfNeighbor = this->NewNumberOfNeighbor;
+		for (int i=0; i<this->NewNumberOfNeighbor; i++)
+			ptcl->NewNeighbors[i] = this->NewNeighbors[i];
 	}
 	
 };

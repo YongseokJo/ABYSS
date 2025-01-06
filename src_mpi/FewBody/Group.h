@@ -120,7 +120,7 @@ struct Group
 	}
 */
 
-	bool ARIntegration(double next_time);
+	void ARIntegration(double next_time);
 	bool CheckBreak();
 	void initialManager();
 	void initialIntegrator(int NumMembers);
