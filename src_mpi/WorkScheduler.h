@@ -110,7 +110,7 @@ public:
         for (int i=0; i<_ParticleList.size(); i++) {
             pid_tmp = _ParticleList[i];
             particles[pid_tmp].isUpdateToDate = false;
-            if (particles[pid_tmp].GroupInfo == nullptr)
+            if (particles[pid_tmp].isCMptcl)
             {
                 SingleParticleList.push_back(pid_tmp);
             }
@@ -119,9 +119,12 @@ public:
                 CMPtclMap.insert({pid_tmp, i});
             }
         }
+        int fb_total_tasks = CMPtclMap.size(); // this is for the SDAR computations by YS 2025.01.06
+        int fb_assigned_tasks = 0; // this is for the SDAR computations by YS 2025.01.06
 
         do {
-            if (_FreeWorkers.size() == 0 || _assigned_tasks == _total_tasks) {
+            if (_FreeWorkers.size() == 0 || _assigned_tasks == _total_tasks) 
+            {
                 // have to add check all the sends are recved.
                 // MPI_Waitall(NumberOfCommunication, requests, statuses);
                 // NumberOfCommunication = 0;
@@ -130,7 +133,7 @@ public:
                 _WorkerTmp = _Callback();
                 _completed_tasks++;
                 // I have to add that if the worker is a CMworker, I should run SDAR integration (Query to myself)
-                if (particles[_WorkerTmp->PID].GroupInfo != nullptr  && _WorkerTmp->isCMWorker) 
+                if (particles[_WorkerTmp->PID].isCMptcl && _WorkerTmp->isCMWorker) 
                 {
                     _ptcl = &particles[_WorkerTmp->PID];
                    // check if all the neighbors of the CM particle are updated to date
@@ -140,7 +143,15 @@ public:
                             break;
                     }
                     // all neighbors are up to date.
-                    // (Query) I have to add the code for the SDAR execution.
+                    // for the SDAR execution.
+                    if ( _WorkerTmp != _FreeWorkers.back()) {
+                        fprintf(stderr, "Worker does not match!\n");
+                        exit(EXIT_FAILURE);
+                    }
+                    _FreeWorkers.pop_back();
+                    _WorkerTmp->task = 26;
+                    _assignJobs(_WorkerTmp);
+                    fb_assigned_tasks++;
                 }
             }
 
@@ -174,13 +185,14 @@ public:
                     _WorkerTmp->PID = pid_tmp;
                 }
 
+                _WorkerTmp->task = 0;
                 _WorkerTmp->next_time = next_time;
                 //fprintf(stdout, "assigned_tasks = %d/%d, number of free worker = %d pid = %d rank = %d\n",
                 //_assigned_tasks, _total_tasks, _FreeWorkers.size(), _WorkerTmp->PID, _WorkerTmp->MyRank);
                 _assignJobs(_WorkerTmp);
                 _assigned_tasks++;
             }
-        } while (_completed_tasks < _total_tasks);
+        } while (_completed_tasks < _total_tasks && fb_completed_tasks < fb_total_tasks);
 
         if (SingleParticleList.size() != 0 || CMPtclMap.size() != 0) {
             fprintf(stderr, "Something's wrong. The particle list is not empty.\n");
@@ -205,7 +217,7 @@ public:
 
 
     void _assignJobs(Worker *worker) {
-        if ((worker->task == 0) || (worker->task == 1))
+        if ((worker->task == 0) || (worker->task == 1) || (worker->task == 26))
         {
             MPI_Send(&worker->task,      1, MPI_INT,    worker->MyRank, TASK_TAG, MPI_COMM_WORLD);
             MPI_Send(&worker->PID,       1, MPI_INT,    worker->MyRank, PTCL_TAG, MPI_COMM_WORLD);

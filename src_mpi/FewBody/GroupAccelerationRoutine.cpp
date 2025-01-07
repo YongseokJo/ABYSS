@@ -80,7 +80,7 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, 
 
 	for (int i = global_variable->NumberOfParticle; i < NumberOfParticle; i++) {
 		if (terminated.empty()) {
-			existing.insert({i, existingCMPtcl_Worker_Map.size() % NumberOfWorker + 1});
+			existing.insert({i, existingCMPtcl_Worker_Map.size() % NumberOfWorker + 1}); // (Query) shouldn't it be existing not existingCMPtcl_Worker_Map? 2025.01.06
 			newCMptcls.push_back(i);
 		}
 		else {
@@ -108,7 +108,7 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, 
 				[](int i) { return !particles[i].isActive; }
 		),
 		ParticleList.end()
-	);
+	); // this might not be needed. 
 	ParticleList.insert(ParticleList.end(), newCMptcls.begin(), newCMptcls.end())
 	global_variable->NewPID = NewPID;
 }

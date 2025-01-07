@@ -2,6 +2,7 @@
 #include <vector>
 #include <errno.h>
 #include "global.h"
+#include "def.h"
 #include "particle.h"
 #include <vector>
 
@@ -183,7 +184,7 @@ void WorkerRoutines() {
 				fprintf(stderr, "(%d) nbody+:time_block = %d, EnzoTimeStep=%e\n", MyRank, time_block, EnzoTimeStep);
 				fflush(stderr);
 				break;
-#ifdef FEWBOY
+#ifdef FEWBODY
 			case 20: // Primordial binary search
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
@@ -245,17 +246,24 @@ void WorkerRoutines() {
 
 				break;
 
-			case 26: // Irregular Acceleration for CM Particle (example code)
+			case 26: // SDAR for few body encounters
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
+				/* (Query) this will be done already. 
 				ptcl->computeAccelerationIrr();
 				ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 				ptcl->calculateTimeStepIrr();
 				ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+				*/
 
-				Group* group;
+				if (!ptcl->isCMptcl || ptcl->GroupInfo == nullptr) {
+					fprintf(stderr, "Something is wrong. ptcl->isCMptcl=%d ptcl->GroupInfo=%p\n", ptcl->isCMptcl, ptcl->GroupInfo);
+					exit(EXIT_FAILURE);
+				}
+
+				Group* group = ptcl->GroupInfo; // by YS 2025.01.06 EST (Query) is this correct?
 				
 				group->sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
 				for (int i=0; i<ptcl->NumberOfNeighbor; i++)
