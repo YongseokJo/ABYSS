@@ -14,6 +14,7 @@ void CalculateAcceleration23(Particle* ptcl1);
 void makePrimordialGroup(Particle* ptclCM);
 void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
+void FBTermination(Group* group);
 
 void WorkerRoutines() {
 
@@ -183,13 +184,13 @@ void WorkerRoutines() {
 				fprintf(stderr, "(%d) nbody+:time_block = %d, EnzoTimeStep=%e\n", MyRank, time_block, EnzoTimeStep);
 				fflush(stderr);
 				break;
-#ifdef FEWBOY
+#ifdef FEWBODY
 			case 20: // Primordial binary search
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
-				particles[ptcl_id+i].NewNumberOfNeighbor = 0;
-				particles[ptcl_id+i].checkNewGroup2();
+				ptcl->NewNumberOfNeighbor = 0;
+				ptcl->checkNewGroup2();
 
 				break;
 /* // No more used by EW 2025.1.6
@@ -257,21 +258,15 @@ void WorkerRoutines() {
 				ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 				ptcl->calculateTimeStepIrr();
 				ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
-
-				Group* group = ptcl->GroupInfo;
 				
-				group->sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
-				for (int i=0; i<ptcl->NumberOfNeighbor; i++)
-					group->sym_int.particles.cm.Neighbors[i] = ptcl->Neighbors[i];
-				
-				group->ARIntegration(next_time);
-				if (!group->isMerger)
-					group->isTerminate = group->CheckBreak();
-				else if (group->isMerger && !group->isTerminate)
-					group->isMerger = false;
+				ptcl->GroupInfo->ARIntegration(next_time);
+				if (!ptcl->GroupInfo->isMerger)
+					ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
+				else if (ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
+					ptcl->GroupInfo->isMerger = false;
 
-				if (!group->isMerger && group->isTerminate)
-					FBTermination(group);
+				if (!ptcl->GroupInfo->isMerger && ptcl->GroupInfo->isTerminate)
+					FBTermination(ptcl->GroupInfo);
 
 				break;
 #endif // FewBody

@@ -25,17 +25,17 @@ void deleteGroup(Particle* ptclCM) {
 
 	ptclCM->NewNumberOfNeighbor = ptclGroup->sym_int.particles.getSize();
 
-	assert(!ptclGroup->sym_int.particles.isOriginFrame); // for debugging by EW 2025.1.4
+	assert(!ptclGroup->sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.4
 
 	for (int i=0; i < ptclGroup->sym_int.particles.getSize(); i++) {
 		Particle* members = &ptclGroup->sym_int.particles[i];
 		ptclCM->NewNeighbors[i] = members->ParticleIndex;
 
 		for (int dim=0; dim<Dim; dim++) {
-			&particles[members->ParticleIndex]->Position[dim] = ptclCM->Position[dim] + members->Position[dim];
-			&particles[members->ParticleIndex]->Velocity[dim] = ptclCM->Velocity[dim] + members->Velocity[dim];
+			particles[members->ParticleIndex].Position[dim] = ptclCM->Position[dim] + members->Position[dim];
+			particles[members->ParticleIndex].Velocity[dim] = ptclCM->Velocity[dim] + members->Velocity[dim];
 		}
-		&particles[members->ParticleIndex]->Mass = members->Mass;
+		particles[members->ParticleIndex].Mass = members->Mass;
 	}
 
 /* // original version; this might take so much time by EW 2025.1.4
@@ -83,9 +83,6 @@ void Group::initialManager() {
 
 void Group::initialIntegrator(int NumMembers) {
 
-	Particle* groupCM;
-	groupCM = &particles[groupCMOrder];
-
 	sym_int.manager = &manager;
 
 	sym_int.particles.setMode(COMM::ListMode::copy);
@@ -95,7 +92,6 @@ void Group::initialIntegrator(int NumMembers) {
 	fprintf(binout, "Mem PID:");
     for (int i = 0; i < groupCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[groupCM->NewNeighbors[i]];
-        members->isActive = false;
 		if (!members->isCMptcl) {
 			members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 			sym_int.particles.addMemberAndAddress(*members);
@@ -103,7 +99,7 @@ void Group::initialIntegrator(int NumMembers) {
 		}
 		else {
 			for (int j=0; j < members->NewNumberOfNeighbor; j++) {
-				Particle* members_members = &particles[members->NewNeighbor[j]];
+				Particle* members_members = &particles[members->NewNeighbors[j]];
 				members_members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 				sym_int.particles.addMemberAndAddress(*members_members);
 				fprintf(binout, " %d", sym_int.particles[i].PID);
@@ -112,8 +108,6 @@ void Group::initialIntegrator(int NumMembers) {
     }
 	fprintf(binout, "\n");
 	fflush(binout);
-
-	// if (BHinside) sym_int.manager->setBHinside();
 
 	sym_int.info.r_break_crit = rbin/position_unit; // distance criterion for checking stability
 	// more information in symplectic_integrator.h

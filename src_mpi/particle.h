@@ -200,7 +200,7 @@ struct Particle {
 		this->a_spin[0] = 0.;
 		this->a_spin[1] = 0.;
 		this->a_spin[2] = 0.;
-		this->CMptclIndex = -1;
+		this->CMPtclIndex = -1;
 
 #ifdef SEVN
 		this->ParticleType = NormalStar+SingleStar;
@@ -355,9 +355,9 @@ struct Particle {
 
 	// made by EW 2025.1.6
 	void copyNewNeighbor(Particle* ptcl) {
-		ptcl->NewNumberOfNeighbor = this->NewNumberOfNeighbor;
-		for (int i=0; i<this->NewNumberOfNeighbor; i++)
-			ptcl->NewNeighbors[i] = this->NewNeighbors[i];
+		this->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor;
+		for (int i = 0; i < ptcl->NewNumberOfNeighbor; i++)
+			this->NewNeighbors[i] = ptcl->NewNeighbors[i];
 	}
 	
 };

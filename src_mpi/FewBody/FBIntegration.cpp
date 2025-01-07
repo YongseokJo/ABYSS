@@ -47,14 +47,16 @@ void FBTermination2(Group* group);
 // If Intererrupt_mode != none, then bin_termination = true;
 void Group::ARIntegration(double next_time){
 
-    // fprintf(stderr, "PID: %d\n", groupCM->PID);
-    // if (groupCM->PID == -1035)
-    //     fprintf(stderr, "NumOfAC: %d\n", groupCM->NumberOfAC);
-
-    // fprintf(mergerout, "PID: %d\n", groupCM->PID);
-    // fprintf(mergerout, "before posx: %e pc\n", sym_int.particles[0].Position[0]*position_unit);
-
-    Particle* groupCM = this->groupCM;
+    for (int dim=0; dim<Dim; dim++) {
+        sym_int.particles.cm.Position[dim] = groupCM->Position[dim];
+        sym_int.particles.cm.Velocity[dim] = groupCM->Velocity[dim];
+        for (int j=0; j<HERMITE_ORDER; j++)
+            sym_int.particles.cm.a_irr[dim][j] = groupCM->a_irr[dim][j];
+    }
+    
+    sym_int.particles.cm.NumberOfNeighbor = groupCM->NumberOfNeighbor;
+    for (int i=0; i<groupCM->NumberOfNeighbor; i++)
+        sym_int.particles.cm.Neighbors[i] = groupCM->Neighbors[i];
 
     auto bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
 
@@ -73,9 +75,8 @@ void Group::ARIntegration(double next_time){
         else {
             GR_energy_loss_iter(bin_interrupt, bin_root, CurrentTime, next_time);
         }
-        if (bin_interrupt.status == AR::InterruptStatus::none) {
+        if (bin_interrupt.status == AR::InterruptStatus::none)
             sym_int.initialIntegration(next_time*EnzoTimeStep); // Eunwoo: this should be fixed later // Eunwoo: I don't think so!
-        }
     }    
 // */
 
@@ -88,7 +89,7 @@ void Group::ARIntegration(double next_time){
             double pos[Dim], vel[Dim];
 
             groupCM->predictParticleSecondOrder(bin_interrupt.time_now/EnzoTimeStep - CurrentTime, pos, vel);
-            // This might me changed later because changing Pos & Vel during Irregular Acceleration calculation is not good
+            // This might be changed later because changing Pos & Vel during Irregular Acceleration calculation is not good
             // But if SDAR integration is done after Irregular Acceleration calculation, this is fine
             // (Query) by EW 2025.1.6
             for (int dim=0; dim<Dim; dim++) {
@@ -108,15 +109,15 @@ void Group::ARIntegration(double next_time){
             sym_int.particles.template writeBackMemberAll<Particle>();
             */
 
-            assert(!sym_int.particles.isOriginFrame); // for debugging by EW 2025.1.6
+            assert(!sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.6
             for (int i = 0; i < sym_int.particles.getSize(); i++) {
                 Particle* members = &sym_int.particles[i];
 
                 for (int dim=0; dim<Dim; dim++) {
-                    &particles[members->ParticleIndex]->Position[dim] = groupCM->Position[dim] + members->Position[dim];
-                    &particles[members->ParticleIndex]->Velocity[dim] = groupCM->Velocity[dim] + members->Velocity[dim];
+                    particles[members->ParticleIndex].Position[dim] = groupCM->Position[dim] + members->Position[dim];
+                    particles[members->ParticleIndex].Velocity[dim] = groupCM->Velocity[dim] + members->Velocity[dim];
                 }
-                &particles[members->ParticleIndex]->Mass = members->Mass;
+                particles[members->ParticleIndex].Mass = members->Mass;
             }
 
             isTerminate = true;
@@ -141,19 +142,19 @@ void Group::ARIntegration(double next_time){
             sym_int.particles.template writeBackMemberAll<Particle>();
             */
 
-            assert(!sym_int.particles.isOriginFrame); // for debugging by EW 2025.1.6
+            assert(!sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.6
             for (int i = 0; i < sym_int.particles.getSize(); i++) {
                 Particle* members = &sym_int.particles[i];
 
                 for (int dim=0; dim<Dim; dim++) {
-                    &particles[members->ParticleIndex]->Position[dim] = groupCM->Position[dim] + members->Position[dim];
-                    &particles[members->ParticleIndex]->Velocity[dim] = groupCM->Velocity[dim] + members->Velocity[dim];
+                    particles[members->ParticleIndex].Position[dim] = groupCM->Position[dim] + members->Position[dim];
+                    particles[members->ParticleIndex].Velocity[dim] = groupCM->Velocity[dim] + members->Velocity[dim];
                 }
-                &particles[members->ParticleIndex]->Mass = members->Mass;
+                particles[members->ParticleIndex].Mass = members->Mass;
             }
 
             NewFBInitialization3(this);
-            return; // Eunwoo: return true makes an SIGMENTATION FAULT error when doing checkBreak!
+            return;
         }
     }
 #ifdef SEVN
@@ -226,15 +227,15 @@ void Group::ARIntegration(double next_time){
 #endif
 
     // for write_out_group function by EW 2025.1.6
-    assert(!sym_int.particles.isOriginFrame); // for debugging by EW 2025.1.6
+    assert(!sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.6
     for (int i = 0; i < sym_int.particles.getSize(); i++) {
         Particle* members = &sym_int.particles[i];
 
         for (int dim=0; dim<Dim; dim++) {
-            &particles[members->ParticleIndex]->Position[dim] = groupCM->NewPosition[dim] + members->Position[dim];
-            &particles[members->ParticleIndex]->Velocity[dim] = groupCM->NewVelocity[dim] + members->Velocity[dim];
+            particles[members->ParticleIndex].Position[dim] = groupCM->NewPosition[dim] + members->Position[dim];
+            particles[members->ParticleIndex].Velocity[dim] = groupCM->NewVelocity[dim] + members->Velocity[dim];
         }
-        &particles[members->ParticleIndex]->Mass = members->Mass;
+        particles[members->ParticleIndex].Mass = members->Mass;
     }
 
     CurrentTime = next_time;
