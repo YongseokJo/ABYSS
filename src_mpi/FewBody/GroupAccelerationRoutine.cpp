@@ -1,35 +1,30 @@
 #ifdef FEWBODY
 #include <iostream>
+#include <map>
 #include "../global.h"
 #include "../def.h"
 #include <cassert> // Eunwoo debug
 
 
-void NewFBInitialization(int newOrder);
-// void NewFBInitialization2(Particle* ptcl);
-void MergeGroups();
-void NewPrimordialBinaries(int newOrder);
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
+void deleteNeighbors(int newOrder);
+void mergeGroupCandidates();
 
 
-void formPrimordialBinaries(int& beforeNumberOfParticle) {
+void formPrimordialBinaries(int beforeNumberOfParticle) {
 
 	Particle* ptcl;
 	Particle* NewCM;
-
-	beforeNumberOfParticle = NumberOfParticle;
 
 	for (int i=0; i<NumberOfParticle; i++) {
 		ptcl = &particles[i];
 		if (ptcl->NewNumberOfNeighbor > 0) {
 			NewCM = &particles[NumberOfParticle];
 			NewCM->clear();
-			for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++) {
-				NewCM->NewNeighbors[j] = ptcl->NewNeighbors[j];
-			}
+			NewCM->copyNewNeighbor(ptcl);		
 			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleIndex;
-			NewCM->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor + 1;
+			NewCM->NewNumberOfNeighbor++;
 
 			NumberOfParticle++;
 		}
@@ -59,13 +54,13 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, 
 			fprintf(stdout, "GAR. PID: %d\n", ptcl->PID);
 			NewCM = &particles[NumberOfParticle];
 			NewCM->clear();
+			NewCM->copyNewNeighbor(ptcl);
 			for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++) {
-				NewCM->NewNeighbors[j] = ptcl->NewNeighbors[j];
 				fprintf(stdout, "GAR. PID: %d\n", particles[ptcl->NewNeighbors[j]].PID);
 			}
 			fflush(stdout);
 			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleIndex;
-			NewCM->NewNumberOfNeighbor = ptcl->NewNumberOfNeighbor + 1;
+			NewCM->NewNumberOfNeighbor++;
 
 			NumberOfParticle++;
 		}
@@ -88,7 +83,7 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, 
 
 			Particle* ptcl = &particles[i];
 			auto it = terminated.begin();
-			&particles[it->first]->copyNewNeighbor(ptcl);
+			particles[it->first].copyNewNeighbor(ptcl);
 
 			existing.insert({it->first, it->second});
 			terminated.erase(it);
@@ -98,9 +93,10 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, 
 
 	global_variable->NumberOfParticle = afterNumberOfParticle;
 
-	for (int i; newCMptcls) {
+	for (int i: newCMptcls) {
 		deleteNeighbors(i);
 	}
+
 	ParticleList.erase(
 		std::remove_if(
 				ParticleList.begin(), 
@@ -110,6 +106,7 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, 
 		ParticleList.end()
 	); // this might not be needed. 
 	ParticleList.insert(ParticleList.end(), newCMptcls.begin(), newCMptcls.end())
+
 	global_variable->NewPID = NewPID;
 }
 
@@ -154,7 +151,7 @@ void mergeGroupCandidates() {
 
                     // Mark otherGroup for deletion after the loop
 					if (j != NumberOfParticle-1) {
-						particles[j] = particles[NumberOfParticle-1];
+						particles[j].copyNewNeighbor(&particles[NumberOfParticle-1]);
 					}
 					particles[NumberOfParticle-1].clear();
 					NumberOfParticle--;
@@ -176,6 +173,8 @@ void deleteNeighbors(int newOrder) {
 	NewPID++;
 	ptclCM->isActive = true;
 	ptclCM->isCMptcl = true;
+	ptclCM->RadiusOfNeighbor = ACRadius*ACRadius;
+	ptclCM->binary_state = 0;
 
 	Particle* members;
 
@@ -185,8 +184,12 @@ void deleteNeighbors(int newOrder) {
 	}
 
 	// Erase members and put CM particle in neighbors
-	for (int i=0; i<newOrder; i++) {
+	for (int i=0; i<NumberOfParticle; i++) {
+
 		Particle* ptcl = &particles[i];
+		if (!ptcl->isActive)
+			continue;
+
 		auto newEnd = std::remove_if(
 			ptcl->Neighbors, 
 			ptcl->Neighbors + ptcl->NumberOfNeighbor, 
@@ -204,8 +207,6 @@ void deleteNeighbors(int newOrder) {
 }
 
 void makePrimordialGroup(Particle* ptclCM) {
-
-	Particle* ptclCM;
 
 	Group* ptclGroup = new Group();
 
@@ -341,7 +342,6 @@ void makePrimordialGroup(Particle* ptclCM) {
 	fflush(binout);
 }
 
-/*
 bool AddNewGroupsToList(std::vector<Particle*> &particle) {
 
 	assert(GroupCandidateList.empty()); // Let's check GroupCandidateList is initially empty!
@@ -408,3 +408,4 @@ bool AddNewGroupsToList2(std::vector<Particle*> &members, std::vector<Particle*>
 }
 */
 #endif
+

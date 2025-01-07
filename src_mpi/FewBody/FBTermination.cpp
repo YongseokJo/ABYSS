@@ -14,6 +14,9 @@ void FBTermination(Group* group){
 
 	Particle* ptclCM = group->groupCM;
 
+	ptclCM->CurrentBlockIrr	= ptclCM->NewCurrentBlockIrr;
+	ptclCM->CurrentTimeIrr	= ptclCM->CurrentBlockIrr*time_step;
+
 	fprintf(binout,"--------------------------------------\n");
 	fprintf(binout,"In FBTermination.cpp... (CM PID: %d)\n\n", ptclCM->PID);
 	fprintf(binout, "CurrentTimeIrr of ptclCM (Myr): %e\n", ptclCM->CurrentTimeIrr*EnzoTimeStep*1e4);
@@ -31,16 +34,16 @@ void FBTermination(Group* group){
 	ptclGroup->sym_int.particles.template writeBackMemberAll<Particle>();
 	*/
 
-	assert(!group->sym_int.particles.isOriginFrame); // for debugging by EW 2025.1.6
+	assert(!group->sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.6
 	if (ptclCM->NumberOfNeighbor != 0) {
 		for (int i = 0; i < group->sym_int.particles.getSize(); i++) {
 			Particle* members = &group->sym_int.particles[i];
 
 			for (int dim=0; dim<Dim; dim++) {
-				&particles[members->ParticleIndex]->Position[dim] = groupCM->NewPosition[dim] + members->Position[dim];
-				&particles[members->ParticleIndex]->Velocity[dim] = groupCM->NewVelocity[dim] + members->Velocity[dim];
+				particles[members->ParticleIndex].Position[dim] = ptclCM->NewPosition[dim] + members->Position[dim];
+				particles[members->ParticleIndex].Velocity[dim] = ptclCM->NewVelocity[dim] + members->Velocity[dim];
 			}
-			&particles[members->ParticleIndex]->Mass = members->Mass;
+			particles[members->ParticleIndex].Mass = members->Mass;
 		}
 	}
 	else {
@@ -48,31 +51,26 @@ void FBTermination(Group* group){
 			Particle* members = &group->sym_int.particles[i];
 
 			for (int dim=0; dim<Dim; dim++) {
-				&particles[members->ParticleIndex]->Position[dim] = groupCM->Position[dim] + members->Position[dim];
-				&particles[members->ParticleIndex]->Velocity[dim] = groupCM->Velocity[dim] + members->Velocity[dim];
+				particles[members->ParticleIndex].Position[dim] = ptclCM->Position[dim] + members->Position[dim];
+				particles[members->ParticleIndex].Velocity[dim] = ptclCM->Velocity[dim] + members->Velocity[dim];
 			}
-			&particles[members->ParticleIndex]->Mass = members->Mass;
+			particles[members->ParticleIndex].Mass = members->Mass;
 		}
 	}
-
-	ptclCM->CurrentBlockIrr = ptclCM->NewCurrentBlockIrr;
-	ptclCM->CurrentTimeIrr  = ptclCM->CurrentBlockIrr*time_step;
-
 
 	ptclCM->isActive = false;
 	ptclCM->NewNumberOfNeighbor = 0;
 	
-	for (int i=0; i<ptclGroup->sym_int.particles.getSize(); i++) {
-		Particle* members = &particles[ptclGroup->sym_int.particles[i].ParticleIndex];
+	for (int i=0; i<group->sym_int.particles.getSize(); i++) {
+		Particle* members = &particles[group->sym_int.particles[i].ParticleIndex];
 
-		ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = ptcl->ParticleIndex;
+		ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = members->ParticleIndex;
 		ptclCM->NewNumberOfNeighbor++;
 
-		members->isActive = true;
 		members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
 
 		// For 3-body & 4-body termination case by EW 2025.1.6
-		if (ptclGroup->sym_int.particles.getSize() > 2)
+		if (group->sym_int.particles.getSize() > 2)
 			members->binary_state = -1;
 
 		members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr;
@@ -136,7 +134,6 @@ void FBTermination(Group* group){
 	fprintf(binout,"end of Few Body Termination\n");
 	fprintf(binout,"--------------------------------------\n");
 	fflush(binout);
-
 }
 
 // Use this function when SDAR (2-body) is interrupted in the middle of its integration by stellar merger, TDE, GW merger, etc.
@@ -159,54 +156,53 @@ void FBTermination2(Group* group){
 	ptclCM->isActive = false;
 	ptclCM->NewNumberOfNeighbor = 0;
 
-	for (int i=0; i<ptclGroup->sym_int.particles.getSize(); i++) {
-		Particle* ptcl = &particles[ptclGroup->sym_int.particles[i].ParticleIndex];
-		if (ptcl->Mass != 0.0) {
+	for (int i=0; i<group->sym_int.particles.getSize(); i++) {
+		Particle* members = &particles[group->sym_int.particles[i].ParticleIndex];
+		if (members->Mass != 0.0) {
 
-			ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = ptcl->ParticleIndex;
+			ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = members->ParticleIndex;
 			ptclCM->NewNumberOfNeighbor++;
 
-			ptcl->isActive = true;
 			members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
 
 			// Set CurrentBlock and CurrentTime for group particles.
-			ptcl->CurrentBlockIrr	= ptclCM->CurrentBlockIrr; // Block to be integrated
-			ptcl->CurrentBlockReg	= ptclCM->CurrentBlockReg;
-			ptcl->CurrentTimeIrr	= current_time; // This will be updated later.
-			ptcl->CurrentTimeReg	= ptclCM->CurrentTimeReg;
-			ptcl->NewCurrentBlockIrr = ptclCM->NewCurrentBlockIrr;
+			members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr; // Block to be integrated
+			members->CurrentBlockReg	= ptclCM->CurrentBlockReg;
+			members->CurrentTimeIrr		= current_time; // This will be updated later.
+			members->CurrentTimeReg		= ptclCM->CurrentTimeReg;
+			members->NewCurrentBlockIrr = ptclCM->NewCurrentBlockIrr;
 
-			ptcl->TimeLevelIrr		= ptclCM->TimeLevelIrr;
-			ptcl->TimeLevelReg		= ptclCM->TimeLevelReg;
+			members->TimeLevelIrr		= ptclCM->TimeLevelIrr;
+			members->TimeLevelReg		= ptclCM->TimeLevelReg;
 
-			CalculateAcceleration01(ptcl);
-			CalculateAcceleration23(ptcl);
+			CalculateAcceleration01(members);
+			CalculateAcceleration23(members);
 
 			double pos[Dim], vel[Dim];
-			ptcl->predictParticleSecondOrder(ptclCM->CurrentTimeIrr - current_time, pos, vel);
+			members->predictParticleSecondOrder(ptclCM->CurrentTimeIrr - current_time, pos, vel);
 
 			for (int dim=0; dim<Dim; dim++) {
-				ptcl->Position[dim] =  pos[dim];
-				ptcl->Velocity[dim] =  vel[dim];
+				members->Position[dim] =  pos[dim];
+				members->Velocity[dim] =  vel[dim];
 			}
-			ptcl->CurrentTimeIrr = ptclCM->CurrentTimeIrr;
+			members->CurrentTimeIrr = ptclCM->CurrentTimeIrr;
 
-			ptcl->calculateTimeStepReg();
+			members->calculateTimeStepReg();
 		
-			if (ptcl->TimeLevelReg <= ptclCM->TimeLevelReg-1 
-					&& ptcl->TimeBlockReg/2+ptcl->CurrentBlockReg > ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
-				ptcl->TimeLevelReg = ptclCM->TimeLevelReg-1;
+			if (members->TimeLevelReg <= ptclCM->TimeLevelReg-1 
+					&& members->TimeBlockReg/2+members->CurrentBlockReg > ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
+				members->TimeLevelReg = ptclCM->TimeLevelReg-1;
 			}
-			else if  (ptcl->TimeLevelReg >= ptclCM->TimeLevelReg+1) {
-				ptcl->TimeLevelReg = ptclCM->TimeLevelReg+1;
+			else if  (members->TimeLevelReg >= ptclCM->TimeLevelReg+1) {
+				members->TimeLevelReg = ptclCM->TimeLevelReg+1;
 			}
 			else 
-				ptcl->TimeLevelReg = ptclCM->TimeLevelReg;
-			ptcl->TimeStepReg  = static_cast<double>(pow(2, ptcl->TimeLevelReg)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
-			ptcl->TimeBlockReg = static_cast<ULL>(pow(2, ptcl->TimeLevelReg-time_block)); // Eunwoo: I think this was already calculated in calculateTimeStepReg()
+				members->TimeLevelReg = ptclCM->TimeLevelReg;
+			members->TimeStepReg  = static_cast<double>(pow(2, members->TimeLevelReg));
+			members->TimeBlockReg = static_cast<ULL>(pow(2, members->TimeLevelReg-time_block));
 
-			// ptcl->calculateTimeStepIrr2(ptcl->a_tot, ptcl->a_irr);
-			ptcl->calculateTimeStepIrr();
+			// members->calculateTimeStepIrr2(ptcl->a_tot, ptcl->a_irr);
+			members->calculateTimeStepIrr();
 		}
 	}
 

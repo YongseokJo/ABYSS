@@ -69,22 +69,6 @@ struct Group
 	}
 
 /*
-	Group& operator = (const Group& other) {
-		groupCMOrder = other.groupCMOrder;
-		isTerminate = other.isTerminate;
-		isMerger = other.isMerger;
-		CurrentTime = other.CurrentTime;
-		sym_int = other.sym_int;
-#ifdef SEVN
-		useSEVN = other.useSEVN;
-		EvolutionTime = other.EvolutionTime;
-		EvolutionTimeStep = other.EvolutionTimeStep;
-#endif
-		return *this;
-	}
-*/
-
-/*
 	// custom initializer
 	// initializer added YS 2025.1.2
 	void initialize(void)
@@ -100,23 +84,6 @@ struct Group
 		EvolutionTime = 0.0;
 		EvolutionTimeStep = 0.0;
 #endif
-	}
-*/
-
-/*
-	void clear() {
-		groupCMOrder = -1;
-		isTerminate = false;
-		isMerger = false;
-		CurrentTime = 0.0;
-		sym_int.clear(); // Delocate memory
-		sym_int.particles.clear(); // Delocate memory
-		manager.step.clear(); // Delocate memory
-#ifdef SEVN
-		useSEVN = false;
-		EvolutionTime = 0.0;
-		EvolutionTimeStep = 0.0;
-#endif		
 	}
 */
 

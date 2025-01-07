@@ -21,12 +21,7 @@ bool updateSkipList(SkipList *skiplist, int ptcl_id);
 int writeParticle(double current_time, int outputNum);
 void calculateRegAccelerationOnGPU(std::vector<int> RegularList, WorkScheduler &ws);
 
-void SetPrimordialBinaries();
-void FBTermination(int Order);
-void FBTermination2(int Order);
-void SetBinaries(std::vector<int>& ParticleList);
-
-void formPrimordialBinaries(int& beforeNumberOfParticle);
+void formPrimordialBinaries(int beforeNumberOfParticle);
 void insertNeighbors(int Order);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::map<int, int>& existing, std::map<int, int>& terminated);
 
@@ -50,6 +45,10 @@ void RootRoutines() {
 	std::map<int, int> existingCMPtcl_Worker_Map; // by EW 2025.1.4
 	std::map<int, int> terminatedCMPtcl_Worker_Map; // by EW 2025.1.4
 	std::vector<int> newCMptcls; // by EW 2025.1.6
+	std::vector<int> notusedPtcls; // by EW 2025.1.7
+	// merged particles & PISN will be contained here
+	// new single Particle formed in Enzo can be formed in ParticleIndex of these ptcls
+	// if empty, NumberOfParticle++
 	
 
 	std::vector<int> RegularList;
@@ -69,7 +68,7 @@ void RootRoutines() {
 
 	WorkScheduler work_scheduler;
 
-	std::vector<int> PIDs;
+	std::vector<int> PIDs; // (Query) EW: If this is used only in the initialization part, how about defining this in initialization section?
 	PIDs.reserve(NumberOfParticle);
 	PIDs.resize(NumberOfParticle);
 	for (int i = 0; i < NumberOfParticle; i++)
@@ -107,25 +106,26 @@ void RootRoutines() {
 
 #ifdef FEWBODY
 		// Primordial binary search
-		std::vector<int> BinaryList;
+		// std::vector<int> BinaryList; // commented by EW 2025.1.7
 
 		work_scheduler.initialize();
-		work_scheduler.doSimpleTask(20, NumberOfParticle);
+		work_scheduler.doSimpleTask(20, PIDs);
 
-		// Example codes by EW 2025.1.4
+		// example code by EW 2025.1.7
 		int beforeNumberOfParticle = NumberOfParticle;
 		formPrimordialBinaries(beforeNumberOfParticle);
-		assert(beforeNumberOfParticle >= NumberOfParticle); // for debugging by EW 2025.1.4
-		assert(existingCMPtclIndexList.empty()); // for debugging by EW 2025.1.4
+		assert(beforeNumberOfParticle <= NumberOfParticle); // for debugging by EW 2025.1.4
+		assert(existingCMPtcl_Worker_Map.empty()); // for debugging by EW 2025.1.4
 		if (beforeNumberOfParticle != NumberOfParticle) {
-			Particle* ptcl;
 			for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
-				// i is ParticleIndex
 				ptcl = &particles[i];
 				existingCMPtcl_Worker_Map.insert({ptcl->ParticleIndex, existingCMPtcl_Worker_Map.size() % NumberOfWorker + 1});
+				PIDs.push_back(i);
+
+				int rank1 = existingCMPtcl_Worker_Map[ptcl->ParticleIndex];
+				// work_scheduler.doSimpleTask(23, NumberOfParticle - beforeNumberOfParticle); // wrong code by EW 2025.1.6
+				// Send and do task 23 in worker number: rank1
 			}
-			work_scheduler.doSimpleTask(23, NumberOfParticle - beforeNumberOfParticle); // wrong code by EW 2025.1.6
-			// Let's use existingCMPtcl_Worker_Map; it is containing all the data needed by EW 2025.1.6
 		}
 
 		fprintf(stdout, "SetPrimordialBinaries ends... NumberOfParticle: %d\n", NumberOfParticle);
@@ -390,20 +390,20 @@ void RootRoutines() {
 
 #ifdef FEWBODY
 				int OriginalSize = ThisLevelNode->ParticleList.size();
-				Particle* ptcl;
 				for (int i=0; i<OriginalSize; i++ ){
+					ptcl = &particles[ThisLevelNode->ParticleList[i]];
 					if (ptcl->isCMptcl && !ptcl->isActive) {
 
 						terminatedCMPtcl_Worker_Map.insert({ptcl->ParticleIndex, existingCMPtcl_Worker_Map[ptcl->ParticleIndex]});
 						existingCMPtcl_Worker_Map.erase(ptcl->ParticleIndex);
 
-						insertNeighbors(ptcl->ParticleIndex); // Proper function should be used here by EW 2025.1.6
+						insertNeighbors(ptcl->ParticleIndex);
 
-						ThisLevelNode->ParticleList.insert(
-							ThisLevelNode->ParticleList.end(), 
-							ptcl->NewNeighbors.begin(), 
-							ptcl->NewNeighbors.end()
-						);
+						for (int j=0; j < ptcl->NewNumberOfNeighbor; j++) {
+							ThisLevelNode->ParticleList.push_back(ptcl->NewNeighbors[j]);
+							particles[ptcl->NewNeighbors[j]].isActive = true;
+						}
+
 						bin_termination = true;
 					}
 				}
@@ -428,7 +428,7 @@ void RootRoutines() {
 				if (beforeParticleListSize != ThisLevelNode->ParticleList.size()) {
 					new_binaries = true;
 					for (int i=beforeParticleListSize; i<ThisLevelNode->ParticleList.size(); i++) {
-						Particle* ptcl = &particles[ThisLevelNode->ParticleList[i]];
+						ptcl = &particles[ThisLevelNode->ParticleList[i]];
 						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
 						fflush(stdout);
 					}
@@ -437,6 +437,31 @@ void RootRoutines() {
 					// First, delete CM particle inside NewNeighbors using void deleteGroup(Particle* ptclCM) // task 25?
 					// Should adjust existingCMPtcl_Worker_Map & terminatedCMPtcl_Worker_Map
 					// Then, use task 24
+
+					// example code by EW 2025.1.7
+					Particle* ptclCM;
+					Particle* mem_ptclCM;
+					for (int i=0; i<newCMptcls.size(); i++) {
+						ptclCM = &particles[i];
+						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
+							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
+							if (mem_ptclCM->isCMptcl) {
+								int rank1 = existingCMPtcl_Worker_Map[mem_ptclCM->ParticleIndex];
+								// Send and do task 25 in worker number: rank1
+							}
+						}
+						int rank2 = existingCMPtcl_Worker_Map[ptclCM->ParticleIndex]; 
+						// Send and do task 24 in worker number: rank2
+					}
+
+					ThisLevelNode->ParticleList.erase(
+						std::remove_if(
+								ThisLevelNode->ParticleList.begin(), 
+								ThisLevelNode->ParticleList.end(),
+								[](int i) { return !particles[i].isActive; }
+						),
+						ThisLevelNode->ParticleList.end()
+					);
 				}
 				newCMptcls.clear();
 
@@ -597,14 +622,40 @@ void RootRoutines() {
 				formBinaries(RegularList, newCMptcls, existingCMPtcl_Worker_Map, terminatedCMPtcl_Worker_Map);
 				if (beforeRegularListSize != RegularList.size()) {
 					for (int i=beforeRegularListSize; i<RegularList.size(); i++) {
-						Particle* ptcl = &particles[RegularList[i]];
+						ptcl = &particles[RegularList[i]];
 						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
 						fflush(stdout);
 					}
-					work_scheduler.doSimpleTask(24, newCMptcls); // This is wrong by EW 2025.1.6
+					work_scheduler.doSimpleTask(24, newCMptcls); 
 					// This should be fixed by EW 2025.1.6
 					// First, delete CM particle inside NewNeighbors using void deleteGroup(Particle* ptclCM) // task 25?
+					// Should adjust existingCMPtcl_Worker_Map & terminatedCMPtcl_Worker_Map
 					// Then, use task 24
+
+					// example code by EW 2025.1.7
+					Particle* ptclCM;
+					Particle* mem_ptclCM;
+					for (int i=0; i<newCMptcls.size(); i++) {
+						ptclCM = &particles[i];
+						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
+							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
+							if (mem_ptclCM->isCMptcl) {
+								int rank1 = existingCMPtcl_Worker_Map[mem_ptclCM->ParticleIndex];
+								// Send and do task 25 in worker number: rank1
+							}
+						}
+						int rank2 = existingCMPtcl_Worker_Map[ptclCM->ParticleIndex]; 
+						// Send and do task 24 in worker number: rank2
+					}
+
+					RegularList.erase(
+						std::remove_if(
+								RegularList.begin(), 
+								RegularList.end(),
+								[](int i) { return !particles[i].isActive; }
+						),
+						RegularList.end()
+					);
 				}
 				newCMptcls.clear();
 
