@@ -1,3 +1,4 @@
+#define FEWBODY
 #define CUDA
 
 #define LoadBalance
@@ -76,3 +77,21 @@ typedef unsigned long long ULL;
 //#define BatchSize 32 // each thread calculates BatchSize particles
 //#define GridDimY 16 // each block calcuates NNB/GridDimY particles
 //#define NNB_per_block 128
+
+
+
+
+// TASK NAMES
+#define IRR_FORCE 0 
+#define REG_FORCE 1 
+#define IRR_UPDATE 2 
+#define REG_UPDATE 3 
+#define REG_CUDA 4 
+#define REG_CUDA_UPDATE 5 
+#define INIT1 7 
+#define INIT2 8 
+#define INIT_TIME 9 
+#define TIME_SYNC 10 
+#define PB_SERACH 20
+#define FB_SERACH 21 
+#define FB_SDAR 26
