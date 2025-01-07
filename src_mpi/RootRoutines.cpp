@@ -50,6 +50,10 @@ void RootRoutines() {
 	std::map<int, int> existingCMPtcl_Worker_Map; // by EW 2025.1.4
 	std::map<int, int> terminatedCMPtcl_Worker_Map; // by EW 2025.1.4
 	std::vector<int> newCMptcls; // by EW 2025.1.6
+	std::vector<int> terminatedPtcls; // by EW 2025.1.7
+	// merged particles & PISN will be contained here
+	// new single Particle formed in Enzo can be formed in ParticleIndex of these ptcls
+	// if empty, NumberOfParticle++
 	
 
 	std::vector<int> RegularList;
@@ -404,6 +408,17 @@ void RootRoutines() {
 							ptcl->NewNeighbors.begin(), 
 							ptcl->NewNeighbors.end()
 						);
+						if (ptcl->NewNumberOfNeighbor > 2) {
+							for (int j=0; j<ptcl->NewNumberOfNeighbor; j++) {
+								particles[ptcl->NewNeighbors[j]].isActive = true;
+								particles[ptcl->NewNeighbors[j]].bin_state = -1;
+							}
+						}
+						else {
+							for (int j=0; j<ptcl->NewNumberOfNeighbor; j++)
+								particles[ptcl->NewNeighbors[j]].isActive = true;
+						}
+
 						bin_termination = true;
 					}
 				}

@@ -19,6 +19,7 @@ enum class BinaryInterruptState:int {none = 0, form = 1, exchange = 2, collision
 struct Group;
 struct Particle {
 	int PID;
+	int ParticleIndex; // (Query) please change it to index when you get a chance // (Answer) done!
 	int ParticleType;
 	double Position[3];      // Position in 3D space (x, y, z)
 	double Velocity[3];      // Velocity in 3D space (vx, vy, vz)
@@ -43,15 +44,14 @@ struct Particle {
 	ULL TimeBlockReg;
 	int TimeLevelIrr;
 	int TimeLevelReg;
-	double NewPosition[Dim];
-	double NewVelocity[Dim];
-	double RadiusOfNeighbor; //this should be squared of it.
-	double BackgroundAcceleration[Dim];
+	double NewPosition[Dim]; // this might be initialized in NewFBInitialization by EW 2025.1.7
+	double NewVelocity[Dim]; // this might be initialized in NewFBInitialization by EW 2025.1.7
+	double RadiusOfNeighbor; //this should be squared of it. // this might be initialized in NewFBInitialization by EW 2025.1.7
+	double BackgroundAcceleration[Dim]; // this might be initialized in NewFBInitialization by EW 2025.1.7
 
 	// For SDAR
 	bool isActive;
 	bool isUpdateToDate;
-	int ParticleIndex; // (Query) please change it to index when you get a chance
 	double radius;
 	double dm; // Stellar mass which will be distributed to nearby gas cells
 	double time_check; // time to check next interrupt
@@ -107,7 +107,7 @@ struct Particle {
 		CMPtclIndex = -1;
 
 	}
-
+/*
 	Particle& operator = (const Particle& other) { // This seems unnecessary now by EW 2025.1.6
 
         PID = other.PID;
@@ -162,7 +162,7 @@ struct Particle {
 
         return *this;
     }
-
+*/
 	/*
 	Particle(double x, double y, double z, double vx, double vy, double vz, double m, double q)
 		: Mass(m) {
@@ -203,7 +203,7 @@ struct Particle {
 		this->CMptclIndex = -1;
 
 #ifdef SEVN
-		this->ParticleType = NormalStar+SingleParticle;
+		this->ParticleType = NormalStar+SingleStar;
 #else
 		if (this->Mass*1e9 > 8) {
 			this->ParticleType = Blackhole+SingleStar;
@@ -217,59 +217,19 @@ struct Particle {
 #endif
 	}
 
-	// Clear function
+	// Clear function // Simplified by EW 2025.1.7
     void clear() {
         PID = -1;
-        // ParticleType = 0;
-		ParticleType = NormalStar+SingleStar;
-        for (int i = 0; i < 3; ++i) {
-            Position[i] = 0.0;
-            Velocity[i] = 0.0;
-        }
-        Mass = 0.0;
-        for (int i = 0; i < Dim; ++i) {
-            for (int j = 0; j < HERMITE_ORDER; ++j) {
-                a_tot[i][j] = 0.0;
-                a_reg[i][j] = 0.0;
-                a_irr[i][j] = 0.0;
-            }
-        }
-        for (int i = 0; i < MaxNumberOfNeighbor; ++i) {
-            Neighbors[i] = -1;
-            NewNeighbors[i] = -1;
-        }
+		ParticleIndex = -1;
+
         NumberOfNeighbor = 0;
         NewNumberOfNeighbor = 0;
 
-        CurrentTimeIrr = 0.0;
-        CurrentTimeReg = 0.0;
-        CurrentBlockIrr = 0;
-        NewCurrentBlockIrr = 0;
-        CurrentBlockReg = 0;
-        NextBlockIrr = 0;
-        TimeStepIrr = 0.0;
-        TimeStepReg = 0.0;
-        TimeBlockIrr = 0;
-        TimeBlockReg = 0;
-        TimeLevelIrr = 0;
-        TimeLevelReg = 0;
-        for (int i = 0; i < Dim; ++i) {
-            NewPosition[i] = 0.0;
-            NewVelocity[i] = 0.0;
-            BackgroundAcceleration[i] = 0.0;
-			a_spin[i] = 0.0;
-        }
-        RadiusOfNeighbor = ACRadius*ACRadius;
-
         isActive = false;
-		ParticleIndex = -1;
-		radius = 0.;
-		dm = 0.0;
-		time_check = NUMERIC_FLOAT_MAX;
-		binary_state = 0;
 		GroupInfo = nullptr;
 		isCMptcl = false;
 		CMPtclIndex = -1;
+		binary_state = 0;
     }
 
 	void normalizeParticle() {

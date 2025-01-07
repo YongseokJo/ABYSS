@@ -68,7 +68,6 @@ void FBTermination(Group* group){
 		ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 		ptclCM->NewNumberOfNeighbor++;
 
-		members->isActive = true;
 		members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
 
 		// For 3-body & 4-body termination case by EW 2025.1.6
@@ -166,7 +165,6 @@ void FBTermination2(Group* group){
 			ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 			ptclCM->NewNumberOfNeighbor++;
 
-			ptcl->isActive = true;
 			members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
 
 			// Set CurrentBlock and CurrentTime for group particles.

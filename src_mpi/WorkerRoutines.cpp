@@ -211,11 +211,14 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 
 				ptcl->NewNumberOfNeighbor = 0;
-				if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin) {
-					if (ptcl->binary_state = -1)
-						ptcl->checkNewGroup2();
-					else
+
+				if (ptcl->binary_state = 0) {
+					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
 						ptcl->checkNewGroup();
+				}
+				else {
+					assert(ptcl->binary_state = -1); // for debugging by EW 2025.1.7
+					ptcl->checkNewGroup2();
 					ptcl->binary_state = 0;
 				}
 
@@ -255,7 +258,7 @@ void WorkerRoutines() {
 				ptcl->calculateTimeStepIrr();
 				ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 
-				Group* group;
+				Group* group = ptcl->GroupInfo;
 				
 				group->sym_int.particles.cm.NumberOfNeighbor = ptcl->NumberOfNeighbor;
 				for (int i=0; i<ptcl->NumberOfNeighbor; i++)

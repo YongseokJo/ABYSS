@@ -154,7 +154,7 @@ void mergeGroupCandidates() {
 
                     // Mark otherGroup for deletion after the loop
 					if (j != NumberOfParticle-1) {
-						particles[j] = particles[NumberOfParticle-1];
+						particles[j]->copyNewNeighbors(particles[NumberOfParticle-1]);
 					}
 					particles[NumberOfParticle-1].clear();
 					NumberOfParticle--;
@@ -176,6 +176,8 @@ void deleteNeighbors(int newOrder) {
 	NewPID++;
 	ptclCM->isActive = true;
 	ptclCM->isCMptcl = true;
+	ptclCM->RadiusOfNeighbor = ACRadius*ACRadius;
+	ptclCM->binary_state = 0;
 
 	Particle* members;
 
