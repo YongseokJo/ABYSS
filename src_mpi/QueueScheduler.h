@@ -97,16 +97,18 @@ public:
                 _FreeWorkers.insert(&workers[_rank]);
             return &workers[_rank];
         }
-        if (type == 1) // non-blocking
+        else if (type == 1) // non-blocking
         {
             MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_flag, &_status);
             if (_flag) 
             {
                 _rank = _status.MPI_SOURCE;
+                //fprintf(stdout,"Iprobe probed someting on rank %d.\n", _rank);
                 return &workers[_rank];
             }
             else
             {
+                //fprintf(stdout,"Iprobe probed nothing yet.\n");
                 return nullptr;
             }
         }
@@ -115,12 +117,12 @@ public:
 
     // this is only for a non-blocking wait.
     void callback(Worker* worker) {
-        workers->callback();
+        worker->callback();
         _completed_queues++;
-        if (workers->NumberOfQueues > 0)
-            WorkersToGo.insert(workers);
+        if (worker->NumberOfQueues > 0)
+            WorkersToGo.insert(worker);
         else
-            _FreeWorkers.insert(workers);
+            _FreeWorkers.insert(worker);
     }
 
 
@@ -149,6 +151,11 @@ public:
 
     void setTotalQueue(int total_queues) {_total_queues = total_queues;}
 
+    void assignWorker(Worker *worker) {
+        WorkersToGo.insert(worker);
+        _FreeWorkers.erase(worker);
+    }
+
 #ifdef FEWBODY
     std::unordered_set<int> CMPtcls;
     //std::unordered_map<int, int> CM_worker;
@@ -164,13 +171,14 @@ public:
         _next_time = next_time;
         _total_queues = queue_list.size();
         _queue_list.reserve(_total_queues);
+        _queue_list.resize(_total_queues);
         int single_ptcl=0, cm_ptcl=_total_queues-1;
 
         for (int i=0; i<_total_queues; i++)
         {
             pid = queue_list[i];
             particles[pid].isUpdateToDate = false;
-            if (particles[pid].isCMptcl)
+            if (!particles[pid].isCMptcl)
             {
                 _queue_list[single_ptcl++] = pid;
             }
@@ -180,6 +188,7 @@ public:
                 CMPtcls.insert(pid);
             }
         }
+
         //fb_total_tasks = CMPtcls.size(); // this is for the SDAR computations by YS 2025.01.06
         //fb_assigned_tasks = 0; // this is for the SDAR computations by YS 2025.01.06
         //UpdatedCMPtcl.resize(fb_total_tasks);

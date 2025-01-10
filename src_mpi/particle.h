@@ -201,6 +201,7 @@ struct Particle {
 		this->a_spin[1] = 0.;
 		this->a_spin[2] = 0.;
 		this->CMPtclIndex = -1;
+		this->isUpdateToDate = true;
 
 #ifdef SEVN
 		this->ParticleType = NormalStar+SingleStar;
@@ -225,6 +226,7 @@ struct Particle {
         NumberOfNeighbor = 0;
         NewNumberOfNeighbor = 0;
 
+		isUpdateToDate = true;
         isActive = false;
 		GroupInfo = nullptr;
 		isCMptcl = false;

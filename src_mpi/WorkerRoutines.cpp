@@ -62,6 +62,7 @@ void WorkerRoutines() {
 				ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 				ptcl->calculateTimeStepIrr();
 				ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+				ptcl->isUpdateToDate = true;
 				//std::cout << "IrrCal done " << MyRank << std::endl;
 				break;
 
@@ -235,20 +236,20 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 
 				NewFBInitialization(ptcl);
-
+				std::cout << "FewBody object of particle " << ptcl_id
+						  << " is successfully initialized on rank " << MyRank << "." <<std::endl;
 				break;
-			
+
 			case 25: // Delete a Group struct
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
-
 				deleteGroup(ptcl);
-
 				break;
 
 			case 26: // SDAR for few body encounters
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
+				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
 				ptcl = &particles[ptcl_id];
 
 				/* (Query) this will be done already. 
@@ -272,6 +273,7 @@ void WorkerRoutines() {
 				if (!ptcl->GroupInfo->isMerger && ptcl->GroupInfo->isTerminate)
 					FBTermination(ptcl->GroupInfo);
 
+				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl_id << " done!" <<std::endl;
 				break;
 #endif 
 

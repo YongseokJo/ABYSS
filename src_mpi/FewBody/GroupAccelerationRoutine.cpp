@@ -42,7 +42,8 @@ void formPrimordialBinaries(int beforeNumberOfParticle) {
 	global_variable->NewPID = NewPID;
 }
 
-void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int,int>& existing, std::unordered_map<int,int>& terminated) {
+void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
+ std::unordered_map<int,int>& existing, std::unordered_map<int,int>& terminated) {
 
 	Particle* ptcl;
 	Particle* NewCM;
@@ -75,6 +76,9 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, 
 
 	for (int i = global_variable->NumberOfParticle; i < NumberOfParticle; i++) {
 		if (terminated.empty()) {
+			NewCM = &particles[i];
+			NewCM->ParticleIndex = i; // added by YS 2025.01.10 (Query)
+			NewCM->PID = global_variable->NewPID; // added by YS 2025.01.10 (Query)
 			existing.insert({i, existing.size() % NumberOfWorker + 1}); // (Query) shouldn't it be existing not existingCMPtcl_Worker_Map? 2025.01.06
 			newCMptcls.push_back(i);
 		}

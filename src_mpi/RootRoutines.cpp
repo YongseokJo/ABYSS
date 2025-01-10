@@ -70,7 +70,7 @@ void RootRoutines() {
 	workers = new Worker[NumberOfWorker+1];
 
 	for (int i=0; i<=NumberOfWorker; i++) {
-		workers[i].MyRank = i;
+		workers[i].initialize(i);
 	}
 
 	QueueScheduler queue_scheduler;
@@ -104,10 +104,9 @@ void RootRoutines() {
 		{
 			PIDs[i] = i;
 		}
-	
+
 		std::cout << "Initialization of particles starts." << std::endl;
 		queue_scheduler.initialize(INIT_ACC1);
-		queue_scheduler.printFreeWorker();
 		queue_scheduler.takeQueue(PIDs);
 		do
 		{
@@ -134,21 +133,21 @@ void RootRoutines() {
 
 #ifdef FEWBODY
 		// Primordial binary search
-		// std::vector<int> BinaryList; // commented by EW 2025.1.7
-
-		//work_scheduler.initialize();
-		//work_scheduler.doSimpleTask(20, PIDs);
-
 		// example code by EW 2025.1.7
 		Queue queue;
 		int rank;
-		int beforeNumberOfParticle = NumberOfParticle;
-		formPrimordialBinaries(beforeNumberOfParticle);
-		assert(beforeNumberOfParticle <= NumberOfParticle); // for debugging by EW 2025.1.4
+		int OriginalNumberOfParticle = NumberOfParticle;
+		formPrimordialBinaries(OriginalNumberOfParticle);
+		assert(OriginalNumberOfParticle <= NumberOfParticle); // for debugging by EW 2025.1.4
 		assert(CMPtclWorker.empty()); // for debugging by EW 2025.1.4
-		if (beforeNumberOfParticle != NumberOfParticle) {
+		if (OriginalNumberOfParticle != NumberOfParticle) {
+			std::cout << "In total, " << OriginalNumberOfParticle - NumberOfParticle
+					  << " primordial binaries are created." << std::endl;
 			queue_scheduler.initialize(23);
-			for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
+			for (int i=OriginalNumberOfParticle; i<NumberOfParticle; i++) {
+				std::cout << "New Primordial Binary of PID="
+						  << i << " is created with being assigned to a worker of rank "
+						  << rank << "." << std::endl;
 				ptcl = &particles[i];
 				CMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker.size() % NumberOfWorker + 1});
 				PIDs.push_back(ptcl->ParticleIndex);
@@ -165,8 +164,10 @@ void RootRoutines() {
 				queue_scheduler.waitQueue(0);
 			} while(queue_scheduler.isComplete());
 		}
-
-		fprintf(stdout, "SetPrimordialBinaries ends... NumberOfParticle: %d\n", NumberOfParticle);
+		else {
+			std::cout << "There is no primordial binary." << std::endl;
+		}
+		fprintf(stdout, "PrimordialBinariesRoutine has ended...\nThe total number of particles is  %d\n", NumberOfParticle);
 		fflush(stdout);
 #endif
 
@@ -452,7 +453,8 @@ void RootRoutines() {
 
 				// Irregular Force
 #ifdef FEWBODY
-				int pid;
+				std::cout << "Irr force starts" << std::endl;
+				int cm_pid;
 				Queue queue;
 				queue_scheduler.initializeIrr(IRR_FORCE, next_time, ThisLevelNode->ParticleList);
 				auto iter = queue_scheduler.CMPtcls.begin();
@@ -461,28 +463,40 @@ void RootRoutines() {
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
 					do { 
-						worker = queue_scheduler.waitQueue(1); // blocking wait
-						/* check if there's any CM ptcl ready to go for SDAR*/
-						if (iter == queue_scheduler.CMPtcls.end()) 
-							iter = queue_scheduler.CMPtcls.begin();
-						pid = *(iter);
-						ptcl = &particles[pid];
-						for (int j = 0; j < ptcl->NumberOfNeighbor; j++)
+						worker = queue_scheduler.waitQueue(1); // non-blocking wait
+						// if there's any CMPtcl
+						if (queue_scheduler.CMPtcls.size() > 0)
 						{
-							if (particles[ptcl->Neighbors[j]].isUpdateToDate == false) {
-								iter++;
-								break;
+							/* check if there's any CM ptcl ready to go for SDAR*/
+							if (iter == queue_scheduler.CMPtcls.end())
+								iter = queue_scheduler.CMPtcls.begin();
+							cm_pid = *(iter);
+							ptcl = &particles[cm_pid];
+							for (int j = 0; j < ptcl->NumberOfNeighbor; j++)
+							{
+								if (particles[ptcl->Neighbors[j]].isUpdateToDate == false)
+								{
+									iter++;
+									goto skip_to_next;
+								}
 							}
+							queue.task = FB_SDAR;
+							queue.pid = cm_pid;
+							queue.next_time = next_time;
+							workers[CMPtclWorker[cm_pid]].addQueue(queue);
+							queue_scheduler.assignWorker(&workers[CMPtclWorker[cm_pid]]);
+							iter = queue_scheduler.CMPtcls.erase(iter);
+						skip_to_next:;
 						}
-						queue.task = FB_SDAR;
-						queue.pid  = pid;
-						queue.next_time = next_time;
-						workers[CMPtclWorker[pid]].addQueue(queue);
-						queue_scheduler.WorkersToGo.insert(&workers[CMPtclWorker[pid]]);
-						iter = queue_scheduler.CMPtcls.erase(iter);
-					} while (worker != nullptr);
+						if (worker != nullptr) 
+						{
+							//fprintf(stdout, "Worker rank: %d\n", worker->MyRank);
+						}
+					} while (worker == nullptr);
 					queue_scheduler.callback(worker);
-				} while (queue_scheduler.isComplete() && queue_scheduler.CMPtcls.size() > 0);
+				} while (queue_scheduler.isComplete() || queue_scheduler.CMPtcls.size() > 0);
+
+				std::cout << "Irregular Force done" << std::endl;
 #else
 				queue_scheduler.initialize(IRR_FORCE, next_time);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -568,9 +582,11 @@ void RootRoutines() {
 					// example code by EW 2025.1.7
 					Particle* ptclCM;
 					Particle* mem_ptclCM;
+					int total_queues = 0;
 					for (int i=0; i<newCMptcls.size(); i++) {
-						ptclCM = &particles[i];
+						ptclCM = &particles[newCMptcls[i]]; // 2025.01.10 edited to newCMptcls[i] by YS
 						queue_scheduler.initialize(25);
+						total_queues = 0;
 						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
 							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
 							if (mem_ptclCM->isCMptcl) {
@@ -579,23 +595,30 @@ void RootRoutines() {
 								queue.pid = mem_ptclCM->ParticleIndex;
 								workers[rank_delete].addQueue(queue);
 								queue_scheduler.WorkersToGo.insert(&workers[rank_delete]);
+								total_queues++;
 							}
 						}
-						queue_scheduler.setTotalQueue(CMPtclWorker.size());
-						do
+						if (total_queues > 0)
 						{
-							queue_scheduler.runQueueAuto();
-							queue_scheduler.waitQueue(0);
-						} while (queue_scheduler.isComplete());
+							queue_scheduler.setTotalQueue(total_queues);
+							do
+							{
+								queue_scheduler.runQueueAuto();
+								queue_scheduler.waitQueue(0);
+							} while (queue_scheduler.isComplete());
+						}
 
 						queue_scheduler.initialize(24);
 						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
+						fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
+						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->ParticleIndex, rank_new);
 						queue.task = 24;
 						queue.pid = ptclCM->ParticleIndex;
 						workers[rank_new].addQueue(queue);
 						workers[rank_new].runQueue();
 						workers[rank_new].callback();
 					}
+					std::cout << "All new fewbody objects are initialized." << std::endl;
 
 					ThisLevelNode->ParticleList.erase(
 						std::remove_if(
@@ -812,7 +835,6 @@ void RootRoutines() {
 				std::cout << "erase success" << std::endl;
 #endif
 			}
-			/*
 				{
 					//, NextRegTime= %.3e Myr(%llu),
 					for (int i=0; i<RegularList.size(); i++) {
@@ -874,7 +896,6 @@ void RootRoutines() {
 					}
 					//fflush(stdout); 
 				}
-				*/
 #else
 			//std::cout << "Regular Routine Starts." << std::endl;
 			// Regular
