@@ -1,4 +1,4 @@
-#define FEWBODY
+#define NO_FEWBODY
 #define CUDA
 
 #define LoadBalance
@@ -92,6 +92,6 @@ typedef unsigned long long ULL;
 #define INIT_ACC2 8 
 #define INIT_TIME 9 
 #define TIME_SYNC 10 
-#define PB_SERACH 20
-#define FB_SERACH 21 
+#define PB_SEARCH 20
+#define FB_SEARCH 21 
 #define FB_SDAR 26
