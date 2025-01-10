@@ -550,7 +550,6 @@ void RootRoutines() {
 				//work_scheduler.doSimpleTask(22, ThisLevelNode->ParticleList);
 
 				int beforeParticleListSize = ThisLevelNode->ParticleList.size();
-				Queue queue;
 				int rank_delete, rank_new;
 				formBinaries(ThisLevelNode->ParticleList, newCMptcls, CMPtclWorker, PrevCMPtclWorker);
 				if (beforeParticleListSize != ThisLevelNode->ParticleList.size()) {
