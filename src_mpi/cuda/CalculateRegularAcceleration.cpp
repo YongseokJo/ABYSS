@@ -6,7 +6,7 @@
 #include <mpi.h>
 #include "../def.h"
 #include "../global.h"
-#include "../WorkScheduler.h"
+#include "../QueueScheduler.h"
 #include "cuda_functions.h"
 
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
@@ -22,7 +22,7 @@ void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, doub
  *  Date    : 2024.01.18  by Seoyoung Kim
  *
  */
-void calculateRegAccelerationOnGPU(std::vector<int> RegularList, WorkScheduler &ws){
+void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler &queue_scheduler){
 
 
 
@@ -140,17 +140,52 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, WorkScheduler &
 */
 
 
-	/*
-	std::cout << "RegularList, PID= ";
-	for (int i=0; i<total_tasks; i++) {
-		std::cout << RegularList[i]<< ", ";
-	}*/
 
-	// std::cout << std::endl;
+/*
+	std::cout << "(REG_CUDA) RegularList, PID= ";
+	for (int i=0; i<RegularList.size(); i++) {
+		std::cout << RegularList[i]<< ", ";
+	}
+	std::cout << std::endl;
+	*/
 
 
 
 	// Adjust Regular Gravity
+	int i=0, task=REG_CUDA;
+	queue_scheduler.initialize(REG_CUDA);
+	queue_scheduler.takeQueue(RegularList);
+	do
+	{
+		queue_scheduler.assignQueueAuto();
+        for (auto worker = queue_scheduler.WorkersToGo.begin(); worker != queue_scheduler.WorkersToGo.end();)
+        {
+            if ((*worker)->NumberOfQueues > 0)
+            {
+				//std::cout << "(REG_CUDA) My Rank =" << (*worker)->MyRank << std::endl;
+				MPI_Send(&task, 1, MPI_INT, (*worker)->MyRank, TASK_TAG, MPI_COMM_WORLD);
+				MPI_Send(&RegularList[i], 1, MPI_INT, (*worker)->MyRank, PTCL_TAG, MPI_COMM_WORLD);
+				MPI_Send(&NumNeighborReceive[i], 1, MPI_INT, (*worker)->MyRank, 10, MPI_COMM_WORLD);
+				MPI_Send(&ACListReceive[i * NumNeighborMax], NumNeighborReceive[i], MPI_INT, (*worker)->MyRank, 11, MPI_COMM_WORLD);
+				MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 12, MPI_COMM_WORLD);
+				MPI_Send(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 13, MPI_COMM_WORLD);
+				((*worker))->onDuty = true;
+				(*worker)->CurrentQueue++;
+				(*worker)->CurrentQueue %= MAX_QUEUE;
+				(*worker)->NumberOfQueues--;
+                worker = queue_scheduler.WorkersToGo.erase(worker);
+				i++;
+            }
+			else
+			{
+                ++worker;
+			}
+        }
+		queue_scheduler.waitQueue(0); // blocking wait
+	} while (queue_scheduler.isComplete());
+
+
+#ifdef nouse
 	ws.initialize();
 	int return_value, i = 0;
 	ws._setTask(4);
@@ -186,6 +221,7 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, WorkScheduler &
 		}
 		i++;
 	} while (ws._completed_tasks < ws._total_tasks);
+#endif
 
 	delete[] IndexList;
 

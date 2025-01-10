@@ -1,67 +1,175 @@
-#ifndef WORK_SCHEDULER_H
-#define WORK_SCHEDULER_H
+#ifndef QUEUE_SCHEDULER_H
+#define QUEUE_SCHEDULER_H
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include "mpi.h"
 #include "def.h"
 #include "particle.h"
 #include "global.h"
+#include "Queue.h"
+#include "Worker.h"
 
 
-struct Worker {
-    int MyRank; 
-    int task;
-    int PID;
-    double next_time;
-    bool onDuty;
-    std::vector<int> CMPtclIDs;
-    bool isCMWorker;
 
-    Worker() {
-        MyRank = -1;
-        task = -1;
-        onDuty = false;
-        next_time = -1;
-        PID = -1;
-        CMPtclIDs.clear();
-        isCMWorker = false;
-    }
 
-    void initialize() {
-        task = -1;
-        onDuty = false;
-        next_time = -1;
-        PID = -1;
-        if (CMPtclIDs.size() > 0) {
-           isCMWorker = true; 
-        }
-    }
-};
 
-extern Worker* workers;
-
-class WorkScheduler
+class QueueScheduler
 {
 public:
+    std::unordered_set<Worker*> WorkersToGo;
 
-    WorkScheduler() {
-        _FreeWorkers.reserve(NumberOfWorker);
-    }
-    void initialize()
+
+    QueueScheduler()
     {
-        _FreeWorkers.clear();
-        _FreeWorkers.resize(NumberOfWorker);
-        for (int i = 0; i < NumberOfWorker; i++) {
-            workers[i].initialize();
-            _FreeWorkers[i] = &workers[i];
+        _FreeWorkers.reserve(NumberOfWorker);
+        WorkersToGo.reserve(NumberOfWorker);
+    }
+
+    void initialize(int task, double next_time)
+    {
+        _initialize();
+        _task = task;
+        _next_time = next_time;
+    }
+
+    void initialize(int task)
+    {
+        _initialize();
+        _task = task;
+        _next_time = -1.;
+    }
+
+    void takeQueue(std::vector<int> &queue_list) {
+        _queue_list = queue_list;
+        _total_queues = _queue_list.size();
+    }
+
+    void assignQueueAuto() {
+        for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)
+        {
+            if (_queue_list.size() > 0)
+            {
+                _queue.task = _task;
+                _queue.pid = _queue_list.back();
+                _queue_list.pop_back();
+                _queue.next_time = _next_time;
+                (*worker)->addQueue(_queue);
+                WorkersToGo.insert(*worker);
+                _assigned_queues++;
+                worker = _FreeWorkers.erase(worker);
+                //_queue.print();
+            }
+            else {
+               ++worker; 
+            }
         }
-        _completed_tasks = 0;
-        _assigned_tasks = 0;
+    }
+
+    void runQueueAuto() {
+        for (auto worker = WorkersToGo.begin(); worker != WorkersToGo.end();)
+        {
+            if ((*worker)->NumberOfQueues > 0)
+            {
+                (*worker)->runQueue();
+                worker = WorkersToGo.erase(worker);
+            }
+            else
+            {
+                ++worker;
+            }
+        }
+    }
+
+    void assignQueue(Worker *worker, Queue *queue) {
+        worker->addQueue(*queue);
+        _FreeWorkers.erase(worker);
+        _assigned_queues++;
+        WorkersToGo.insert(worker);
+    }
+
+    Worker* waitQueue(int type) {
+        if (type == 0) // blocking
+        {
+            MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_status);
+            _completed_queues++;
+            // Retrieve the rank of the source processor
+            _rank = _status.MPI_SOURCE;
+            //fprintf(stdout, "returned rank = %d\n",_rank);
+            workers[_rank].callback();
+            _FreeWorkers.insert(&workers[_rank]);
+            return &workers[_rank];
+        }
+        if (type == 1) // non-blocking
+        {
+            MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_flag, &_status);
+            _rank = _status.MPI_SOURCE;
+            return &workers[_rank];
+        }
     }
 
 
-    void doSimpleTask(int task, std::vector<int> &list) {
+    void callback() {
+
+    }
+
+
+
+
+    bool isComplete() {
+        if (_completed_queues == _total_queues && _assigned_queues == _total_queues)
+            return _complete;
+        else
+            return _not_complete; 
+    }
+
+    void printFreeWorker() {
+        std::cout << "<FreeWorkers List>" << std::endl;
+        for (Worker* worker: _FreeWorkers) {
+            std::cout << "MyRank=" << worker->MyRank << std::endl;
+        }
+    }
+
+    void printWorkerToGo() {
+        std::cout << "<WorkersToGo List>" << std::endl;
+        for (Worker* worker: WorkersToGo) {
+            std::cout << "MyRank=" << worker->MyRank << std::endl;
+        }
+    }
+
+
+private:
+    std::unordered_set<Worker*> _FreeWorkers;
+    std::vector<int> _queue_list;
+    Queue _queue;
+    int _task, _rank, _flag;
+    double _next_time;
+    int _total_queues, _assigned_queues, _completed_queues;
+    const bool _complete = false;
+    const bool _not_complete = true;
+    MPI_Request _request;  // Pointer to the request handle
+    MPI_Status _status;    // Pointer to the status object
+
+
+
+    void _initialize() {
+        WorkersToGo.clear();
+        _FreeWorkers.clear();
+        for (int i = 1; i <= NumberOfWorker; i++) {
+            workers[i].initialize();
+            _FreeWorkers.insert(&workers[i]);
+        }
+        _total_queues=0;
+        _assigned_queues=0;
+        _completed_queues=0;;
+    }
+
+#ifdef unuse
+
+
+        void doSimpleTask(int task, std::vector<int> &list)
+    {
         int return_value, i = 0;
         _task = task;
         _total_tasks = list.size();
@@ -91,9 +199,6 @@ public:
         } while(_completed_tasks < _total_tasks);
     }
 
-
-
-
     void doIrregularForce(std::vector<int> &ParticleList,
                           double &next_time)
     {
@@ -101,7 +206,9 @@ public:
         _ParticleList = ParticleList;
         _total_tasks = _ParticleList.size();
         std::vector<int> SingleParticleList;
-        std::unordered_map<int, int> CMPtclMap;
+        std::unordered_set<int> CMPtcls;
+        std::vector<int> UpdatedCMPtcl;
+        std::unordered_set<int> ReadyToGoCMPtcl;
         int pid_tmp, return_value;
         SingleParticleList.reserve(_total_tasks);
 
@@ -116,11 +223,13 @@ public:
             }
             else
             {
-                CMPtclMap.insert({pid_tmp, i});
+                CMPtcls.insert(pid_tmp);
             }
         }
-        int fb_total_tasks = CMPtclMap.size(); // this is for the SDAR computations by YS 2025.01.06
+
+        int fb_total_tasks = CMPtcls.size(); // this is for the SDAR computations by YS 2025.01.06
         int fb_assigned_tasks = 0; // this is for the SDAR computations by YS 2025.01.06
+        UpdatedCMPtcl.resize(fb_total_tasks);
 
         do {
             if (_FreeWorkers.size() == 0 || _assigned_tasks == _total_tasks) 
@@ -129,22 +238,21 @@ public:
                 // MPI_Waitall(NumberOfCommunication, requests, statuses);
                 // NumberOfCommunication = 0;
                 _checkCompletion(return_value);
-                /* we can do something here */
+                // this ensures that cmptcls are ready to go (neighbors are update to date)
+                _checkCMPtclNeighbor(UpdatedCMPtcl, ReadyToGoCMPtcl); 
                 _WorkerTmp = _Callback();
                 _completed_tasks++;
+
+            }
+
+            // SDAR assignment
+            if (_FreeWokrers.size() != 0 && ReadyToGoCMPtcl.size() != 0) {
                 // I have to add that if the worker is a CMworker, I should run SDAR integration (Query to myself)
                 if (particles[_WorkerTmp->PID].isCMptcl && _WorkerTmp->isCMWorker) 
                 {
-                    _ptcl = &particles[_WorkerTmp->PID];
-                   // check if all the neighbors of the CM particle are updated to date
-                    for (int j = 0; j < _ptcl->NumberOfNeighbor; j++)
-                    {
-                        if (particles[_ptcl->Neighbors[j]].isUpdateToDate == false)
-                            break;
-                    }
                     // all neighbors are up to date.
-                    // for the SDAR execution.
-                    if ( _WorkerTmp != _FreeWorkers.back()) {
+                
+                
                         fprintf(stderr, "Worker does not match!\n");
                         exit(EXIT_FAILURE);
                     }
@@ -167,11 +275,12 @@ public:
                     for (int cm_pid : _WorkerTmp->CMPtclIDs)
                     {
                         _WorkerTmp->isCMWorker = false;
-                        if (CMPtclMap.find(cm_pid) != CMPtclMap.end())
+                        if (CMPtcls.find(cm_pid) != CMPtcls.end())
                         {
                             _WorkerTmp->PID = cm_pid;
                             _WorkerTmp->isCMWorker = true;
-                            CMPtclMap.erase(cm_pid);
+                            CMPtcls.erase(cm_pid);
+                            UpdatedCMPtcl.push_back(cm_pid);
                             break;
                         }
                     }
@@ -194,11 +303,13 @@ public:
             }
         } while (_completed_tasks < _total_tasks && fb_completed_tasks < fb_total_tasks);
 
-        if (SingleParticleList.size() != 0 || CMPtclMap.size() != 0) {
+        if (SingleParticleList.size() != 0 || CMPtcls.size() != 0) {
             fprintf(stderr, "Something's wrong. The particle list is not empty.\n");
             exit(1);
         }
 
+        UpdatedCMPtcl.clear();
+        UpdatedCMPtcl.shrink_to_fit();
         SingleParticleList.clear();
         SingleParticleList.shrink_to_fit();
     }
@@ -211,6 +322,7 @@ public:
     std::vector<Worker*> _FreeWorkers;
     MPI_Request _request;  // Pointer to the request handle
     MPI_Status _status;    // Pointer to the status object
+    int _rank;
     Particle* _ptcl;
     Worker* _WorkerTmp, _CompletedWorker;
 
@@ -255,6 +367,25 @@ public:
             workers[i].task = task;
         }
     }
+
+    void _checkCMPtclNeighbor(const std::vector<int>& UpdatedCMPtcl, std::unordered_set<int>& ReadyToGoCMPtcl) {
+        Particle *ptcl;
+        int i = 0;
+        for (int pid:UpdatedCMPtcl) {
+           ptcl = &particles[pid]; 
+           if (!ptcl->isCMPtcl) {
+            fprintf(stderr, "this is not CM ptcl!\n");
+            exit(EXIT_FAILURE);
+           }
+           for (int j = 0; j < _ptcl->NumberOfNeighbor; j++)
+           {
+               if (particles[_ptcl->Neighbors[j]].isUpdateToDate == false)
+                   break;
+           }
+           ReadyToGoCMPtcl.insert(pid); // (Query to myself) should I add worker rank?
+        }
+    }
+#endif
 };
 
 

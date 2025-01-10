@@ -15,6 +15,8 @@
 #include <nvToolsExt.h>
 #endif
 
+extern int MyRank;
+const int ROOT = 0;
 
 static int NNB;
 static CUDA_REAL time_send, time_grav, time_out, time_nb;
@@ -422,7 +424,9 @@ void _ReceiveFromHost(
 
 void _InitializeDevice(int irank){
 
+	if (MyRank == ROOT) {
 	std::cout << "Initializing CUDA ..." << std::endl;
+	}
 	// Select CUDA device (optional)
 	int deviceNum = 0; // Choose GPU device 0
 	int deviceCount;
@@ -439,7 +443,10 @@ void _InitializeDevice(int irank){
 	gethostname(hostname,150);
 	
 
+
+	if (MyRank == ROOT) {
 	fprintf(stderr, "# GPU initialization - rank: %d; HOST %s; NGPU %d; device: %d %s\n", irank, hostname,numGPU, devid, prop.name);
+	}
 
 
 	cudaSetDevice(deviceNum);
@@ -455,14 +462,16 @@ void _InitializeDevice(int irank){
 		//cuDeviceGetAttribute(&deviceId, CU_DEVICE_ATTRIBUTE_DEVICE_PARTITIONABLE, device);
 		//cuDeviceGetAttribute(&deviceId, CU_DEVICE_ATTRIBUTE_DEVICE_PARTITIONABLE, device);
 		//cuDeviceGetAttribute(&deviceId, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY, device);
-		std::cout << "Root processor's current device is: " << deviceId << std::endl;
+		//std::cout << "Root processor's current device is: " << deviceId << std::endl;
 	} else {
 		std::cerr << "Failed to get CUDA context on root processor." << std::endl;
 	}
 
 	cudaStreamCreate(&stream);
 
+	if (MyRank == ROOT) {
 	std::cout << "There are " << deviceCount << " GPUs." << std::endl;
+	}
 	if (device < 0 || device >= deviceCount) {
 		    // Handle invalid device index
 	}
@@ -478,7 +487,7 @@ void _InitializeDevice(int irank){
 	*/
 
 	// CUDA is now initialized and ready to be used
-	std::cout << "CUDA initialized successfully!" << std::endl;
+	//std::cout << "CUDA initialized successfully!" << std::endl;
 
 	/*
 	if(devinit) return;

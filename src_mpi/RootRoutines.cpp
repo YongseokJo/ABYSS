@@ -4,7 +4,9 @@
 #include <mpi.h>
 #include "global.h"
 #include "SkipList.h"
-#include "WorkScheduler.h"
+#include "Queue.h"
+#include "Worker.h"
+#include "QueueScheduler.h"
 
 
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
@@ -19,7 +21,7 @@ void updateNextRegTime(std::vector<int>& RegularList);
 bool createSkipList(SkipList *skiplist);
 bool updateSkipList(SkipList *skiplist, int ptcl_id);
 int writeParticle(double current_time, int outputNum);
-void calculateRegAccelerationOnGPU(std::vector<int> RegularList, WorkScheduler &ws);
+void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler &queue_scheduler);
 
 void formPrimordialBinaries(int beforeNumberOfParticle);
 void insertNeighbors(int Order);
@@ -60,13 +62,13 @@ void RootRoutines() {
 	int sender_rank, sender_tag;
 	int ptcl_id;
 
-	workers = new Worker[NumberOfWorker];
+	workers = new Worker[NumberOfWorker+1];
 
-	for (int i=0; i<NumberOfWorker; i++) {
-		workers[i].MyRank = i+1;
+	for (int i=0; i<=NumberOfWorker; i++) {
+		workers[i].MyRank = i;
 	}
 
-	WorkScheduler work_scheduler;
+	QueueScheduler queue_scheduler;
 
 	std::vector<int> PIDs; // (Query) EW: If this is used only in the initialization part, how about defining this in initialization section?
 	PIDs.reserve(NumberOfParticle);
@@ -98,18 +100,38 @@ void RootRoutines() {
 	/* Initialization */
 	{
 		std::cout << "Initialization of particles starts." << std::endl;
-		work_scheduler.initialize();
-		work_scheduler.doSimpleTask(7, PIDs);
+		queue_scheduler.initialize(INIT_ACC1);
+		queue_scheduler.printFreeWorker();
+		queue_scheduler.takeQueue(PIDs);
+		do
+		{
+			//queue_scheduler.printFreeWorker();
+			//queue_scheduler.printWorkerToGo();
+			queue_scheduler.assignQueueAuto();
+			//queue_scheduler.printFreeWorker();
+			//queue_scheduler.printWorkerToGo();
+			queue_scheduler.runQueueAuto();
+			queue_scheduler.waitQueue(0); //blocking wait
+		} while(queue_scheduler.isComplete());
 
-		work_scheduler.initialize();
-		work_scheduler.doSimpleTask(8, PIDs);
+		std::cout << "Init 01 done" << std::endl;
+		queue_scheduler.initialize(INIT_ACC2);
+		queue_scheduler.takeQueue(PIDs);
+		do
+		{
+			queue_scheduler.assignQueueAuto();
+			queue_scheduler.runQueueAuto();
+			queue_scheduler.waitQueue(0); //blocking wait
+		} while(queue_scheduler.isComplete());
+
+		std::cout << "Init 02 done" << std::endl;
 
 #ifdef FEWBODY
 		// Primordial binary search
 		// std::vector<int> BinaryList; // commented by EW 2025.1.7
 
-		work_scheduler.initialize();
-		work_scheduler.doSimpleTask(20, PIDs);
+		//work_scheduler.initialize();
+		//work_scheduler.doSimpleTask(20, PIDs);
 
 		// example code by EW 2025.1.7
 		int beforeNumberOfParticle = NumberOfParticle;
@@ -133,8 +155,38 @@ void RootRoutines() {
 #endif
 
 		// Initialize Time Step
-		work_scheduler.initialize();
-		work_scheduler.doSimpleTask(9, PIDs);
+		queue_scheduler.initialize(INIT_TIME);
+		queue_scheduler.takeQueue(PIDs);
+		do
+		{
+			queue_scheduler.assignQueueAuto();
+			queue_scheduler.runQueueAuto();
+			queue_scheduler.waitQueue(0); //blocking wait
+		} while(queue_scheduler.isComplete());
+
+		/*
+		for (int i=0; i<NumberOfParticle; i++) {
+			ptcl = &particles[i];
+			if (ptcl->isActive)
+				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
+								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
+								"NumNeighbor= %d\n",
+						ptcl->PID,
+						ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->CurrentBlockIrr,
+						ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->CurrentBlockReg,
+						// NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
+						// NextRegTimeBlock,
+						ptcl->TimeStepIrr * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->TimeStepReg * EnzoTimeStep * 1e10 / 1e6,
+						ptcl->TimeBlockIrr,
+						ptcl->TimeLevelIrr,
+						ptcl->TimeBlockReg,
+						ptcl->TimeLevelReg,
+						ptcl->NumberOfNeighbor);
+		}
+		*/
 	}
 
 
@@ -186,6 +238,7 @@ void RootRoutines() {
 		std::cout << "Time Step done." << std::endl;
 	}
 
+	/*
 		for (int i=0; i<NumberOfParticle; i++) {
 			ptcl = &particles[i];
 			if (ptcl->isActive)
@@ -207,6 +260,7 @@ void RootRoutines() {
 						ptcl->TimeLevelReg,
 						ptcl->NumberOfNeighbor);
 		}
+		*/
 
 	/* timestep variable synchronization */
 	{
@@ -303,6 +357,7 @@ void RootRoutines() {
 	}
 	*/
 	/* Particle Initialization Check */
+	/*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
 		for (int i=0; i<NumberOfParticle; i++) {
@@ -327,7 +382,7 @@ void RootRoutines() {
 						ptcl->NumberOfNeighbor);
 		}
 	}
-
+	*/
 
 
 	/* Actual Loop */
@@ -347,12 +402,14 @@ void RootRoutines() {
 		//ParticleSynchronization();
 		while (1) {
 			updateNextRegTime(RegularList);
+			/*
 			std::cout << "NextRegTimeBlock=" << NextRegTimeBlock << std::endl;
 			std::cout << "PID= ";
 			for (int i=0; i<RegularList.size(); i++)
 				std::cout << RegularList[i]<< ", ";
 			std::cout << std::endl;
 			std::cout << "size of regularlist= " << RegularList.size() << std::endl;
+			*/
 
 			skiplist = new SkipList(max_level, prob);
 			if (createSkipList(skiplist) == FAIL)
@@ -369,9 +426,26 @@ void RootRoutines() {
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 
+				// print out particlelist
+				/*
+				fprintf(stdout, "(IRR_FORCE) PID (%d) =", ThisLevelNode->ParticleList.size());
+				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
+					ptcl = &particles[ThisLevelNode->ParticleList[i]];
+					fprintf(stdout, "%d, ", ptcl->PID);
+				}
+				fprintf(stdout, "\n");
+				fflush(stdout);
+				*/
+
 				// Irregular Force
-				work_scheduler.initialize();
-				work_scheduler.doIrregularForce(ThisLevelNode->ParticleList, next_time);
+				queue_scheduler.initialize(IRR_FORCE);
+				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
+				do
+				{
+					queue_scheduler.assignQueueAuto();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
 
 				//ParticleSynchronization();
 
@@ -385,8 +459,14 @@ void RootRoutines() {
 					*/
 
 				// Irregular Update
-				work_scheduler.initialize();
-				work_scheduler.doSimpleTask(2, ThisLevelNode->ParticleList);
+				queue_scheduler.initialize(IRR_UPDATE);
+				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
+				do
+				{
+					queue_scheduler.assignQueueAuto();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
 
 #ifdef FEWBODY
 				int OriginalSize = ThisLevelNode->ParticleList.size();
@@ -419,8 +499,8 @@ void RootRoutines() {
 				);
 
 				// Few-body group search
-				work_scheduler.initialize();
-				work_scheduler.doSimpleTask(22, ThisLevelNode->ParticleList);
+				//work_scheduler.initialize();
+				//work_scheduler.doSimpleTask(22, ThisLevelNode->ParticleList);
 
 				int beforeParticleListSize = ThisLevelNode->ParticleList.size();
 
@@ -432,7 +512,7 @@ void RootRoutines() {
 						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
 						fflush(stdout);
 					}
-					work_scheduler.doSimpleTask(24, newCMptcls); 
+					//work_scheduler.doSimpleTask(24, newCMptcls); 
 					// This should be fixed by EW 2025.1.6
 					// First, delete CM particle inside NewNeighbors using void deleteGroup(Particle* ptclCM) // task 25?
 					// Should adjust existingCMPtcl_Worker_Map & terminatedCMPtcl_Worker_Map
@@ -471,12 +551,12 @@ void RootRoutines() {
 				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++)
 					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
 
-				std::cout << "update success" << std::endl;
+				//std::cout << "update success" << std::endl;
 				//skiplist->display();
 				/*
 				{
 					//, NextRegTime= %.3e Myr(%llu),
-					for (int i=0; i<total_tasks; i++) {
+					for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
 						ptcl = &particles_original[ThisLevelNode->ParticleList[i]];
 						fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr, NextReg = %.3e (%llu)\n"\
 								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d), NextBlockIrr= %.3e(%llu)\n"\
@@ -539,7 +619,7 @@ void RootRoutines() {
 				current_time_irr = particles[ThisLevelNode->ParticleList[0]].CurrentBlockIrr*time_step;
 				skiplist->deleteFirstNode();
 
-				std::cout << "deleteFirstNode success" << std::endl;
+				//std::cout << "deleteFirstNode success" << std::endl;
 				//ThisLevelNode = skiplist->getFirstNode();
 
 				/*
@@ -605,17 +685,24 @@ void RootRoutines() {
 				next_time = NextRegTimeBlock*time_step;
 
 				//fprintf(stdout, "Regular starts\n");
-				calculateRegAccelerationOnGPU(RegularList, work_scheduler);
+				calculateRegAccelerationOnGPU(RegularList, queue_scheduler);
 
 				// Update Regular
-				work_scheduler.initialize();
-				work_scheduler.doSimpleTask(5, RegularList);
+				queue_scheduler.initialize(REG_CUDA_UPDATE);
+				queue_scheduler.takeQueue(RegularList);
+				do
+				{
+					queue_scheduler.assignQueueAuto();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
+
 				//fprintf(stdout, "Regular done\n");
 #ifdef FEWBODY
 
 				// Few-body group search
-				work_scheduler.initialize();
-				work_scheduler.doSimpleTask(22, RegularList);
+				//work_scheduler.initialize();
+				//work_scheduler.doSimpleTask(22, RegularList);
 
 				int beforeRegularListSize = RegularList.size();
 
@@ -626,7 +713,7 @@ void RootRoutines() {
 						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
 						fflush(stdout);
 					}
-					work_scheduler.doSimpleTask(24, newCMptcls); 
+					//work_scheduler.doSimpleTask(24, newCMptcls); 
 					// This should be fixed by EW 2025.1.6
 					// First, delete CM particle inside NewNeighbors using void deleteGroup(Particle* ptclCM) // task 25?
 					// Should adjust existingCMPtcl_Worker_Map & terminatedCMPtcl_Worker_Map

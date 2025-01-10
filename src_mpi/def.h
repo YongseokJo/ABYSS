@@ -1,4 +1,4 @@
-#define FEWBODY
+#define NO_FEWBODY
 #define CUDA
 
 #define LoadBalance
@@ -88,8 +88,8 @@ typedef unsigned long long ULL;
 #define REG_UPDATE 3 
 #define REG_CUDA 4 
 #define REG_CUDA_UPDATE 5 
-#define INIT1 7 
-#define INIT2 8 
+#define INIT_ACC1 7 
+#define INIT_ACC2 8 
 #define INIT_TIME 9 
 #define TIME_SYNC 10 
 #define PB_SERACH 20
