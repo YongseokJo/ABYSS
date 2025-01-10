@@ -1,5 +1,5 @@
-#ifndef GR_ENERGY_LOST
-#define GR_ENERGY_LOST
+#ifndef GR_ENERGY_LOSS
+#define GR_ENERGY_LOSS
 #ifdef FEWBODY
 #include <cmath>
 

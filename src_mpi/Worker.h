@@ -12,7 +12,7 @@
 
 
 
-#define MAX_QUEUE 10
+#define MAX_QUEUE 1000
 
 struct Worker {
     int MyRank; 
@@ -44,6 +44,10 @@ struct Worker {
 
     void addQueue(Queue queue) {
         int index = CurrentQueue+NumberOfQueues++;
+        if (NumberOfQueues == MAX_QUEUE) {
+           fprintf(stderr, "NumberOfQueues exceeds MAX_QUEUE!"); 
+           exit(EXIT_FAILURE);
+        }
         index %= MAX_QUEUE;
         queues[index] = queue;
     }

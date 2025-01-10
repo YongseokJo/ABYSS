@@ -18,14 +18,6 @@ class QueueScheduler
 {
 public:
     std::unordered_set<Worker*> WorkersToGo;
-#ifdef FEWBODY
-    std::vector<int> SingleParticleList;
-    std::unordered_set<int> CMPtcls;
-    std::vector<int> UpdatedCMPtcl;
-    std::unordered_set<int> ReadyToGoCMPtcl;
-    int fb_total_tasks;    // this is for the SDAR computations by YS 2025.01.06
-    int fb_assigned_tasks; // this is for the SDAR computations by YS 2025.01.06
-#endif
 
     QueueScheduler()
     {
@@ -99,7 +91,10 @@ public:
             _rank = _status.MPI_SOURCE;
             //fprintf(stdout, "returned rank = %d\n",_rank);
             workers[_rank].callback();
-            _FreeWorkers.insert(&workers[_rank]);
+            if (workers[_rank].NumberOfQueues > 0)
+                WorkersToGo.insert(&workers[_rank]);
+            else
+                _FreeWorkers.insert(&workers[_rank]);
             return &workers[_rank];
         }
         if (type == 1) // non-blocking
@@ -121,7 +116,11 @@ public:
     // this is only for a non-blocking wait.
     void callback(Worker* worker) {
         workers->callback();
-        _FreeWorkers.insert(worker);
+        _completed_queues++;
+        if (workers->NumberOfQueues > 0)
+            WorkersToGo.insert(workers);
+        else
+            _FreeWorkers.insert(workers);
     }
 
 
@@ -148,17 +147,19 @@ public:
         }
     }
 
+    void setTotalQueue(int total_queues) {_total_queues = total_queues;}
+
 #ifdef FEWBODY
-    std::vector<int> new_list; // list is ordered so that CM ptcl be in priority
     std::unordered_set<int> CMPtcls;
-    std::unordered_map<int, int> CM_worker;
+    //std::unordered_map<int, int> CM_worker;
     //std::vector<int> UpdatedCMPtcl;
-    int fb_total_tasks;    // this is for the SDAR computations by YS 2025.01.06
-    int fb_assigned_tasks; // this is for the SDAR computations by YS 2025.01.06
+    //int fb_total_tasks;    // this is for the SDAR computations by YS 2025.01.06
+    //int fb_assigned_tasks; // this is for the SDAR computations by YS 2025.01.06
 
     void initializeIrr(int task, double next_time, std::vector<int> &queue_list)
     {
         _initialize();
+        int pid;
         _task = task;
         _next_time = next_time;
         _total_queues = queue_list.size();
@@ -171,7 +172,7 @@ public:
             particles[pid].isUpdateToDate = false;
             if (particles[pid].isCMptcl)
             {
-                _queue_list[sigle_ptcl++] = pid;
+                _queue_list[single_ptcl++] = pid;
             }
             else
             {
@@ -184,7 +185,7 @@ public:
         //UpdatedCMPtcl.resize(fb_total_tasks);
     }
 
-    /* check the neighbors of CM particles if they're up to date*/
+    /* check the neighbors of CM particles if they're up to date
     void checkCMPtclToGo() {
         Particle *ptcl;
         int i = 0;
@@ -202,14 +203,11 @@ public:
            ReadyToGoCMPtcl.insert(pid); // (Query to myself) should I add worker rank?
         }
     }
+    */
 
 
 
     ~QueueScheduler() {
-        UpdatedCMPtcl.clear();
-        UpdatedCMPtcl.shrink_to_fit();
-        new_list.clear();
-        new_list.shrink_to_fit();
     }
 #endif
 
