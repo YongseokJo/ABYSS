@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include <map>
+#include <cassert>
 #include <mpi.h>
 #include "global.h"
 #include "SkipList.h"
@@ -390,14 +392,11 @@ void RootRoutines() {
 		int max_level = 5;
 		double prob = 0.5;
 		SkipList *skiplist;
-		// int update_idx; // commented out by EW 2025.1.6
 		Node* ThisLevelNode;
-		// flag = 0; // commented out by EW 2025.1.6
 		double current_time_irr=0;
 		double next_time=0;
-		// int ptcl_id_return; // commented out by EW 2025.1.6
-		// int AdaptiveLoadBalancing; // commented out by EW 2025.1.6
-		// int size=0; // commented out by EW 2025.1.6
+		Worker* worker;
+
 
 		//ParticleSynchronization();
 		while (1) {
@@ -438,7 +437,20 @@ void RootRoutines() {
 				*/
 
 				// Irregular Force
-				queue_scheduler.initialize(IRR_FORCE);
+#ifdef FEWBODY
+				queue_scheduler.initializeIrr(IRR_FORCE, next_time, ThisLevelNode->ParticleList);
+				do
+				{
+					queue_scheduler.assignQueueIrr();
+					queue_scheduler.runQueueAuto();
+					worker = queue_scheduler.waitQueue(1); // blocking wait
+					/* CM ptcl routines */
+					if (worker != nullptr)
+						queue_scheduler.callback(worker);
+				} while (queue_scheduler.isComplete());
+				queue_scheduler.endIrr();
+#else
+				queue_scheduler.initialize(IRR_FORCE, next_time);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
 				do
 				{
@@ -446,6 +458,7 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+#endif
 
 				//ParticleSynchronization();
 

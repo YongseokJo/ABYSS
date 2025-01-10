@@ -14,12 +14,18 @@
 
 
 
-
 class QueueScheduler
 {
 public:
     std::unordered_set<Worker*> WorkersToGo;
-
+#ifdef FEWBODY
+    std::vector<int> SingleParticleList;
+    std::unordered_set<int> CMPtcls;
+    std::vector<int> UpdatedCMPtcl;
+    std::unordered_set<int> ReadyToGoCMPtcl;
+    int fb_total_tasks;    // this is for the SDAR computations by YS 2025.01.06
+    int fb_assigned_tasks; // this is for the SDAR computations by YS 2025.01.06
+#endif
 
     QueueScheduler()
     {
@@ -82,12 +88,7 @@ public:
         }
     }
 
-    void assignQueue(Worker *worker, Queue *queue) {
-        worker->addQueue(*queue);
-        _FreeWorkers.erase(worker);
-        _assigned_queues++;
-        WorkersToGo.insert(worker);
-    }
+
 
     Worker* waitQueue(int type) {
         if (type == 0) // blocking
@@ -104,14 +105,23 @@ public:
         if (type == 1) // non-blocking
         {
             MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_flag, &_status);
-            _rank = _status.MPI_SOURCE;
-            return &workers[_rank];
+            if (_flag) 
+            {
+                _rank = _status.MPI_SOURCE;
+                return &workers[_rank];
+            }
+            else
+            {
+                return nullptr;
+            }
         }
     }
 
 
-    void callback() {
-
+    // this is only for a non-blocking wait.
+    void callback(Worker* worker) {
+        workers->callback();
+        _FreeWorkers.insert(worker);
     }
 
 
@@ -138,6 +148,80 @@ public:
         }
     }
 
+#ifdef FEWBODY
+    void initializeIrr(int task, double next_time, std::vector<int> &queue_list)
+    {
+        _initialize();
+        _task = task;
+        _next_time = next_time;
+        _total_queues = _queue_list.size();
+        SingleParticleList.reserve(_total_queues);
+
+        for (int pid:queue_list)
+        {
+            particles[pid].isUpdateToDate = false;
+            if (particles[pid].isCMptcl)
+            {
+                SingleParticleList.push_back(pid);
+            }
+            else
+            {
+                CMPtcls.insert(pid);
+            }
+        }
+        fb_total_tasks = CMPtcls.size(); // this is for the SDAR computations by YS 2025.01.06
+        fb_assigned_tasks = 0; // this is for the SDAR computations by YS 2025.01.06
+        UpdatedCMPtcl.resize(fb_total_tasks);
+    }
+
+    void assignQueueIrr() {
+        for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)
+        {
+            if (_queue_list.size() > 0)
+            {
+                _queue.task = _task;
+                _queue.next_time = _next_time;
+                if ((*worker)->isCMWorker) 
+                {
+                    for (int cm_pid : (*worker)->CMPtclIDs)
+                    {
+                        (*worker)->isCMWorker = false;
+                        if (CMPtcls.find(cm_pid) != CMPtcls.end())
+                        {
+                            _queue.pid = cm_pid;
+                            (*worker)->isCMWorker = true;
+                            CMPtcls.erase(cm_pid);
+                            UpdatedCMPtcl.push_back(cm_pid);
+                            break;
+                        }
+                    }
+                }
+
+                // Single particle assignment
+                if (!(*worker)->isCMWorker)
+                {
+                    _queue.pid = SingleParticleList.back();
+                    SingleParticleList.pop_back();
+                }
+
+                (*worker)->addQueue(_queue);
+                WorkersToGo.insert(*worker);
+                _assigned_queues++;
+                worker = _FreeWorkers.erase(worker);
+            }
+            else {
+               ++worker; 
+            }
+        }
+    }
+
+    void endIrr() {
+        UpdatedCMPtcl.clear();
+        UpdatedCMPtcl.shrink_to_fit();
+        SingleParticleList.clear();
+        SingleParticleList.shrink_to_fit();
+    }
+#endif
 
 private:
     std::unordered_set<Worker*> _FreeWorkers;
@@ -166,8 +250,6 @@ private:
     }
 
 #ifdef unuse
-
-
         void doSimpleTask(int task, std::vector<int> &list)
     {
         int return_value, i = 0;

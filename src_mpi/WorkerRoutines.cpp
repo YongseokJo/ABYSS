@@ -47,7 +47,7 @@ void WorkerRoutines() {
 			case IRR_FORCE: // Irregular Acceleration
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				//std::cout << "(IRR_FORCE) Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
-				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
+				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status); // (Query to myself) it seems like it's not needed.
 #ifdef PerformanceTrace
 				ptcl = &particles[ptcl_id];
 				start_point = std::chrono::high_resolution_clock::now();
