@@ -55,7 +55,7 @@ public:
     void assignQueueAuto() {
         for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)
         {
-            if (_queue_list.size() > 0)
+            if (_queue_list.size() > 0 && (*worker)->NumberOfQueues == 0)
             {
                 _queue.task = _task;
                 _queue.pid = _queue_list.back();
@@ -149,77 +149,67 @@ public:
     }
 
 #ifdef FEWBODY
+    std::vector<int> new_list; // list is ordered so that CM ptcl be in priority
+    std::unordered_set<int> CMPtcls;
+    std::unordered_map<int, int> CM_worker;
+    //std::vector<int> UpdatedCMPtcl;
+    int fb_total_tasks;    // this is for the SDAR computations by YS 2025.01.06
+    int fb_assigned_tasks; // this is for the SDAR computations by YS 2025.01.06
+
     void initializeIrr(int task, double next_time, std::vector<int> &queue_list)
     {
         _initialize();
         _task = task;
         _next_time = next_time;
-        _total_queues = _queue_list.size();
-        SingleParticleList.reserve(_total_queues);
+        _total_queues = queue_list.size();
+        _queue_list.reserve(_total_queues);
+        int single_ptcl=0, cm_ptcl=_total_queues-1;
 
-        for (int pid:queue_list)
+        for (int i=0; i<_total_queues; i++)
         {
+            pid = queue_list[i];
             particles[pid].isUpdateToDate = false;
             if (particles[pid].isCMptcl)
             {
-                SingleParticleList.push_back(pid);
+                _queue_list[sigle_ptcl++] = pid;
             }
             else
             {
+                _queue_list[cm_ptcl--] = pid;
                 CMPtcls.insert(pid);
             }
         }
-        fb_total_tasks = CMPtcls.size(); // this is for the SDAR computations by YS 2025.01.06
-        fb_assigned_tasks = 0; // this is for the SDAR computations by YS 2025.01.06
-        UpdatedCMPtcl.resize(fb_total_tasks);
+        //fb_total_tasks = CMPtcls.size(); // this is for the SDAR computations by YS 2025.01.06
+        //fb_assigned_tasks = 0; // this is for the SDAR computations by YS 2025.01.06
+        //UpdatedCMPtcl.resize(fb_total_tasks);
     }
 
-    void assignQueueIrr() {
-        for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)
-        {
-            if (_queue_list.size() > 0)
-            {
-                _queue.task = _task;
-                _queue.next_time = _next_time;
-                if ((*worker)->isCMWorker) 
-                {
-                    for (int cm_pid : (*worker)->CMPtclIDs)
-                    {
-                        (*worker)->isCMWorker = false;
-                        if (CMPtcls.find(cm_pid) != CMPtcls.end())
-                        {
-                            _queue.pid = cm_pid;
-                            (*worker)->isCMWorker = true;
-                            CMPtcls.erase(cm_pid);
-                            UpdatedCMPtcl.push_back(cm_pid);
-                            break;
-                        }
-                    }
-                }
-
-                // Single particle assignment
-                if (!(*worker)->isCMWorker)
-                {
-                    _queue.pid = SingleParticleList.back();
-                    SingleParticleList.pop_back();
-                }
-
-                (*worker)->addQueue(_queue);
-                WorkersToGo.insert(*worker);
-                _assigned_queues++;
-                worker = _FreeWorkers.erase(worker);
-            }
-            else {
-               ++worker; 
-            }
+    /* check the neighbors of CM particles if they're up to date*/
+    void checkCMPtclToGo() {
+        Particle *ptcl;
+        int i = 0;
+        for (int pid:UpdatedCMPtcl) {
+           ptcl = &particles[pid]; 
+           if (!ptcl->isCMPtcl) {
+            fprintf(stderr, "this is not CM ptcl!\n");
+            exit(EXIT_FAILURE);
+           }
+           for (int j = 0; j < _ptcl->NumberOfNeighbor; j++)
+           {
+               if (particles[_ptcl->Neighbors[j]].isUpdateToDate == false)
+                   break;
+           }
+           ReadyToGoCMPtcl.insert(pid); // (Query to myself) should I add worker rank?
         }
     }
 
-    void endIrr() {
+
+
+    ~QueueScheduler() {
         UpdatedCMPtcl.clear();
         UpdatedCMPtcl.shrink_to_fit();
-        SingleParticleList.clear();
-        SingleParticleList.shrink_to_fit();
+        new_list.clear();
+        new_list.shrink_to_fit();
     }
 #endif
 

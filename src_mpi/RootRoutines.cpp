@@ -438,16 +438,35 @@ void RootRoutines() {
 
 				// Irregular Force
 #ifdef FEWBODY
+				int pid;
+				Queue queue;
 				queue_scheduler.initializeIrr(IRR_FORCE, next_time, ThisLevelNode->ParticleList);
+				auto iter = queue_scheduler.CMPtcls.begin();
 				do
 				{
-					queue_scheduler.assignQueueIrr();
+					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
-					worker = queue_scheduler.waitQueue(1); // blocking wait
-					/* CM ptcl routines */
-					if (worker != nullptr)
-						queue_scheduler.callback(worker);
-				} while (queue_scheduler.isComplete());
+					do { 
+						worker = queue_scheduler.waitQueue(1); // blocking wait
+						/* check if there's any CM ptcl ready to go for SDAR*/
+						if (iter == queue_scheduler.CMPtcls.end()) 
+							iter = queue_scheduler.CMPtcls.begin();
+						pid = *(iter++);
+						ptcl = &particles[pid];
+						for (int j = 0; j < ptcl->NumberOfNeighbor; j++)
+						{
+							if (particles[ptcl->Neighbors[j]].isUpdateToDate == false)
+								break;
+						}
+						queue.task = FB_SDAR;
+						queue.pid  = pid;
+						queue.next_time = next_time;
+						workers[].addQueue(queue);
+						queue_scheduler.WorkersToDo.insert(&workers[]);
+						iter = queue_scheduler.CMPtcls.erase(--iter);
+					} while (worker != nullptr);
+					queue_scheduler.callback(worker);
+				} while (queue_scheduler.isComplete() && queue_scheduler.CMPtcls.size() > 0);
 				queue_scheduler.endIrr();
 #else
 				queue_scheduler.initialize(IRR_FORCE, next_time);
