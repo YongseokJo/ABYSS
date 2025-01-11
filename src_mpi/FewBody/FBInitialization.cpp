@@ -147,6 +147,7 @@ void NewFBInitialization(Particle* ptclCM) {
 
 	Group* ptclGroup = new Group();
 
+	ptclCM->GroupInfo = ptclGroup;
 	ptclGroup->groupCM = ptclCM;
 
 	// Find member particle with the biggest CurrentTimeIrr

@@ -133,6 +133,18 @@ void RootRoutines() {
 
 #ifdef FEWBODY
 		// Primordial binary search
+
+		queue_scheduler.initialize(20);
+		queue_scheduler.takeQueue(PIDs);
+		do
+		{
+			queue_scheduler.assignQueueAuto();
+			queue_scheduler.runQueueAuto();
+			queue_scheduler.waitQueue(0); //blocking wait
+		} while(queue_scheduler.isComplete());
+
+		std::cout << "Primordial binary search done" << std::endl;
+
 		// example code by EW 2025.1.7
 		Queue queue;
 		int rank;
@@ -374,7 +386,7 @@ void RootRoutines() {
 	}
 	*/
 	/* Particle Initialization Check */
-	/*
+	// /*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
 		for (int i=0; i<NumberOfParticle; i++) {
@@ -399,7 +411,7 @@ void RootRoutines() {
 						ptcl->NumberOfNeighbor);
 		}
 	}
-	*/
+	// */
 
 
 	/* Actual Loop */
@@ -453,7 +465,7 @@ void RootRoutines() {
 
 				// Irregular Force
 #ifdef FEWBODY
-				std::cout << "Irr force starts" << std::endl;
+				// std::cout << "Irr force starts" << std::endl;
 				int cm_pid;
 				Queue queue;
 				queue_scheduler.initializeIrr(IRR_FORCE, next_time, ThisLevelNode->ParticleList);
@@ -496,7 +508,7 @@ void RootRoutines() {
 					queue_scheduler.callback(worker);
 				} while (queue_scheduler.isComplete() || queue_scheduler.CMPtcls.size() > 0);
 
-				std::cout << "Irregular Force done" << std::endl;
+				// std::cout << "Irregular Force done" << std::endl;
 #else
 				queue_scheduler.initialize(IRR_FORCE, next_time);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -560,15 +572,21 @@ void RootRoutines() {
 				);
 
 				// Few-body group search
-				//work_scheduler.initialize();
-				//work_scheduler.doSimpleTask(22, ThisLevelNode->ParticleList);
+				queue_scheduler.initialize(22);
+				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
+				do
+				{
+					queue_scheduler.assignQueueAuto();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
 
-				int beforeParticleListSize = ThisLevelNode->ParticleList.size();
+				int OriginalParticleListSize = ThisLevelNode->ParticleList.size();
 				int rank_delete, rank_new;
 				formBinaries(ThisLevelNode->ParticleList, newCMptcls, CMPtclWorker, PrevCMPtclWorker);
-				if (beforeParticleListSize != ThisLevelNode->ParticleList.size()) {
+				if (OriginalParticleListSize != ThisLevelNode->ParticleList.size()) {
 					new_binaries = true;
-					for (int i=beforeParticleListSize; i<ThisLevelNode->ParticleList.size(); i++) {
+					for (int i=OriginalParticleListSize; i<ThisLevelNode->ParticleList.size(); i++) {
 						ptcl = &particles[ThisLevelNode->ParticleList[i]];
 						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
 						fflush(stdout);
@@ -631,7 +649,7 @@ void RootRoutines() {
 				}
 				newCMptcls.clear();
 
-				std::cout << "erase success" << std::endl;
+				// std::cout << "erase success" << std::endl;
 #endif
 
 				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++)
@@ -762,7 +780,7 @@ void RootRoutines() {
 #ifdef FEWBODY
 			if (bin_termination || new_binaries)
 				updateNextRegTime(RegularList);
-			std::cout << "updateNextRegTime done" << std::endl;
+			// std::cout << "updateNextRegTime done" << std::endl;
 #endif
 
 #ifdef CUDA
@@ -835,6 +853,7 @@ void RootRoutines() {
 				std::cout << "erase success" << std::endl;
 #endif
 			}
+				/*
 				{
 					//, NextRegTime= %.3e Myr(%llu),
 					for (int i=0; i<RegularList.size(); i++) {
@@ -896,6 +915,7 @@ void RootRoutines() {
 					}
 					//fflush(stdout); 
 				}
+				*/
 #else
 			//std::cout << "Regular Routine Starts." << std::endl;
 			// Regular

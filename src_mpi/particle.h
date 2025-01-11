@@ -107,62 +107,7 @@ struct Particle {
 		CMPtclIndex = -1;
 
 	}
-/*
-	Particle& operator = (const Particle& other) { // This seems unnecessary now by EW 2025.1.6
 
-        PID = other.PID;
-        ParticleType = other.ParticleType;
-        for (int i = 0; i < 3; ++i) {
-            Position[i] = other.Position[i];
-            Velocity[i] = other.Velocity[i];
-        }
-        Mass = other.Mass;
-        for (int i = 0; i < Dim; ++i) {
-            for (int j = 0; j < HERMITE_ORDER; ++j) {
-                a_tot[i][j] = other.a_tot[i][j];
-                a_reg[i][j] = other.a_reg[i][j];
-                a_irr[i][j] = other.a_irr[i][j];
-            }
-        }
-        for (int i = 0; i < MaxNumberOfNeighbor; ++i) {
-            Neighbors[i] = other.Neighbors[i];
-            NewNeighbors[i] = other.NewNeighbors[i];
-        }
-        NumberOfNeighbor = other.NumberOfNeighbor;
-        NewNumberOfNeighbor = other.NewNumberOfNeighbor;
-
-        CurrentTimeIrr = other.CurrentTimeIrr;
-        CurrentTimeReg = other.CurrentTimeReg;
-        CurrentBlockIrr = other.CurrentBlockIrr;
-        NewCurrentBlockIrr = other.NewCurrentBlockIrr;
-        CurrentBlockReg = other.CurrentBlockReg;
-        NextBlockIrr = other.NextBlockIrr;
-        TimeStepIrr = other.TimeStepIrr;
-        TimeStepReg = other.TimeStepReg;
-        TimeBlockIrr = other.TimeBlockIrr;
-        TimeBlockReg = other.TimeBlockReg;
-        TimeLevelIrr = other.TimeLevelIrr;
-        TimeLevelReg = other.TimeLevelReg;
-        for (int i = 0; i < Dim; ++i) {
-            NewPosition[i] = other.NewPosition[i];
-            NewVelocity[i] = other.NewVelocity[i];
-            BackgroundAcceleration[i] = other.BackgroundAcceleration[i];
-			a_spin[i] = other.a_spin[i];
-        }
-        RadiusOfNeighbor = other.RadiusOfNeighbor;
-
-        isActive = other.isActive;
-		ParticleIndex = other.ParticleIndex;
-		radius = other.radius;
-		dm = other.dm;
-		time_check = other.time_check;
-		binary_state = other.binary_state;
-		// GroupInfo = other.GroupInfo; // Eunwoo: this should be considered carefully
-		isCMptcl = other.isCMptcl;
-
-        return *this;
-    }
-*/
 	/*
 	Particle(double x, double y, double z, double vx, double vy, double vz, double m, double q)
 		: Mass(m) {

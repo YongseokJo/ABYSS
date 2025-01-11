@@ -12,12 +12,12 @@ void CalculateAcceleration23(Particle* ptcl1);
 void deleteNeighbors(int newOrder);
 void mergeGroupCandidates();
 
-void formPrimordialBinaries(int beforeNumberOfParticle) {
+void formPrimordialBinaries(int OriginalNumberOfParticle) {
 
 	Particle* ptcl;
 	Particle* NewCM;
 
-	for (int i=0; i<NumberOfParticle; i++) {
+	for (int i=0; i<OriginalNumberOfParticle; i++) {
 		ptcl = &particles[i];
 		if (ptcl->NewNumberOfNeighbor > 0) {
 			NewCM = &particles[NumberOfParticle];
@@ -30,13 +30,13 @@ void formPrimordialBinaries(int beforeNumberOfParticle) {
 		}
 	}
 
-	if (beforeNumberOfParticle == NumberOfParticle) return;
+	if (OriginalNumberOfParticle == NumberOfParticle) return;
 
 	mergeGroupCandidates();	// Merge group candidates
 					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
 	global_variable->NumberOfParticle = NumberOfParticle;
 	
-	for (int i=beforeNumberOfParticle; i<NumberOfParticle; i++) {
+	for (int i=OriginalNumberOfParticle; i<NumberOfParticle; i++) {
 		deleteNeighbors(i);
 	}
 	global_variable->NewPID = NewPID;
@@ -76,10 +76,10 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 
 	for (int i = global_variable->NumberOfParticle; i < NumberOfParticle; i++) {
 		if (terminated.empty()) {
-			NewCM = &particles[i];
-			NewCM->ParticleIndex = i; // added by YS 2025.01.10 (Query)
-			NewCM->PID = global_variable->NewPID; // added by YS 2025.01.10 (Query)
-			existing.insert({i, existing.size() % NumberOfWorker + 1}); // (Query) shouldn't it be existing not existingCMPtcl_Worker_Map? 2025.01.06
+			// NewCM = &particles[i];
+			// NewCM->ParticleIndex = i; // added by YS 2025.01.10 (Query) // This is assigned in deleteNeighbors(i) by EW 2025.1.11 (Answer)
+			// NewCM->PID = global_variable->NewPID; // added by YS 2025.01.10 (Query) // This is assigned in deleteNeighbors(i) by EW 2025.1.11 (Answer)
+			existing.insert({i, existing.size() % NumberOfWorker + 1});
 			newCMptcls.push_back(i);
 		}
 		else {
@@ -161,7 +161,7 @@ void deleteNeighbors(int newOrder) {
 
 	Particle* ptclCM;
 
-	std::cout << "New particle index is" << newOrder << std::endl;
+	std::cout << "New particle index is " << newOrder << std::endl;
 	ptclCM = &particles[newOrder];
 	ptclCM->ParticleIndex = newOrder;
 	ptclCM->PID = NewPID;

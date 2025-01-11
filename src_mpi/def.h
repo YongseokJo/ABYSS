@@ -1,5 +1,5 @@
-#define FEWBODY
-#define CUDA
+// #define FEWBODY
+// #define CUDA
 
 #define LoadBalance
 #define PerformanceTrace
@@ -10,7 +10,7 @@
 
 #define NumberOfTask 20
 #define MaxNumberOfParticle 1000000
-#define MaxNumberOfNeighbor 10000
+#define MaxNumberOfNeighbor 2000 // 10000 -> 2000 modified by EW 2025.1.11
 
 
 
@@ -18,10 +18,10 @@
 
 
 //#define FixNumNeighbor 20
-#define FixNumNeighbor 500
+#define FixNumNeighbor 100 // 500 -> 100 modified by EW 2025.1.11
 //#define NumNeighborMax 100
-#define NumNeighborMax 5000
-#define ACRadius 0.11
+#define NumNeighborMax 1000 // 5000 -> 1000 modified by EW 2025.1.11
+#define ACRadius 0.05 // 0.11 -> 0.05 modified by EW 2025.1.11
 
 
 // SDAR
