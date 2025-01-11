@@ -211,6 +211,9 @@ void WorkerRoutines() {
 
 				ptcl->NewNumberOfNeighbor = 0;
 
+				// fprintf(stdout, "Few-body search ind: %d\n", ptcl->ParticleIndex);
+				// fflush(stdout);
+
 				if (ptcl->binary_state = 0) {
 					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
 						ptcl->checkNewGroup();

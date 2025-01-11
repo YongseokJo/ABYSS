@@ -94,9 +94,17 @@ void RootRoutines() {
 		fflush(stdout);
 	}*/
 
+	std::vector<int> PIDs;
+	PIDs.reserve(NumberOfParticle);
+	PIDs.resize(NumberOfParticle);
+	for (int i = 0; i < NumberOfParticle; i++)
+	{
+		PIDs[i] = i;
+	}
+
 	/* Initialization */
 	{
-
+		/*
 		std::vector<int> PIDs;
 		PIDs.reserve(NumberOfParticle);
 		PIDs.resize(NumberOfParticle);
@@ -104,6 +112,7 @@ void RootRoutines() {
 		{
 			PIDs[i] = i;
 		}
+		*/
 
 		std::cout << "Initialization of particles starts." << std::endl;
 		queue_scheduler.initialize(INIT_ACC1);
@@ -454,7 +463,7 @@ void RootRoutines() {
 
 				// print out particlelist
 				/*
-				fprintf(stdout, "(IRR_FORCE) PID (%d) =", ThisLevelNode->ParticleList.size());
+				fprintf(stdout, "(IRR_FORCE) PID (%d) = ", ThisLevelNode->ParticleList.size());
 				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
 					fprintf(stdout, "%d, ", ptcl->PID);
@@ -574,6 +583,7 @@ void RootRoutines() {
 				// Few-body group search
 				queue_scheduler.initialize(22);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
+				// queue_scheduler.takeQueue(PIDs);
 				do
 				{
 					queue_scheduler.assignQueueAuto();
