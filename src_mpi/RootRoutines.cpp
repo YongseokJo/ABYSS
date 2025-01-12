@@ -812,7 +812,7 @@ void RootRoutines() {
 				} while (queue_scheduler.isComplete());
 
 				//fprintf(stdout, "Regular done\n");
-#ifdef FEWBODY
+#ifdef unused
 
 				// Few-body group search
 				queue_scheduler.initialize(22);
