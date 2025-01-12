@@ -4,78 +4,78 @@ WARNING: There was an error initializing an OpenFabrics device.
   Local host:   node14
   Local device: mlx5_0
 --------------------------------------------------------------------------
-[node14:158638] [[12193,0],0] ORTE_ERROR_LOG: Data unpack had inadequate space in file util/show_help.c at line 513
+My Rank =4 : Shared Rank = 4, Shared size = 32
+My Rank =6 : Shared Rank = 6, Shared size = 32
+My Rank =8 : Shared Rank = 8, Shared size = 32
+My Rank =10 : Shared Rank = 10, Shared size = 32
+My Rank =20 : Shared Rank = 20, Shared size = 32
+My Rank =21 : Shared Rank = 21, Shared size = 32
+My Rank =22 : Shared Rank = 22, Shared size = 32
+My Rank =23 : Shared Rank = 23, Shared size = 32
+My Rank =24 : Shared Rank = 24, Shared size = 32
+My Rank =26 : Shared Rank = 26, Shared size = 32
+My Rank =30 : Shared Rank = 30, Shared size = 32
+My Rank =0 : Shared Rank = 0, Shared size = 32
 My Rank =1 : Shared Rank = 1, Shared size = 32
+My Rank =2 : Shared Rank = 2, Shared size = 32
+My Rank =3 : Shared Rank = 3, Shared size = 32
+My Rank =31 : Shared Rank = 31, Shared size = 32
+My Rank =5 : Shared Rank = 5, Shared size = 32
 My Rank =7 : Shared Rank = 7, Shared size = 32
 My Rank =9 : Shared Rank = 9, Shared size = 32
-My Rank =10 : Shared Rank = 10, Shared size = 32
 My Rank =11 : Shared Rank = 11, Shared size = 32
 My Rank =12 : Shared Rank = 12, Shared size = 32
+My Rank =13 : Shared Rank = 13, Shared size = 32
+My Rank =14 : Shared Rank = 14, Shared size = 32
 My Rank =15 : Shared Rank = 15, Shared size = 32
+My Rank =16 : Shared Rank = 16, Shared size = 32
 My Rank =17 : Shared Rank = 17, Shared size = 32
+My Rank =18 : Shared Rank = 18, Shared size = 32
 My Rank =19 : Shared Rank = 19, Shared size = 32
-My Rank =21 : Shared Rank = 21, Shared size = 32
-My Rank =23 : Shared Rank = 23, Shared size = 32
 My Rank =25 : Shared Rank = 25, Shared size = 32
-My Rank =26 : Shared Rank = 26, Shared size = 32
 My Rank =27 : Shared Rank = 27, Shared size = 32
 My Rank =28 : Shared Rank = 28, Shared size = 32
 My Rank =29 : Shared Rank = 29, Shared size = 32
-My Rank =30 : Shared Rank = 30, Shared size = 32
-My Rank =31 : Shared Rank = 31, Shared size = 32
-My Rank =0 : Shared Rank = 0, Shared size = 32
-My Rank =2 : Shared Rank = 2, Shared size = 32
-My Rank =3 : Shared Rank = 3, Shared size = 32
-My Rank =4 : Shared Rank = 4, Shared size = 32
-My Rank =5 : Shared Rank = 5, Shared size = 32
-My Rank =6 : Shared Rank = 6, Shared size = 32
-My Rank =8 : Shared Rank = 8, Shared size = 32
-My Rank =13 : Shared Rank = 13, Shared size = 32
-My Rank =14 : Shared Rank = 14, Shared size = 32
-My Rank =16 : Shared Rank = 16, Shared size = 32
-My Rank =18 : Shared Rank = 18, Shared size = 32
-My Rank =20 : Shared Rank = 20, Shared size = 32
-My Rank =22 : Shared Rank = 22, Shared size = 32
-My Rank =24 : Shared Rank = 24, Shared size = 32
-[node14:158638] 30 more processes have sent help message help-mpi-btl-openib.txt / error in device init
-[node14:158638] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+[node14:159849] 31 more processes have sent help message help-mpi-btl-openib.txt / error in device init
+[node14:159849] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
 # GPU initialization - rank: 0; HOST node14; NGPU 0; device: 0 NVIDIA RTX A6000
+(7) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(8) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(11) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(22) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(19) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (24) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(27) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(29) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(30) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(1) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (2) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(3) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(31) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (4) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (5) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(1) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (6) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(7) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (9) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(10) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(11) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(8) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(12) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (13) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (14) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (15) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (16) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (17) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (18) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(19) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(10) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (20) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (21) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(22) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (23) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (25) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(26) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(27) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 (28) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(29) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(31) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(30) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(3) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
-(12) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
+(26) nbody+:time_block = -51, EnzoTimeStep=1.000000e-04
 variable_size=131072, target_size=131072
 Error creating folder.
 mkdir: File exists
-Something's worng! the worker was not on duty.--------------------------------------------------------------------------
+Something's worng! the worker was not on duty.2
+--------------------------------------------------------------------------
 Primary job  terminated normally, but 1 process returned
 a non-zero exit code. Per user-direction, the job has been aborted.
 --------------------------------------------------------------------------
@@ -83,6 +83,6 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[12193,1],0]
+  Process name: [[13414,1],0]
   Exit code:    1
 --------------------------------------------------------------------------

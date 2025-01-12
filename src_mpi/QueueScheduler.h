@@ -432,7 +432,7 @@ private:
         MPI_Wait(&_request, &_status);
         int rank = _status.MPI_SOURCE;
         if (!workers[rank-1].onDuty) {
-            fprintf(stderr, "Something's worng! the worker was not on duty.");
+            fprintf(stderr, "Something's worng! the worker was not on duty.1\n");
             exit(1);
         }
         workers[rank-1].onDuty = false;

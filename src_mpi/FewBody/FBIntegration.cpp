@@ -237,7 +237,7 @@ void Group::ARIntegration(double next_time){
         }
         particles[members->ParticleIndex].Mass = members->Mass;
     }
-
+    
     CurrentTime = next_time;
     return; 
 }

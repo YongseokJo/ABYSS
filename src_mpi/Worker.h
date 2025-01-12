@@ -75,7 +75,7 @@ struct Worker {
         int return_value;
         MPI_Recv(&return_value, 1, MPI_INT, this->MyRank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
         if (!onDuty) {
-            fprintf(stderr, "Something's worng! the worker was not on duty.");
+            fprintf(stderr, "Something's worng! the worker was not on duty.2\n");
             exit(1);
         }
         onDuty = false;
