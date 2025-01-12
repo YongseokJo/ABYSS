@@ -211,15 +211,12 @@ void WorkerRoutines() {
 
 				ptcl->NewNumberOfNeighbor = 0;
 
-				// fprintf(stdout, "Few-body search ind: %d\n", ptcl->ParticleIndex);
-				// fflush(stdout);
-
-				if (ptcl->binary_state = 0) {
+				if (ptcl->binary_state == 0) {
 					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
 						ptcl->checkNewGroup();
 				}
 				else {
-					assert(ptcl->binary_state = -1); // for debugging by EW 2025.1.7
+					assert(ptcl->binary_state == -1); // for debugging by EW 2025.1.7
 					ptcl->checkNewGroup2();
 					ptcl->binary_state = 0;
 				}

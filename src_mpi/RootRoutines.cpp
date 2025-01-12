@@ -812,17 +812,24 @@ void RootRoutines() {
 				} while (queue_scheduler.isComplete());
 
 				//fprintf(stdout, "Regular done\n");
-#ifdef unused
+#ifdef FEWBODY
 
 				// Few-body group search
-				//work_scheduler.initialize();
-				//work_scheduler.doSimpleTask(22, RegularList);
+				queue_scheduler.initialize(22);
+				queue_scheduler.takeQueue(RegularList);
+				// queue_scheduler.takeQueue(PIDs);
+				do
+				{
+					queue_scheduler.assignQueueAuto();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
 
-				int beforeRegularListSize = RegularList.size();
-
+				int OriginalRegularListSize = RegularList.size();
+				int rank_delete, rank_new;
 				formBinaries(RegularList, newCMptcls, CMPtclWorker, PrevCMPtclWorker);
-				if (beforeRegularListSize != RegularList.size()) {
-					for (int i=beforeRegularListSize; i<RegularList.size(); i++) {
+				if (OriginalRegularListSize != RegularList.size()) {
+					for (int i=OriginalRegularListSize; i<RegularList.size(); i++) {
 						ptcl = &particles[RegularList[i]];
 						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
 						fflush(stdout);
@@ -834,20 +841,46 @@ void RootRoutines() {
 					// Then, use task 24
 
 					// example code by EW 2025.1.7
+					Queue queue;
 					Particle* ptclCM;
 					Particle* mem_ptclCM;
+					int total_queues = 0;
 					for (int i=0; i<newCMptcls.size(); i++) {
-						ptclCM = &particles[i];
+						ptclCM = &particles[newCMptcls[i]]; // 2025.01.10 edited to newCMptcls[i] by YS
+						queue_scheduler.initialize(25);
+						total_queues = 0;
 						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
 							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
 							if (mem_ptclCM->isCMptcl) {
-								int rank1 = CMPtclWorker[mem_ptclCM->ParticleIndex];
-								// Send and do task 25 in worker number: rank1
+								rank_delete = CMPtclWorker[mem_ptclCM->ParticleIndex];
+								queue.task = 25;
+								queue.pid = mem_ptclCM->ParticleIndex;
+								workers[rank_delete].addQueue(queue);
+								queue_scheduler.WorkersToGo.insert(&workers[rank_delete]);
+								total_queues++;
 							}
 						}
-						int rank2 = CMPtclWorker[ptclCM->ParticleIndex]; 
-						// Send and do task 24 in worker number: rank2
+						if (total_queues > 0)
+						{
+							queue_scheduler.setTotalQueue(total_queues);
+							do
+							{
+								queue_scheduler.runQueueAuto();
+								queue_scheduler.waitQueue(0);
+							} while (queue_scheduler.isComplete());
+						}
+
+						queue_scheduler.initialize(24);
+						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
+						fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
+						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->ParticleIndex, rank_new);
+						queue.task = 24;
+						queue.pid = ptclCM->ParticleIndex;
+						workers[rank_new].addQueue(queue);
+						workers[rank_new].runQueue();
+						workers[rank_new].callback();
 					}
+					std::cout << "All new fewbody objects are initialized." << std::endl;
 
 					RegularList.erase(
 						std::remove_if(
@@ -860,7 +893,7 @@ void RootRoutines() {
 				}
 				newCMptcls.clear();
 
-				std::cout << "erase success" << std::endl;
+				// std::cout << "erase success" << std::endl;
 #endif
 			}
 				/*

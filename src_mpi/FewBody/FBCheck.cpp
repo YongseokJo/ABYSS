@@ -54,6 +54,9 @@ void Particle::checkNewGroup() {
 		ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
         const Float dr = dist(pos1, pos2);
+
+        // fprintf(stdout, "dr: %e pc, ind pair: (%d, %d)\n", dr*position_unit, this->ParticleIndex, ptcl2->ParticleIndex);
+        // fflush(stdout);
         // ASSERT(dr>0.0);
 
         // if (dr < r_min) // Eunwoo test
