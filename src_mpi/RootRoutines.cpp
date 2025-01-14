@@ -474,7 +474,7 @@ void RootRoutines() {
 
 				// Irregular Force
 #ifdef FEWBODY
-				// std::cout << "Irr force starts" << std::endl;
+				std::cout << "Irr force starts" << std::endl;
 				int cm_pid;
 				Queue queue;
 				queue_scheduler.initializeIrr(IRR_FORCE, next_time, ThisLevelNode->ParticleList);
@@ -501,12 +501,18 @@ void RootRoutines() {
 									goto skip_to_next;
 								}
 							}
+							//queue_scheduler.printFreeWorker();
+							//queue_scheduler.printWorkerToGo();
+							//std::cout << "before: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
 							queue.task = FB_SDAR;
 							queue.pid = cm_pid;
 							queue.next_time = next_time;
 							workers[CMPtclWorker[cm_pid]].addQueue(queue);
 							queue_scheduler.assignWorker(&workers[CMPtclWorker[cm_pid]]);
 							iter = queue_scheduler.CMPtcls.erase(iter);
+							//std::cout << "after: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
+							//queue_scheduler.printFreeWorker();
+							//queue_scheduler.printWorkerToGo();
 						skip_to_next:;
 						}
 						if (worker != nullptr) 
@@ -515,9 +521,10 @@ void RootRoutines() {
 						}
 					} while (worker == nullptr);
 					queue_scheduler.callback(worker);
-				} while (queue_scheduler.isComplete() || queue_scheduler.CMPtcls.size() > 0);
+					//queue_scheduler.printStatus();
+				} while (queue_scheduler.isComplete() || queue_scheduler.isCMPtclComplete());
 
-				// std::cout << "Irregular Force done" << std::endl;
+				 std::cout << "Irregular Force done" << std::endl;
 #else
 				queue_scheduler.initialize(IRR_FORCE, next_time);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -549,6 +556,7 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+				 std::cout << "Irregular update done" << std::endl;
 
 #ifdef FEWBODY
 				int OriginalSize = ThisLevelNode->ParticleList.size();
@@ -580,6 +588,8 @@ void RootRoutines() {
 					ThisLevelNode->ParticleList.end()
 				);
 
+				 std::cout << "FB search starts" << std::endl;
+				 std::cerr << "FB search starts" << std::endl;
 				// Few-body group search
 				queue_scheduler.initialize(22);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -588,8 +598,12 @@ void RootRoutines() {
 				{
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
+					queue_scheduler.printStatus();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+
+				std::cerr << "FB search ended" << std::endl;
+				std::cout << "FB search ended" << std::endl;
 
 				int OriginalParticleListSize = ThisLevelNode->ParticleList.size();
 				int rank_delete, rank_new;

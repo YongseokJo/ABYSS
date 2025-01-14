@@ -208,6 +208,7 @@ void WorkerRoutines() {
 			case 22: // Few-body group search
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
+				std::cerr << "FB search of particle  " << ptcl_id << " is initiated on rank " << MyRank << "." <<std::endl;
 
 				ptcl->NewNumberOfNeighbor = 0;
 
@@ -220,6 +221,7 @@ void WorkerRoutines() {
 					ptcl->checkNewGroup2();
 					ptcl->binary_state = 0;
 				}
+				std::cerr << "FB search of particle  " << ptcl_id << " is successfully finished on rank " << MyRank << "." <<std::endl;
 
 				break;
 

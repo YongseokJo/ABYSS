@@ -34,6 +34,7 @@ struct Worker {
            isCMWorker = true; 
         }
         NumberOfQueues = 0;
+        CurrentQueue = 0;
     }
 
     void initialize(int _MyRank) {
@@ -56,6 +57,11 @@ struct Worker {
     }
 
     void runQueue() {
+        if (onDuty) {
+            std::cout << "Worker " << MyRank << " is already on duty" << std::endl;
+            std::cerr << "Worker " << MyRank << " is already on duty" << std::endl;
+            exit(1);
+        }
         if (NumberOfQueues == 0) {
             fprintf(stderr, "There is no queue in this worker!\n");
             exit(EXIT_FAILURE);
@@ -66,6 +72,7 @@ struct Worker {
         //sendTask(queues[CurrentQueue++]);
         CurrentQueue %= MAX_QUEUE;
         NumberOfQueues--;
+        //std::cout << "Worker " << MyRank << " is on duty" << std::endl;
     }
 
     void removeQueue() {
@@ -75,10 +82,12 @@ struct Worker {
         int return_value;
         MPI_Recv(&return_value, 1, MPI_INT, this->MyRank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
         if (!onDuty) {
-            fprintf(stderr, "Something's worng! the worker was not on duty.2\n");
+            fprintf(stderr, "Something's worng! the worker %d was not on duty.\n", this->MyRank);
+            fprintf(stdout, "Something's worng! the worker %d was not on duty.\n", this->MyRank);
             exit(1);
         }
         onDuty = false;
+        //std::cout << "Worker " << MyRank << " is off duty" << std::endl;
     }
 
 /*
