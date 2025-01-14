@@ -140,12 +140,7 @@ public:
             return _not_complete; 
     }
 
-    bool isCMPtclComplete() {
-        if (_completed_cm_queues == _total_cm_queues && CMPtcls.size() == 0)
-            return _complete; // but returns false
-        else
-            return _not_complete; 
-    }
+
     void printFreeWorker() {
         std::cout << std::left << "FreeWorker List: ";
         for (Worker* worker: _FreeWorkers) {
@@ -167,6 +162,8 @@ public:
         std::cout << "Total Queues = " << _total_queues << std::endl;
         std::cout << "Assigned Queues = " << _assigned_queues << std::endl;
         std::cout << "Completed Queues = " << _completed_queues << std::endl;
+        std::cout << "Total CM Queues = " << _total_cm_queues << std::endl;
+        std::cout << "Completed CM Queues = " << _completed_cm_queues << std::endl;
 
         std::cout << "-----------Worker Status-----------" << std::endl;
         std::cout << std::left << std::setw(10) << "MyRank";
@@ -198,6 +195,7 @@ public:
             WorkersToGo.insert(worker);
             _FreeWorkers.erase(worker);
         }
+        _assigned_queues++;
     }
 
 #ifdef FEWBODY
@@ -235,6 +233,7 @@ public:
                 _total_cm_queues++;
             }
         }
+        _total_queues += _total_cm_queues;
     }
 
     /* check the neighbors of CM particles if they're up to date

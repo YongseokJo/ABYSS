@@ -522,7 +522,7 @@ void RootRoutines() {
 					} while (worker == nullptr);
 					queue_scheduler.callback(worker);
 					//queue_scheduler.printStatus();
-				} while (queue_scheduler.isComplete() || queue_scheduler.isCMPtclComplete());
+				} while (queue_scheduler.isComplete());
 
 				 std::cout << "Irregular Force done" << std::endl;
 #else
@@ -598,7 +598,7 @@ void RootRoutines() {
 				{
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
-					queue_scheduler.printStatus();
+					//queue_scheduler.printStatus();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
 
