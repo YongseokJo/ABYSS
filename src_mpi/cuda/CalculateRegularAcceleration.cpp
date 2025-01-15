@@ -173,7 +173,7 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 		queue_scheduler.assignQueueAuto();
         for (auto worker = queue_scheduler.WorkersToGo.begin(); worker != queue_scheduler.WorkersToGo.end();)
         {
-            if ((*worker)->NumberOfQueues > 0)
+            if ((*worker)->NumberOfQueues > 0) // original
             {
 				//std::cout << "(REG_CUDA) My Rank =" << (*worker)->MyRank << std::endl;
 				MPI_Send(&task, 1, MPI_INT, (*worker)->MyRank, TASK_TAG, MPI_COMM_WORLD);
@@ -183,18 +183,32 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 				MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 12, MPI_COMM_WORLD);
 				MPI_Send(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 13, MPI_COMM_WORLD);
 				((*worker))->onDuty = true;
+				/*
 				(*worker)->CurrentQueue++;
 				(*worker)->CurrentQueue %= MAX_QUEUE;
 				(*worker)->NumberOfQueues--;
+				*/
                 worker = queue_scheduler.WorkersToGo.erase(worker);
 				i++;
+#ifdef DEBUG
+				std::cout << "i: " << i << std::endl;
+#endif
             }
 			else
 			{
                 ++worker;
+#ifdef DEBUG
+				std::cout << "worker MyRank: " << (*worker)->MyRank << std::endl;
+#endif
 			}
         }
+#ifdef DEBUG
+		std::cout << "queue_scheduler.waitQueue(0) starts" << std::endl;
+#endif
 		queue_scheduler.waitQueue(0); // blocking wait
+#ifdef DEBUG
+		std::cout << "queue_scheduler.waitQueue(0) ended" << std::endl;
+#endif
 	} while (queue_scheduler.isComplete());
 
 #ifdef DEBUG

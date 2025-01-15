@@ -47,6 +47,7 @@ void FBTermination2(Group* group);
 // If Intererrupt_mode != none, then bin_termination = true;
 void Group::ARIntegration(double next_time){
 
+// /*
     for (int dim=0; dim<Dim; dim++) {
         sym_int.particles.cm.Position[dim] = groupCM->Position[dim];
         sym_int.particles.cm.Velocity[dim] = groupCM->Velocity[dim];
@@ -57,9 +58,62 @@ void Group::ARIntegration(double next_time){
     sym_int.particles.cm.NumberOfNeighbor = groupCM->NumberOfNeighbor;
     for (int i=0; i<groupCM->NumberOfNeighbor; i++)
         sym_int.particles.cm.Neighbors[i] = groupCM->Neighbors[i];
+// */
+/*
+    for (int i=0; i < sym_int.particles.getSize(); i++) {
+		Particle* members = &sym_int.particles[i];
+		fprintf(stderr, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
+		fprintf(stderr, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(stderr, "PID: %d. Mass (Msol) - %e, \n", members->PID, members->Mass*mass_unit);
+    }
+    
+    auto& bin_root = sym_int.info.getBinaryTreeRoot();
+    std::cerr<<"  Binary: "
+                <<"  i1="<<bin_root.getMemberIndex(0)
+                <<"  i2="<<bin_root.getMemberIndex(1)
+                <<"  m1="<<bin_root.m1*mass_unit
+                <<"  m2="<<bin_root.m2*mass_unit
+                <<"  sep="<<bin_root.r*position_unit
+                <<"  semi= "<<bin_root.semi*position_unit
+                <<"  ecc= "<<bin_root.ecc
+                <<"  period= "<<bin_root.period*1e4
+                <<"  stab= "<<bin_root.stab
+                <<"  SD= "<<bin_root.slowdown.getSlowDownFactor()
+                <<"  SD_org= "<<bin_root.slowdown.getSlowDownFactorOrigin()
+                <<"  Tscale= "<<bin_root.slowdown.timescale
+                <<"  pert_in= "<<bin_root.slowdown.pert_in
+                <<"  pert_out= "<<bin_root.slowdown.pert_out;
+    std::cerr<<std::endl;
 
+    std::cerr << "Current Time: " << CurrentTime*EnzoTimeStep*1e4 << "Myr, " << "Next Time: " << next_time*EnzoTimeStep*1e4 << "Myr" << std::endl;
+*/
     auto bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
+/*
+    for (int i=0; i < sym_int.particles.getSize(); i++) {
+		Particle* members = &sym_int.particles[i];
+		fprintf(stderr, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
+		fprintf(stderr, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
+		fprintf(stderr, "PID: %d. Mass (Msol) - %e, \n", members->PID, members->Mass*mass_unit);
+    }
 
+    bin_root = sym_int.info.getBinaryTreeRoot();
+    std::cerr<<"  Binary: "
+                <<"  i1="<<bin_root.getMemberIndex(0)
+                <<"  i2="<<bin_root.getMemberIndex(1)
+                <<"  m1="<<bin_root.m1*mass_unit
+                <<"  m2="<<bin_root.m2*mass_unit
+                <<"  sep="<<bin_root.r*position_unit
+                <<"  semi= "<<bin_root.semi*position_unit
+                <<"  ecc= "<<bin_root.ecc
+                <<"  period= "<<bin_root.period*1e4
+                <<"  stab= "<<bin_root.stab
+                <<"  SD= "<<bin_root.slowdown.getSlowDownFactor()
+                <<"  SD_org= "<<bin_root.slowdown.getSlowDownFactorOrigin()
+                <<"  Tscale= "<<bin_root.slowdown.timescale
+                <<"  pert_in= "<<bin_root.slowdown.pert_in
+                <<"  pert_out= "<<bin_root.slowdown.pert_out;
+    std::cerr<<std::endl;
+*/
 // /* PN corrections
     // if (PNon && bin_interrupt.status == AR::InterruptStatus::none) { // Only particles with BH
     if (bin_interrupt.status == AR::InterruptStatus::none) { // Every bound orbit

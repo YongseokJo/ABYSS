@@ -368,9 +368,6 @@ void NewFBInitialization(Particle* ptclCM) {
 	// 	fflush(stderr);
 	// }
 
-	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
-    ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
-
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[ptclCM->NewNeighbors[i]];
 
@@ -381,6 +378,18 @@ void NewFBInitialization(Particle* ptclCM) {
 	// Find neighbors for CM particle and calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately 
 	CalculateAcceleration01(ptclCM);
 	CalculateAcceleration23(ptclCM);
+
+	for (int dim=0; dim<Dim; dim++) {
+        for (int j=0; j<HERMITE_ORDER; j++)
+            ptclGroup->sym_int.particles.cm.a_irr[dim][j] = ptclCM->a_irr[dim][j];
+    }
+    
+    ptclGroup->sym_int.particles.cm.NumberOfNeighbor = ptclCM->NumberOfNeighbor;
+    for (int i=0; i<ptclCM->NumberOfNeighbor; i++)
+    	ptclGroup->sym_int.particles.cm.Neighbors[i] = ptclCM->Neighbors[i];
+
+	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
+    ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
 
 	ptclCM->calculateTimeStepReg();
 	if (ptclCM->TimeLevelReg <= ptcl->TimeLevelReg-1 
@@ -539,6 +548,15 @@ void NewFBInitialization3(Group* group) {
 		// fprintf(binout, "PID: %d. Time Blocks - irregular:%llu, regular:%llu \n", members->PID, members->TimeBlockIrr, members->TimeBlockReg);
 		// fprintf(binout, "PID: %d. Current Blocks - irregular: %llu, regular:%llu \n", members->PID, members->CurrentBlockIrr, members->CurrentBlockReg);
     }
+
+	for (int dim=0; dim<Dim; dim++) {
+        for (int j=0; j<HERMITE_ORDER; j++)
+            ptclGroup->sym_int.particles.cm.a_irr[dim][j] = ptclCM->a_irr[dim][j];
+    }
+    
+    ptclGroup->sym_int.particles.cm.NumberOfNeighbor = ptclCM->NumberOfNeighbor;
+    for (int i=0; i<ptclCM->NumberOfNeighbor; i++)
+    	ptclGroup->sym_int.particles.cm.Neighbors[i] = ptclCM->Neighbors[i];
 
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);

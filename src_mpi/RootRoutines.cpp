@@ -465,7 +465,7 @@ void RootRoutines() {
 
 				// print out particlelist
 				// /*
-				fprintf(stdout, "(IRR_FORCE) timestep: %e Myr", particles[ThisLevelNode->ParticleList[0]].TimeStepIrr*EnzoTimeStep*1e4);
+				fprintf(stdout, "(IRR_FORCE) timestep: %e Myr\n", particles[ThisLevelNode->ParticleList[0]].TimeStepIrr*EnzoTimeStep*1e4);
 				fprintf(stdout, "PID (%d) = ", ThisLevelNode->ParticleList.size());
 				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
