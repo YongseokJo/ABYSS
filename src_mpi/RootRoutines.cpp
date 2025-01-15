@@ -464,19 +464,22 @@ void RootRoutines() {
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 
 				// print out particlelist
-				/*
-				fprintf(stdout, "(IRR_FORCE) PID (%d) = ", ThisLevelNode->ParticleList.size());
+				// /*
+				fprintf(stdout, "(IRR_FORCE) timestep: %e Myr", particles[ThisLevelNode->ParticleList[0]].TimeStepIrr*EnzoTimeStep*1e4);
+				fprintf(stdout, "PID (%d) = ", ThisLevelNode->ParticleList.size());
 				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
 					fprintf(stdout, "%d, ", ptcl->PID);
 				}
 				fprintf(stdout, "\n");
 				fflush(stdout);
-				*/
+				// */
 
 				// Irregular Force
 #ifdef FEWBODY
+#ifdef DEBUG
 				std::cout << "Irr force starts" << std::endl;
+#endif
 				int cm_pid;
 				Queue queue;
 				queue_scheduler.initializeIrr(IRR_FORCE, next_time, ThisLevelNode->ParticleList);
@@ -485,7 +488,7 @@ void RootRoutines() {
 				{
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
-					queue_scheduler.printStatus();
+					// queue_scheduler.printStatus();
 					do { 
 						worker = queue_scheduler.waitQueue(1); // non-blocking wait
 						// if there's any CMPtcl
@@ -526,8 +529,9 @@ void RootRoutines() {
 					queue_scheduler.callback(worker);
 					//queue_scheduler.printStatus();
 				} while (queue_scheduler.isComplete());
-
+#ifdef DEBUG
 				 std::cout << "Irregular Force done" << std::endl;
+#endif
 #else
 				queue_scheduler.initialize(IRR_FORCE, next_time);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -559,7 +563,9 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+#ifdef DEBUG
 				 std::cout << "Irregular update done" << std::endl;
+#endif
 
 #ifdef FEWBODY
 				int OriginalSize = ThisLevelNode->ParticleList.size();
@@ -592,6 +598,7 @@ void RootRoutines() {
 				);
 
 				/* by YS 2025.1.14 */
+				/*
 				if (ThisLevelNode->ParticleList.size() == 0) {
 					// current_time_irr = particles[].CurrentBlockIrr * time_step; 
 					//(Query) current_time_irr should be updated somewhere.
@@ -599,9 +606,11 @@ void RootRoutines() {
 					continue; // this happened there was one CM ptcl and it terminated.
 							  // this skips the rest of the loop and goes to the next time step.
 				}
-
+				*/
+#ifdef DEBUG
 				std::cout << "FB search starts" << std::endl;
-				std::cerr << "FB search starts" << std::endl;
+#endif
+				// std::cerr << "FB search starts" << std::endl;
 				// Few-body group search
 				queue_scheduler.initialize(22);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -610,17 +619,28 @@ void RootRoutines() {
 				{
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
-					queue_scheduler.printStatus();
+					// queue_scheduler.printStatus();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
 
-				std::cerr << "FB search ended" << std::endl;
+				// std::cerr << "FB search ended" << std::endl;
+#ifdef DEBUG
 				std::cout << "FB search ended" << std::endl;
+#endif
 
 				int OriginalParticleListSize = ThisLevelNode->ParticleList.size();
 				int rank_delete, rank_new;
+#ifdef DEBUG
+				std::cout << "formBinaries starts" << std::endl;
+#endif
 				formBinaries(ThisLevelNode->ParticleList, newCMptcls, CMPtclWorker, PrevCMPtclWorker);
+#ifdef DEBUG
+				std::cout << "formBinaries ended" << std::endl;
+#endif
 				if (OriginalParticleListSize != ThisLevelNode->ParticleList.size()) {
+#ifdef DEBUG
+					std::cout << "New Binary!" << std::endl;
+#endif
 					new_binaries = true;
 					for (int i=OriginalParticleListSize; i<ThisLevelNode->ParticleList.size(); i++) {
 						ptcl = &particles[ThisLevelNode->ParticleList[i]];
@@ -687,9 +707,14 @@ void RootRoutines() {
 
 				// std::cout << "erase success" << std::endl;
 #endif
-
+#ifdef DEBUG
+				std::cout << "updateSkipList starts" << std::endl;
+#endif
 				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++)
 					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
+#ifdef DEBUG
+				std::cout << "updateSkipList ended" << std::endl;
+#endif
 
 				//std::cout << "update success" << std::endl;
 				//skiplist->display();
@@ -757,7 +782,13 @@ void RootRoutines() {
 				}
 				*/
 				current_time_irr = particles[ThisLevelNode->ParticleList[0]].CurrentBlockIrr*time_step;
+#ifdef DEBUG
+				std::cout << "skiplist->deleteFirstNode() starts" << std::endl;
+#endif
 				skiplist->deleteFirstNode();
+#ifdef DEBUG
+				std::cout << "skiplist->deleteFirstNode() ended" << std::endl;
+#endif
 
 				//std::cout << "deleteFirstNode success" << std::endl;
 				//ThisLevelNode = skiplist->getFirstNode();
@@ -809,14 +840,24 @@ void RootRoutines() {
 				}
 #endif
 			} // Irr
+#ifdef DEBUG
 			delete skiplist;
+			std::cout << "delete skiplist" << std::endl;
+#endif
 			skiplist = nullptr;
 			//exit(SUCCESS);
 
 #ifdef FEWBODY
-			if (bin_termination || new_binaries)
+			if (bin_termination || new_binaries) {
+#ifdef DEBUG
+			std::cout << "(FB) updateNextRegTime starts" << std::endl;
+#endif
 				updateNextRegTime(RegularList);
-			// std::cout << "updateNextRegTime done" << std::endl;
+#ifdef DEBUG
+			std::cout << "(FB) updateNextRegTime done" << std::endl;
+			std::cout << "(FB) RegularList size: " << RegularList.size() << std::endl;
+#endif
+			}
 #endif
 
 #ifdef CUDA
@@ -825,7 +866,18 @@ void RootRoutines() {
 				next_time = NextRegTimeBlock*time_step;
 
 				//fprintf(stdout, "Regular starts\n");
+#ifdef DEBUG
+				std::cout << "calculateRegAccelerationOnGPU starts" << std::endl;
+				std::cout << "RegularList size: " << RegularList.size() << std::endl;
+#endif
 				calculateRegAccelerationOnGPU(RegularList, queue_scheduler);
+#ifdef DEBUG
+				std::cout << "calculateRegAccelerationOnGPU ended" << std::endl;
+#endif
+
+#ifdef DEBUG
+				std::cout << "update regular starts" << std::endl;
+#endif
 
 				// Update Regular
 				queue_scheduler.initialize(REG_CUDA_UPDATE);
@@ -836,6 +888,9 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+#ifdef DEBUG
+				std::cout << "update regular ended" << std::endl;
+#endif
 
 				//fprintf(stdout, "Regular done\n");
 #ifdef unused

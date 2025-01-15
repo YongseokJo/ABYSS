@@ -89,7 +89,13 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 			AccIrrDot[i][dim]        = 0;
 		}
 	}
+#ifdef DEBUG
+	std::cout << "sendAllParticlesToGPU starts" << std::endl;
+#endif
 	sendAllParticlesToGPU(new_time);  // needs to be updated
+#ifdef DEBUG
+	std::cout << "sendAllParticlesToGPU ended" << std::endl;
+#endif
 	
 	
 	for (int i=0; i<ListSize; i++) {
@@ -116,8 +122,13 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 	_time.reg_gpu.markStart();
 #endif
 */
-
+#ifdef DEBUG
+	std::cout << "CalculateAccelerationOnDevice starts" << std::endl;
+#endif
 	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive);
+#ifdef DEBUG
+	std::cout << "CalculateAccelerationOnDevice ended" << std::endl;
+#endif
 
 	/*
 #ifdef time_trace
@@ -149,7 +160,9 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 	std::cout << std::endl;
 	*/
 
-
+#ifdef DEBUG
+	std::cout << "Adjust Regular Gravity starts" << std::endl;
+#endif
 
 	// Adjust Regular Gravity
 	int i=0, task=REG_CUDA;
@@ -183,6 +196,10 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
         }
 		queue_scheduler.waitQueue(0); // blocking wait
 	} while (queue_scheduler.isComplete());
+
+#ifdef DEBUG
+	std::cout << "Adjust Regular Gravity ended" << std::endl;
+#endif
 
 
 #ifdef nouse
