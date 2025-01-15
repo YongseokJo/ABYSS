@@ -86,6 +86,9 @@ public:
 
 
     Worker* waitQueue(int type) {
+        if (_total_queues == 0) // in case of no queue
+            return nullptr;
+
         if (type == 0) // blocking
         {
             MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_status);
@@ -120,14 +123,14 @@ public:
 
     // this is only for a non-blocking wait.
     void callback(Worker* worker) {
+        if (worker->getCurrentQueue()->task == FB_SDAR) 
+            _completed_cm_queues++;
         worker->callback();
         _completed_queues++;
         if (worker->NumberOfQueues > 0)
             WorkersToGo.insert(worker);
         else
             _FreeWorkers.insert(worker);
-        if (worker->queues->task == FB_SDAR) 
-            _completed_cm_queues++;
     }
 
 

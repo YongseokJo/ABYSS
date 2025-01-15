@@ -66,12 +66,10 @@ struct Worker {
             fprintf(stderr, "There is no queue in this worker!\n");
             exit(EXIT_FAILURE);
         }
-        Queue *q = &queues[CurrentQueue++];
+        //Queue *q = &queues[CurrentQueue];
         //q->print();
-        sendTask(*q);
-        //sendTask(queues[CurrentQueue++]);
-        CurrentQueue %= MAX_QUEUE;
-        NumberOfQueues--;
+        //sendTask(*q);
+        sendTask(queues[CurrentQueue]);
         //std::cout << "Worker " << MyRank << " is on duty" << std::endl;
     }
 
@@ -87,6 +85,9 @@ struct Worker {
             exit(1);
         }
         onDuty = false;
+        CurrentQueue++;
+        CurrentQueue %= MAX_QUEUE;
+        NumberOfQueues--;
         //std::cout << "Worker " << MyRank << " is off duty" << std::endl;
     }
 
@@ -117,7 +118,7 @@ struct Worker {
         onDuty = true;
     }
 
-
+    Queue* getCurrentQueue() {return &queues[CurrentQueue];}
 
 private:
     //Queue current_queue;

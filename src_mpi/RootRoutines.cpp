@@ -162,7 +162,7 @@ void RootRoutines() {
 		assert(OriginalNumberOfParticle <= NumberOfParticle); // for debugging by EW 2025.1.4
 		assert(CMPtclWorker.empty()); // for debugging by EW 2025.1.4
 		if (OriginalNumberOfParticle != NumberOfParticle) {
-			std::cout << "In total, " << OriginalNumberOfParticle - NumberOfParticle
+			std::cout << "In total, " << NumberOfParticle - OriginalNumberOfParticle
 					  << " primordial binaries are created." << std::endl;
 			queue_scheduler.initialize(23);
 			for (int i=OriginalNumberOfParticle; i<NumberOfParticle; i++) {
@@ -177,7 +177,7 @@ void RootRoutines() {
 				queue.task = 23;
 				queue.pid = ptcl->ParticleIndex;
 				workers[rank].addQueue(queue);
-				queue_scheduler.WorkersToGo.insert(&workers[rank]);
+				queue_scheduler.assignWorker(&workers[rank]);
 			}
 			queue_scheduler.setTotalQueue(CMPtclWorker.size());
 			do {
@@ -188,7 +188,9 @@ void RootRoutines() {
 		else {
 			std::cout << "There is no primordial binary." << std::endl;
 		}
-		fprintf(stdout, "PrimordialBinariesRoutine has ended...\nThe total number of particles is  %d\n", NumberOfParticle);
+		fprintf(stdout, "PrimordialBinariesRoutine has ended...\n"
+						"The total number of particles is  %d\n",
+				NumberOfParticle - 2 * CMPtclWorker.size());
 		fflush(stdout);
 #endif
 
@@ -483,6 +485,7 @@ void RootRoutines() {
 				{
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
+					queue_scheduler.printStatus();
 					do { 
 						worker = queue_scheduler.waitQueue(1); // non-blocking wait
 						// if there's any CMPtcl
@@ -588,8 +591,17 @@ void RootRoutines() {
 					ThisLevelNode->ParticleList.end()
 				);
 
-				 std::cout << "FB search starts" << std::endl;
-				 std::cerr << "FB search starts" << std::endl;
+				/* by YS 2025.1.14 */
+				if (ThisLevelNode->ParticleList.size() == 0) {
+					// current_time_irr = particles[].CurrentBlockIrr * time_step; 
+					//(Query) current_time_irr should be updated somewhere.
+					skiplist->deleteFirstNode();
+					continue; // this happened there was one CM ptcl and it terminated.
+							  // this skips the rest of the loop and goes to the next time step.
+				}
+
+				std::cout << "FB search starts" << std::endl;
+				std::cerr << "FB search starts" << std::endl;
 				// Few-body group search
 				queue_scheduler.initialize(22);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -598,7 +610,7 @@ void RootRoutines() {
 				{
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
-					//queue_scheduler.printStatus();
+					queue_scheduler.printStatus();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
 
