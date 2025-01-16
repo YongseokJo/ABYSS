@@ -81,7 +81,7 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 	// fprintf(stdout, "C. afterNOP: %d\n", afterNumberOfParticle);
 
 	for (int i = global_variable->NumberOfParticle; i < NumberOfParticle; i++) {
-		if (terminated.empty()) {
+		if (terminated.size() == 0) {
 			// NewCM = &particles[i];
 			// NewCM->ParticleIndex = i; // added by YS 2025.01.10 (Query) // This is assigned in deleteNeighbors(i) by EW 2025.1.11 (Answer)
 			// NewCM->PID = global_variable->NewPID; // added by YS 2025.01.10 (Query) // This is assigned in deleteNeighbors(i) by EW 2025.1.11 (Answer)
@@ -96,8 +96,8 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 			particles[it->first].copyNewNeighbor(ptcl);
 
 			existing.insert({it->first, it->second});
-			terminated.erase(it);
 			newCMptcls.push_back(it->first);
+			terminated.erase(it);
 		}
 	}
 
