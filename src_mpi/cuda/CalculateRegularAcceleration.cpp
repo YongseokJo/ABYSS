@@ -284,7 +284,9 @@ void sendAllParticlesToGPU(double new_time) {
 	double * Radius2;
 	double(*Position)[Dim];
 	double(*Velocity)[Dim];
-	int size = NumberOfParticle;
+	//int size = NumberOfParticle;
+	int size=0, i=0;
+
 
 	// allocate memory to the temporary variables
 	Mass     = new double[size];
@@ -296,19 +298,24 @@ void sendAllParticlesToGPU(double new_time) {
 	Particle *ptcl;
 
 	// copy the data of particles to the arrays to be sent
-	for (int i=0; i<size; i++) {
-		ptcl       = &particles[i];
+		
+	while (size < NumberOfParticle) {
+		ptcl       = &particles[i++];
 		if (!ptcl->isActive) continue;
 
-		Mass[i]    = ptcl->Mass;
-		Mdot[i]    = 0; //particle[i]->Mass;
-		Radius2[i] = ptcl->RadiusOfNeighbor; // mass wieght?
+		Mass[size]    = ptcl->Mass;
+		Mdot[size]    = 0; //particle[i]->Mass;
+		Radius2[size] = ptcl->RadiusOfNeighbor; // mass wieght?
 
 		if (ptcl->NumberOfNeighbor == 0)
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[i], Velocity[i]);
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[size], Velocity[size]);
 		else
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[i], Velocity[i]);
-	}
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
+		size++;
+		//std::cout << "(i , size) = "  << i << " " << size << std::endl;
+	} 
+
+	fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d\n", NumberOfParticle, size);
 
 	//fprintf(stdout, "Sending particles to GPU...\n");
 	//fflush(stdout);
