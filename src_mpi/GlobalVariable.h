@@ -2,8 +2,8 @@
 #define GLOBAL_VARIABLE_H
 
 struct GlobalVariable {
-	int NumberOfParticle;
-	int NewPID;
+	int LastParticleIndex;
+	// int NumberOfParticle;
 };
 
 #endif

@@ -38,9 +38,9 @@ void CalculateAcceleration01(Particle* ptcl1) {
 	//std::cout << "nbody+: Entering CalculateInitialAcceleration  ..." << std::endl;
 	//ptcl1->predictParticleSecondOrder(newTime);
 	
-	//fprintf(stdout, "pid=%d, nn=%d, numpart=%d\n", ptcl1->PID, ptcl1->NumberOfNeighbor, NumberOfParticle);
+	//fprintf(stdout, "pid=%d, nn=%d, numpart=%d\n", ptcl1->PID, ptcl1->NumberOfNeighbor, LastParticleIndex);
 	Particle *ptcl2;
-	for (int i=0; i<global_variable->NumberOfParticle; i++) {
+	for (int i=0; i<global_variable->LastParticleIndex; i++) {
 		ptcl2 = &particles[i];
 
 		if (ptcl1->PID == ptcl2->PID || !ptcl2->isActive) {
@@ -116,7 +116,7 @@ void CalculateAcceleration23(Particle* ptcl1) {
 	}
 
 	Particle *ptcl2;
-	for (int i=0; i<global_variable->NumberOfParticle; i++) {
+	for (int i=0; i<global_variable->LastParticleIndex; i++) {
 		ptcl2 = &particles[i];
 
 		if (ptcl1->PID == ptcl2->PID || !ptcl2->isActive) {

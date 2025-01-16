@@ -26,7 +26,7 @@ bool updateSkipList(SkipList *skiplist, int ptcl_id);
 int writeParticle(double current_time, int outputNum);
 void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler &queue_scheduler);
 
-void formPrimordialBinaries(int beforeNumberOfParticle);
+void formPrimordialBinaries(int beforeLastParticleIndex);
 void FBTermination(Particle* ptclCM);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int, int>& existing, std::unordered_map<int, int>& terminated);
 
@@ -54,7 +54,7 @@ void RootRoutines() {
 	// unordered_set? by EW 2025.1.11
 	// merged particles & PISN will be contained here
 	// new single Particle formed in Enzo can be formed in ParticleIndex of these ptcls
-	// if empty, NumberOfParticle++
+	// if empty, LastParticleIndex++
 	
 
 
@@ -79,7 +79,7 @@ void RootRoutines() {
 	/*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			fprintf(stdout, "PID=%d, pos=(%lf, %lf, %lf), vel=(%lf, %lf, %lf)\n",
 					ptcl->PID,
@@ -95,9 +95,9 @@ void RootRoutines() {
 	}*/
 
 	std::vector<int> PIDs;
-	PIDs.reserve(NumberOfParticle);
-	PIDs.resize(NumberOfParticle);
-	for (int i = 0; i < NumberOfParticle; i++)
+	PIDs.reserve(LastParticleIndex+1);
+	PIDs.resize(LastParticleIndex+1);
+	for (int i = 0; i <= LastParticleIndex; i++)
 	{
 		PIDs[i] = i;
 	}
@@ -106,9 +106,9 @@ void RootRoutines() {
 	{
 		/*
 		std::vector<int> PIDs;
-		PIDs.reserve(NumberOfParticle);
-		PIDs.resize(NumberOfParticle);
-		for (int i = 0; i < NumberOfParticle; i++)
+		PIDs.reserve(LastParticleIndex+1);
+		PIDs.resize(LastParticleIndex+1);
+		for (int i = 0; i <= LastParticleIndex; i++)
 		{
 			PIDs[i] = i;
 		}
@@ -157,15 +157,15 @@ void RootRoutines() {
 		// example code by EW 2025.1.7
 		Queue queue;
 		int rank;
-		int OriginalNumberOfParticle = NumberOfParticle;
-		formPrimordialBinaries(OriginalNumberOfParticle);
-		assert(OriginalNumberOfParticle <= NumberOfParticle); // for debugging by EW 2025.1.4
+		int OriginalLastParticleIndex = LastParticleIndex;
+		formPrimordialBinaries(OriginalLastParticleIndex);
+		assert(OriginalLastParticleIndex <= LastParticleIndex); // for debugging by EW 2025.1.4
 		assert(CMPtclWorker.empty()); // for debugging by EW 2025.1.4
-		if (OriginalNumberOfParticle != NumberOfParticle) {
-			std::cout << "In total, " << NumberOfParticle - OriginalNumberOfParticle
+		if (OriginalLastParticleIndex != LastParticleIndex) {
+			std::cout << "In total, " << LastParticleIndex - OriginalLastParticleIndex
 					  << " primordial binaries are created." << std::endl;
 			queue_scheduler.initialize(23);
-			for (int i=OriginalNumberOfParticle; i<NumberOfParticle; i++) {
+			for (int i=OriginalLastParticleIndex+1; i<=LastParticleIndex; i++) {
 				std::cout << "New Primordial Binary of PID="
 						  << i << " is created with being assigned to a worker of rank "
 						  << rank << "." << std::endl;
@@ -190,7 +190,7 @@ void RootRoutines() {
 		}
 		fprintf(stdout, "PrimordialBinariesRoutine has ended...\n"
 						"The total number of particles is  %d\n",
-				NumberOfParticle - 2 * CMPtclWorker.size());
+				NumberOfParticle);
 		fflush(stdout);
 #endif
 
@@ -205,7 +205,7 @@ void RootRoutines() {
 		} while(queue_scheduler.isComplete());
 
 		/*
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			if (ptcl->isActive)
 				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
@@ -237,7 +237,7 @@ void RootRoutines() {
 	/* timestep correction */
 	{
 		std::cout << "Time Step correction." << std::endl;
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 
 			if (!ptcl->isActive)
@@ -260,7 +260,7 @@ void RootRoutines() {
 		block_max = static_cast<ULL>(pow(2, -time_block));
 		time_step = pow(2,time_block);
 
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 
 			if (!ptcl->isActive)
@@ -279,7 +279,7 @@ void RootRoutines() {
 	}
 
 	/*
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			if (ptcl->isActive)
 				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
@@ -328,7 +328,7 @@ void RootRoutines() {
 	/*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			fprintf(stdout, "%d(%d)=",ptcl->PID,ptcl->NumberOfNeighbor);
 			for (int j=0;j<ptcl->NumberOfNeighbor;j++) {
@@ -337,7 +337,7 @@ void RootRoutines() {
 			fprintf(stdout, "\n");
 		}
 	}
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"\
 					"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"\
@@ -400,7 +400,7 @@ void RootRoutines() {
 	/*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			if (ptcl->isActive)
 				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
@@ -1251,7 +1251,7 @@ void updateNextRegTime(std::vector<int>& RegularList) {
 
 	RegularList.clear();
 
-	for (int i=0; i<NumberOfParticle; i++)
+	for (int i=0; i<=LastParticleIndex; i++)
 	{
 		//std::cout << i << std::endl;
 		ptcl = &particles[i];
@@ -1298,7 +1298,7 @@ bool createSkipList(SkipList *skiplist) {
 
 	Particle* ptcl;
 
-	for (int i=0; i<NumberOfParticle; i++) {
+	for (int i=0; i<=LastParticleIndex; i++) {
 		ptcl =  &particles[i];
 
 		// if ((ptcl->NumberOfNeighbor != 0) && (ptcl->NextBlockIrr <= NextRegTimeBlock)) { // IAR original

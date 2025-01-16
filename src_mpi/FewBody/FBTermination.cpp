@@ -12,7 +12,7 @@ void CalculateAcceleration23(Particle* ptcl1);
 
 void insertNeighbors(Particle* ptclCM) {
 
-	for (int i=0; i<NumberOfParticle; i++) {
+	for (int i=0; i<=LastParticleIndex; i++) {
 		Particle* ptcl = &particles[i];
 		if (!ptcl->isActive)
 			continue;
@@ -30,6 +30,7 @@ void insertNeighbors(Particle* ptclCM) {
 			}
 		}
 	}
+	NumberOfParticle += ptclCM->NewNumberOfNeighbor - 1;
 }
 
 void FBdeleteGroup(Group* group) {

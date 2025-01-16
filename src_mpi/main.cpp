@@ -72,15 +72,8 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Read Data Failed!\n");
 	
 
-	//std::cout << "Processor " << MyRank<< ": NumPart= "<<global_variable.NumberOfParticle << std::endl;
-	//std::cout << "Processor " << MyRank<< ": NumSing= "<<global_variable.NumberOfSingle << std::endl;
-	//broadcastFromRoot(NumberOfParticle);
-	//broadcastFromRoot(NumberOfSingle);
-	//MPI_Win_fence(0, win);
-
 	if (MyRank == ROOT) {
-		global_variable->NumberOfParticle = NumberOfParticle;
-		global_variable->NewPID           = NewPID;
+		global_variable->LastParticleIndex = LastParticleIndex;
 
 		RootRoutines();
 	} else {

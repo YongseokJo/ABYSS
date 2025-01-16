@@ -26,6 +26,7 @@ int readData() {
 
 	NumberOfParticle = getLineNumber();
 	NewPID = NumberOfParticle;
+	LastParticleIndex = NumberOfParticle - 1;
 
 	// Declaration
 	//Particle *particle_temp;	
@@ -200,7 +201,7 @@ int writeParticle(double current_time, int outputNum) {
     // Write particle data to the file
 		Particle *ptcl;
 		double pos[Dim], vel[Dim];
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			if (ptcl->isCMptcl) continue;
 #ifdef FEWBODY

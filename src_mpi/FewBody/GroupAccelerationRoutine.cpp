@@ -10,36 +10,35 @@
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
 void deleteNeighbors(int newOrder);
-void mergeGroupCandidates();
+void mergeGroupCandidates(int OriginalLastParticleIndex);
 
-void formPrimordialBinaries(int OriginalNumberOfParticle) {
+void formPrimordialBinaries(int OriginalLastParticleIndex) {
 
 	Particle* ptcl;
 	Particle* NewCM;
 
-	for (int i=0; i<OriginalNumberOfParticle; i++) {
+	for (int i=0; i<=OriginalLastParticleIndex; i++) {
 		ptcl = &particles[i];
 		if (ptcl->NewNumberOfNeighbor > 0) {
-			NewCM = &particles[NumberOfParticle];
+			NewCM = &particles[LastParticleIndex+1];
 			NewCM->clear();
 			NewCM->copyNewNeighbor(ptcl);		
 			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 			NewCM->NewNumberOfNeighbor++;
 
-			NumberOfParticle++;
+			LastParticleIndex++;
 		}
 	}
 
-	if (OriginalNumberOfParticle == NumberOfParticle) return;
+	if (OriginalLastParticleIndex == LastParticleIndex) return;
 
-	mergeGroupCandidates();	// Merge group candidates
+	mergeGroupCandidates(OriginalLastParticleIndex);	// Merge group candidates
 					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
-	global_variable->NumberOfParticle = NumberOfParticle;
 	
-	for (int i=OriginalNumberOfParticle; i<NumberOfParticle; i++) {
+	for (int i=OriginalLastParticleIndex+1; i<=LastParticleIndex; i++) {
 		deleteNeighbors(i);
 	}
-	global_variable->NewPID = NewPID;
+	global_variable->LastParticleIndex = LastParticleIndex;
 }
 
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
@@ -48,12 +47,14 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 	Particle* ptcl;
 	Particle* NewCM;
 
+	int OriginalLastParticleIndex = LastParticleIndex;
+
 	for (int i=0; i<ParticleList.size(); i++) {
 		ptcl = &particles[ParticleList[i]];
 		if (ptcl->NewNumberOfNeighbor > 0) {
 			fprintf(stdout, "GAR. Num: %d\n", ptcl->NewNumberOfNeighbor + 1);
 			fprintf(stdout, "GAR. PID: %d\n", ptcl->PID);
-			NewCM = &particles[NumberOfParticle];
+			NewCM = &particles[LastParticleIndex+1];
 			NewCM->clear();
 			NewCM->copyNewNeighbor(ptcl);
 			for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++) {
@@ -63,72 +64,62 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 			NewCM->NewNumberOfNeighbor++;
 
-			NumberOfParticle++;
+			LastParticleIndex++;
 		}
 	}
 
-	if (global_variable->NumberOfParticle == NumberOfParticle) return;
+	if (OriginalLastParticleIndex == LastParticleIndex) return;
 
-	// fprintf(stdout, "A. global_variable->NOP: %d, NOP: %d\n", global_variable->NumberOfParticle, NumberOfParticle);
+	// fprintf(stdout, "A. global_variable->NOP: %d, NOP: %d\n", global_variable->LastParticleIndex, LastParticleIndex);
 
-	mergeGroupCandidates();	// Merge group candidates
+	mergeGroupCandidates(OriginalLastParticleIndex);	// Merge group candidates
 					// ex) A & B form a group and B & C form a group --> Merge so that A & B & C become one group!
 	
-	// fprintf(stdout, "B. global_variable->NOP: %d, NOP: %d\n", global_variable->NumberOfParticle, NumberOfParticle);
+	// fprintf(stdout, "B. global_variable->NOP: %d, NOP: %d\n", global_variable->LastParticleIndex, LastParticleIndex);
 
-	int afterNumberOfParticle = NumberOfParticle;
+	assert(LastParticleIndex > OriginalLastParticleIndex); 
 
-	// fprintf(stdout, "C. afterNOP: %d\n", afterNumberOfParticle);
+	while (terminated.size() != 0) {
 
-	for (int i = global_variable->NumberOfParticle; i < NumberOfParticle; i++) {
-		if (terminated.size() == 0) {
-			// NewCM = &particles[i];
-			// NewCM->ParticleIndex = i; // added by YS 2025.01.10 (Query) // This is assigned in deleteNeighbors(i) by EW 2025.1.11 (Answer)
-			// NewCM->PID = global_variable->NewPID; // added by YS 2025.01.10 (Query) // This is assigned in deleteNeighbors(i) by EW 2025.1.11 (Answer)
+		Particle* ptcl = &particles[LastParticleIndex];
+		auto it = terminated.begin();
+		particles[it->first].copyNewNeighbor(ptcl);
+
+		existing.insert({it->first, it->second});
+		newCMptcls.push_back(it->first);
+		terminated.erase(it);
+		LastParticleIndex--;
+		if (OriginalLastParticleIndex == LastParticleIndex)
+			break;
+	}
+	if (OriginalLastParticleIndex != LastParticleIndex) {
+		for (int i = OriginalLastParticleIndex+1; i <= LastParticleIndex; i++) {
 			existing.insert({i, existing.size() % NumberOfWorker + 1});
 			newCMptcls.push_back(i);
 		}
-		else {
-			afterNumberOfParticle--;
-
-			Particle* ptcl = &particles[i];
-			auto it = terminated.begin();
-			particles[it->first].copyNewNeighbor(ptcl);
-
-			existing.insert({it->first, it->second});
-			newCMptcls.push_back(it->first);
-			terminated.erase(it);
-		}
 	}
-
-	// fprintf(stdout, "D. afterNOP: %d\n", afterNumberOfParticle);
-
-	NumberOfParticle = afterNumberOfParticle;
-	global_variable->NumberOfParticle = NumberOfParticle;
-
-	// fprintf(stdout, "E. global_variable->NOP: %d, NOP: %d\n", global_variable->NumberOfParticle, NumberOfParticle);
 
 	for (int i: newCMptcls) {
 		deleteNeighbors(i);
 	}
+	global_variable->LastParticleIndex = LastParticleIndex;
 
 	ParticleList.insert(ParticleList.end(), newCMptcls.begin(), newCMptcls.end());
-	global_variable->NewPID = NewPID;
 }
 
 
-void mergeGroupCandidates() {
+void mergeGroupCandidates(int OriginalLastParticleIndex) {
 
     bool merged = true;
 
     while (merged) {
         merged = false;
-		for (int i = global_variable->NumberOfParticle; i < NumberOfParticle; i++) {
+		for (int i = OriginalLastParticleIndex+1; i <= LastParticleIndex; i++) {
 
 			Particle* currentCM = &particles[i];
 			if (currentCM->NewNumberOfNeighbor == 0) continue; // Skip already deleted groups
 
-			for (int j = i + 1; j < NumberOfParticle; j++) {
+			for (int j = i + 1; j <= LastParticleIndex; j++) {
 
 				Particle* otherCM = &particles[j];
 				if (otherCM->NewNumberOfNeighbor == 0) continue; // Skip already deleted groups
@@ -156,11 +147,11 @@ void mergeGroupCandidates() {
 					merged = true;
 
                     // Mark otherGroup for deletion after the loop
-					if (j != NumberOfParticle-1) {
-						particles[j].copyNewNeighbor(&particles[NumberOfParticle-1]);
+					if (j != LastParticleIndex) {
+						particles[j].copyNewNeighbor(&particles[LastParticleIndex]);
 					}
-					particles[NumberOfParticle-1].clear();
-					NumberOfParticle--;
+					particles[LastParticleIndex].clear();
+					LastParticleIndex--;
                 }
             }
         }
@@ -188,9 +179,10 @@ void deleteNeighbors(int newOrder) {
 		members = &particles[ptclCM->NewNeighbors[i]];
 		members->isActive = false;
 	}
+	NumberOfParticle += 1 - ptclCM->NewNumberOfNeighbor;
 
 	// Erase members and put CM particle in neighbors
-	for (int i=0; i<NumberOfParticle; i++) {
+	for (int i=0; i<=LastParticleIndex; i++) {
 
 		Particle* ptcl = &particles[i];
 		if (!ptcl->isActive)

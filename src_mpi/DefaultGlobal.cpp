@@ -24,7 +24,8 @@ int LoadBalanceParticle;
 
 GlobalVariable *global_variable;
 GlobalVariable *global_variable_original;
-int NumberOfParticle;
+int LastParticleIndex; // The last index of particle array
+int NumberOfParticle; // The number of active particles
 int NewPID;
 
 // Task
@@ -74,12 +75,6 @@ void DefaultGlobal() {
 	for (int i=0;i<NumberOfTask; i++) {
 		Task[i] = i;
 	}
-
-	// Eunwoo: I think these lines are redundant
-	/* Number of particles */
-	// NumberOfParticle = 1000;
-	// NumberOfSingle = 1000;
-	// Eunwoo: I think these lines are redundant
 
 	NumberOfCommunication = 0;
 
