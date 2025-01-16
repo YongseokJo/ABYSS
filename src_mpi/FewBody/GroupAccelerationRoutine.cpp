@@ -69,10 +69,16 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 
 	if (global_variable->NumberOfParticle == NumberOfParticle) return;
 
+	// fprintf(stdout, "A. global_variable->NOP: %d, NOP: %d\n", global_variable->NumberOfParticle, NumberOfParticle);
+
 	mergeGroupCandidates();	// Merge group candidates
 					// ex) A & B form a group and B & C form a group --> Merge so that A & B & C become one group!
+	
+	// fprintf(stdout, "B. global_variable->NOP: %d, NOP: %d\n", global_variable->NumberOfParticle, NumberOfParticle);
 
 	int afterNumberOfParticle = NumberOfParticle;
+
+	// fprintf(stdout, "C. afterNOP: %d\n", afterNumberOfParticle);
 
 	for (int i = global_variable->NumberOfParticle; i < NumberOfParticle; i++) {
 		if (terminated.empty()) {
@@ -95,7 +101,12 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 		}
 	}
 
-	global_variable->NumberOfParticle = afterNumberOfParticle;
+	// fprintf(stdout, "D. afterNOP: %d\n", afterNumberOfParticle);
+
+	NumberOfParticle = afterNumberOfParticle;
+	global_variable->NumberOfParticle = NumberOfParticle;
+
+	// fprintf(stdout, "E. global_variable->NOP: %d, NOP: %d\n", global_variable->NumberOfParticle, NumberOfParticle);
 
 	for (int i: newCMptcls) {
 		deleteNeighbors(i);

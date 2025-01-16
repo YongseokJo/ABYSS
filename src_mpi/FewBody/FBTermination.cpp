@@ -38,7 +38,8 @@ void FBTermination(Group* group){
 	if (ptclCM->NumberOfNeighbor != 0) {
 		for (int i = 0; i < group->sym_int.particles.getSize(); i++) {
 			Particle* members = &group->sym_int.particles[i];
-
+			
+			particles[members->ParticleIndex].isActive = true;
 			for (int dim=0; dim<Dim; dim++) {
 				particles[members->ParticleIndex].Position[dim] = ptclCM->NewPosition[dim] + members->Position[dim];
 				particles[members->ParticleIndex].Velocity[dim] = ptclCM->NewVelocity[dim] + members->Velocity[dim];
@@ -50,6 +51,7 @@ void FBTermination(Group* group){
 		for (int i = 0; i < group->sym_int.particles.getSize(); i++) {
 			Particle* members = &group->sym_int.particles[i];
 
+			particles[members->ParticleIndex].isActive = true;
 			for (int dim=0; dim<Dim; dim++) {
 				particles[members->ParticleIndex].Position[dim] = ptclCM->Position[dim] + members->Position[dim];
 				particles[members->ParticleIndex].Velocity[dim] = ptclCM->Velocity[dim] + members->Velocity[dim];
@@ -82,6 +84,8 @@ void FBTermination(Group* group){
 		members->TimeLevelIrr		= ptclCM->TimeLevelIrr;
 		members->TimeLevelReg		= ptclCM->TimeLevelReg;
 
+		members->RadiusOfNeighbor = ACRadius*ACRadius; // added by EW 2025.1.16
+
 		CalculateAcceleration01(members);
 		CalculateAcceleration23(members);
 
@@ -101,6 +105,8 @@ void FBTermination(Group* group){
 
 		// members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
 		members->calculateTimeStepIrr();
+		members->NewCurrentBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
+		members->NextBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
 	}
 
 
@@ -163,6 +169,8 @@ void FBTermination2(Group* group){
 			ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = members->ParticleIndex;
 			ptclCM->NewNumberOfNeighbor++;
 
+			members->isActive = true;
+
 			members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
 
 			// Set CurrentBlock and CurrentTime for group particles.
@@ -174,6 +182,8 @@ void FBTermination2(Group* group){
 
 			members->TimeLevelIrr		= ptclCM->TimeLevelIrr;
 			members->TimeLevelReg		= ptclCM->TimeLevelReg;
+
+			members->RadiusOfNeighbor = ACRadius*ACRadius; // added by EW 2025.1.16
 
 			CalculateAcceleration01(members);
 			CalculateAcceleration23(members);

@@ -283,7 +283,6 @@ void NewFBInitialization(Particle* ptclCM) {
 
 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
 
-	std::cout << "2" << std::endl;
 	ptclGroup->initialManager();
 	ptclGroup->initialIntegrator(NumberOfMembers); // Binary tree is made and CM particle is made automatically.
 

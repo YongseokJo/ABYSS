@@ -397,7 +397,7 @@ void RootRoutines() {
 	}
 	*/
 	/* Particle Initialization Check */
-	// /*
+	/*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
 		for (int i=0; i<NumberOfParticle; i++) {
@@ -422,7 +422,7 @@ void RootRoutines() {
 						ptcl->NumberOfNeighbor);
 		}
 	}
-	// */
+	*/
 
 
 	/* Actual Loop */
@@ -587,6 +587,25 @@ void RootRoutines() {
 #endif
 
 #ifdef FEWBODY
+/* // FBTermination example code by EW 2025.1.16
+
+				for (int i: ThisLevelNode->ParticleList) {
+					ptcl = &particles[i];
+					if (ptcl->isCMptcl && !ptcl->isActive) {
+						queue_scheduler.initialize(24);
+						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
+						// fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
+						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->PID, rank_new);
+						queue.task = 24;
+						queue.pid = ptclCM->ParticleIndex;
+						workers[rank_new].addQueue(queue);
+						workers[rank_new].runQueue();
+						workers[rank_new].callback();
+					}
+				}
+	
+*/			
+
 				int OriginalSize = ThisLevelNode->ParticleList.size();
 				for (int i=0; i<OriginalSize; i++ ){
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
@@ -599,7 +618,7 @@ void RootRoutines() {
 
 						for (int j=0; j < ptcl->NewNumberOfNeighbor; j++) {
 							ThisLevelNode->ParticleList.push_back(ptcl->NewNeighbors[j]);
-							particles[ptcl->NewNeighbors[j]].isActive = true;
+							// particles[ptcl->NewNeighbors[j]].isActive = true;
 						}
 
 						bin_termination = true;
@@ -703,8 +722,8 @@ void RootRoutines() {
 
 						queue_scheduler.initialize(24);
 						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
-						fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
-						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->ParticleIndex, rank_new);
+						// fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
+						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->PID, rank_new);
 						queue.task = 24;
 						queue.pid = ptclCM->ParticleIndex;
 						workers[rank_new].addQueue(queue);

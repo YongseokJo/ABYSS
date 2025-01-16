@@ -238,7 +238,7 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 
 				NewFBInitialization(ptcl);
-				std::cout << "FewBody object of particle " << ptcl_id
+				std::cout << "FewBody object of particle " << ptcl->PID
 						  << " is successfully initialized on rank " << MyRank << "." <<std::endl;
 				break;
 
@@ -251,8 +251,9 @@ void WorkerRoutines() {
 			case 26: // SDAR for few body encounters
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
-				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
+				
 				ptcl = &particles[ptcl_id];
+				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << std::endl;
 
 				/* (Query) this will be done already. 
 				ptcl->computeAccelerationIrr();
@@ -275,7 +276,7 @@ void WorkerRoutines() {
 				if (!ptcl->GroupInfo->isMerger && ptcl->GroupInfo->isTerminate)
 					FBTermination(ptcl->GroupInfo);
 
-				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl_id << " done!" <<std::endl;
+				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
 				break;
 #endif 
 
