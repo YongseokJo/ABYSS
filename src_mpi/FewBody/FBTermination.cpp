@@ -203,6 +203,8 @@ void FBTermination2(Group* group){
 
 			// members->calculateTimeStepIrr2(ptcl->a_tot, ptcl->a_irr);
 			members->calculateTimeStepIrr();
+			members->NewCurrentBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
+			members->NextBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
 		}
 	}
 

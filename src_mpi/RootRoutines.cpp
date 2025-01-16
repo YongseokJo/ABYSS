@@ -462,18 +462,29 @@ void RootRoutines() {
 				ThisLevelNode = skiplist->getFirstNode();
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
-
+			
+#ifdef DEBUG
 				// print out particlelist
 				// /*
-				fprintf(stdout, "(IRR_FORCE) timestep: %e Myr\n", particles[ThisLevelNode->ParticleList[0]].TimeStepIrr*EnzoTimeStep*1e4);
-				fprintf(stdout, "PID (%d) = ", ThisLevelNode->ParticleList.size());
+				fprintf(stdout, "(IRR_FORCE) next_time: %e Myr\n", next_time*EnzoTimeStep*1e4);
+				fprintf(stdout, "PID: %d. CurrentTimeIrr: %e Myr, TimeStepIrr: %e Myr\n", 
+							particles[ThisLevelNode->ParticleList[0]].PID, 
+							particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr*EnzoTimeStep*1e4, 
+							particles[ThisLevelNode->ParticleList[0]].TimeStepIrr*EnzoTimeStep*1e4);
+
+				// fprintf(stdout, "PID (%d) = ", ThisLevelNode->ParticleList.size());
 				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
-					fprintf(stdout, "%d, ", ptcl->PID);
+					// fprintf(stdout, "%d, ", ptcl->PID);
+					fprintf(stdout, "PID: %d. %e Myr, %e Myr\n", 
+							ptcl->PID,
+							ptcl->CurrentTimeIrr*EnzoTimeStep*1e4,
+							ptcl->TimeStepIrr*EnzoTimeStep*1e4);
 				}
 				fprintf(stdout, "\n");
-				fflush(stdout);
+				// fflush(stdout);
 				// */
+#endif
 
 				// Irregular Force
 #ifdef FEWBODY
@@ -563,6 +574,14 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+
+				for (int i: ThisLevelNode->ParticleList) {
+					ptcl = &particles[i];
+					if (ptcl->CurrentTimeIrr != next_time) {
+						fprintf(stdout, "Error! PID: %d, CurrentTimeIrr: %e Myr, next_time: %e Myr\n", ptcl->PID, ptcl->CurrentTimeIrr*EnzoTimeStep*1e4, next_time*EnzoTimeStep*1e4);
+						assert(ptcl->CurrentTimeIrr == next_time);
+					}
+				}
 #ifdef DEBUG
 				 std::cout << "Irregular update done" << std::endl;
 #endif

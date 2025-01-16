@@ -86,8 +86,33 @@ void Group::ARIntegration(double next_time){
     std::cerr<<std::endl;
 
     std::cerr << "Current Time: " << CurrentTime*EnzoTimeStep*1e4 << "Myr, " << "Next Time: " << next_time*EnzoTimeStep*1e4 << "Myr" << std::endl;
-*/
+*/  
+    // fprintf(stderr, "Before integration\n");
+    // fprintf(stdout, "ARInt. current time: %e Myr, next_time: %e Myr\n", CurrentTime*EnzoTimeStep*1e4, next_time*EnzoTimeStep*1e4);
+    // for (int i=0; i < sym_int.particles.getSize(); i++) {
+	// 	Particle* members = &sym_int.particles[i];
+    //     fprintf(stderr, "CM. Position (pc) - x:%e, y:%e, z:%e, \n", sym_int.particles.cm.Position[0]*position_unit, sym_int.particles.cm.Position[1]*position_unit, sym_int.particles.cm.Position[2]*position_unit);
+	// 	fprintf(stderr, "CM. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", sym_int.particles.cm.Velocity[0]*velocity_unit/yr*pc/1e5, sym_int.particles.cm.Velocity[1]*velocity_unit/yr*pc/1e5, sym_int.particles.cm.Velocity[2]*velocity_unit/yr*pc/1e5);
+	// 	fprintf(stderr, "CM. Mass (Msol) - %e, \n", sym_int.particles.cm.Mass*mass_unit);
+	// 	fprintf(stderr, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
+	// 	fprintf(stderr, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
+	// 	fprintf(stderr, "PID: %d. Mass (Msol) - %e, \n", members->PID, members->Mass*mass_unit);
+    // }
+    
+    assert(next_time > CurrentTime);
     auto bin_interrupt = sym_int.integrateToTime(next_time*EnzoTimeStep);
+
+    // fprintf(stderr, "After integration\n");
+    // fprintf(stderr, "bin_interrupt.time_now: %e Myr, bin_interrupt.time_end: %e Myr\n", bin_interrupt.time_now*1e4, bin_interrupt.time_end*1e4);
+    // for (int i=0; i < sym_int.particles.getSize(); i++) {
+	// 	Particle* members = &sym_int.particles[i];
+    //     fprintf(stderr, "CM. Position (pc) - x:%e, y:%e, z:%e, \n", sym_int.particles.cm.Position[0]*position_unit, sym_int.particles.cm.Position[1]*position_unit, sym_int.particles.cm.Position[2]*position_unit);
+	// 	fprintf(stderr, "CM. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", sym_int.particles.cm.Velocity[0]*velocity_unit/yr*pc/1e5, sym_int.particles.cm.Velocity[1]*velocity_unit/yr*pc/1e5, sym_int.particles.cm.Velocity[2]*velocity_unit/yr*pc/1e5);
+	// 	fprintf(stderr, "CM. Mass (Msol) - %e, \n", sym_int.particles.cm.Mass*mass_unit);
+	// 	fprintf(stderr, "PID: %d. Position (pc) - x:%e, y:%e, z:%e, \n", members->PID, members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
+	// 	fprintf(stderr, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", members->PID, members->Velocity[0]*velocity_unit/yr*pc/1e5, members->Velocity[1]*velocity_unit/yr*pc/1e5, members->Velocity[2]*velocity_unit/yr*pc/1e5);
+	// 	fprintf(stderr, "PID: %d. Mass (Msol) - %e, \n", members->PID, members->Mass*mass_unit);
+    // }
 /*
     for (int i=0; i < sym_int.particles.getSize(); i++) {
 		Particle* members = &sym_int.particles[i];
