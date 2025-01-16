@@ -36,7 +36,7 @@ void GR_energy_loss(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTre
 void GR_energy_loss_iter(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin, double current_time, double next_time);
 
 void NewFBInitialization3(Group* group);
-void FBTermination2(Group* group);
+// void FBTermination2(Group* group);
 
 
 // made 2024.08.12 by Eunwoo Chung
@@ -175,6 +175,8 @@ void Group::ARIntegration(double next_time){
                 groupCM->Position[dim] = pos[dim];
                 groupCM->Velocity[dim] = vel[dim];
             }
+            CurrentTime = bin_interrupt.time_now/EnzoTimeStep;
+            groupCM->CurrentTimeIrr = CurrentTime;
 
             // I don't use the following code anymore because it might take a long time by EW 2025.1.6
             /*
@@ -197,13 +199,12 @@ void Group::ARIntegration(double next_time){
                     particles[members->ParticleIndex].Velocity[dim] = groupCM->Velocity[dim] + members->Velocity[dim];
                 }
                 particles[members->ParticleIndex].Mass = members->Mass;
+                particles[members->ParticleIndex].CurrentTimeIrr = CurrentTime;
             }
 
             isTerminate = true;
 
-            CurrentTime = bin_interrupt.time_now/EnzoTimeStep;
-
-            FBTermination2(this);
+            // FBTermination2(this);
 
             return;   
         }
@@ -315,6 +316,7 @@ void Group::ARIntegration(double next_time){
             particles[members->ParticleIndex].Velocity[dim] = groupCM->NewVelocity[dim] + members->Velocity[dim];
         }
         particles[members->ParticleIndex].Mass = members->Mass;
+        particles[members->ParticleIndex].CurrentTimeIrr = next_time;
     }
     
     CurrentTime = next_time;

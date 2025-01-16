@@ -69,10 +69,20 @@ void Particle::polynomialPrediction(double current_time) {
 
 
 void Particle::updateParticle() {
-	for (int dim=0; dim<Dim; dim++) {
-		this->Position[dim] = this->NewPosition[dim];
-		this->Velocity[dim] = this->NewVelocity[dim];
+	
+	if (this->NumberOfNeighbor != 0) { // IAR original
+		for (int dim=0; dim<Dim; dim++) {
+			this->Position[dim] = this->NewPosition[dim];
+			this->Velocity[dim] = this->NewVelocity[dim];
+		}
 	}
+	else { // IAR modified
+		for (int dim=0; dim<Dim; dim++) {
+			this->NewPosition[dim] = this->Position[dim];
+			this->NewVelocity[dim] = this->Velocity[dim];
+		}
+	}
+	
 	//updateTimeStep();
 }
 

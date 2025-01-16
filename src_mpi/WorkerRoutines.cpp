@@ -15,7 +15,8 @@ void CalculateAcceleration23(Particle* ptcl1);
 void makePrimordialGroup(Particle* ptclCM);
 void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
-void FBTermination(Group* group);
+// void FBTermination(Group* group);
+void FBdeleteGroup(Group* group);
 
 void WorkerRoutines() {
 
@@ -81,8 +82,7 @@ void WorkerRoutines() {
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
-				if (ptcl->NumberOfNeighbor != 0) // IAR modified, (Query) what do you mean? 2025.01.04
-					ptcl->updateParticle();
+				ptcl->updateParticle();
 				ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
 				ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
 				//std::cout << "pid=" << ptcl_id << ", CurrentBlockIrr=" << particles[ptcl_id].CurrentBlockIrr << std::endl;
@@ -273,8 +273,8 @@ void WorkerRoutines() {
 				else if (ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
 					ptcl->GroupInfo->isMerger = false;
 
-				if (!ptcl->GroupInfo->isMerger && ptcl->GroupInfo->isTerminate)
-					FBTermination(ptcl->GroupInfo);
+				if (ptcl->GroupInfo->isTerminate)
+					FBdeleteGroup(ptcl->GroupInfo);
 
 				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
 				break;

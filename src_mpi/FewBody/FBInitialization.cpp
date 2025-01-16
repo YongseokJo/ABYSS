@@ -294,6 +294,8 @@ void NewFBInitialization(Particle* ptclCM) {
 
 	// Set ptcl information like time, PID, etc.
 
+	ptclCM->RadiusOfNeighbor = ptcl->RadiusOfNeighbor;
+
 	ptclCM->CurrentTimeIrr  = ptcl->CurrentTimeIrr;
 	ptclCM->CurrentTimeReg  = ptcl->CurrentTimeReg;
 	ptclCM->CurrentBlockIrr = ptcl->CurrentBlockIrr; 

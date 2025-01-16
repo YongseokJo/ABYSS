@@ -46,7 +46,6 @@ void Particle::computeAccelerationIrr() {
 
 		ptcl = &particles[this->Neighbors[i]];
 
-
 		/*
 		if (ptcl->isCMptcl) {
 			fprintf(stderr, "my = %d , pid of cm = %d\n", this->PID, ptcl->PID);

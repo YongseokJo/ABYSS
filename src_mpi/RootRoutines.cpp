@@ -27,7 +27,7 @@ int writeParticle(double current_time, int outputNum);
 void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler &queue_scheduler);
 
 void formPrimordialBinaries(int beforeNumberOfParticle);
-void insertNeighbors(int Order);
+void FBTermination(Particle* ptclCM);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int, int>& existing, std::unordered_map<int, int>& terminated);
 
 Worker* workers;
@@ -586,42 +586,24 @@ void RootRoutines() {
 				 std::cout << "Irregular update done" << std::endl;
 #endif
 
-#ifdef FEWBODY
-/* // FBTermination example code by EW 2025.1.16
-
-				for (int i: ThisLevelNode->ParticleList) {
-					ptcl = &particles[i];
-					if (ptcl->isCMptcl && !ptcl->isActive) {
-						queue_scheduler.initialize(24);
-						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
-						// fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
-						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->PID, rank_new);
-						queue.task = 24;
-						queue.pid = ptclCM->ParticleIndex;
-						workers[rank_new].addQueue(queue);
-						workers[rank_new].runQueue();
-						workers[rank_new].callback();
-					}
-				}
-	
-*/			
+#ifdef FEWBODY		
 
 				int OriginalSize = ThisLevelNode->ParticleList.size();
 				for (int i=0; i<OriginalSize; i++ ){
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
 					if (ptcl->isCMptcl && !ptcl->isActive) {
 
+						bin_termination = true;
+
 						PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
 						CMPtclWorker.erase(ptcl->ParticleIndex);
 
-						insertNeighbors(ptcl->ParticleIndex);
-
 						for (int j=0; j < ptcl->NewNumberOfNeighbor; j++) {
 							ThisLevelNode->ParticleList.push_back(ptcl->NewNeighbors[j]);
-							// particles[ptcl->NewNeighbors[j]].isActive = true;
+							particles[ptcl->NewNeighbors[j]].isActive = true;
 						}
 
-						bin_termination = true;
+						FBTermination(ptcl);
 					}
 				}
 
