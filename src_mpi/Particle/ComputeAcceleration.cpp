@@ -450,13 +450,15 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 	// Aceeleration correction
 	for (int i=0; i<size; i++) {
-
 		if ( i < this->NumberOfNeighbor ) {
+				
 			// neighbor in old but not in new
 		 	if ( hashTableNew.find(this->Neighbors[i]) == hashTableNew.end() ) {
 				//fprintf(stderr, "in old, not in new = %d\n",this->Neighbors[i]);
 				//std::cerr <<  "in old, not in new =" <<  this->Neighbors[i] << std::endl;
 				ptcl = &particles[this->Neighbors[i]];
+				if (!ptcl->isActive)
+					continue;
 
 				if (ptcl->NumberOfNeighbor == 0)
 					ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
@@ -485,6 +487,9 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 		if ( i < NewNumberOfNeighborGPU ) {
 			ptcl = &particles[NewNeighborsGPU[i]];
+
+			if (!ptcl->isActive)
+				continue;
 
 			if (ptcl->NumberOfNeighbor == 0)
 				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
@@ -579,9 +584,13 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 	}
 	fflush(stdout);
 
-	for (int i=0; i<NewNumberOfNeighborGPU; i++)
-		this->NewNeighbors[i] = NewNeighborsGPU[i];
-	this->NewNumberOfNeighbor = NewNumberOfNeighborGPU;
+	int _NewNumberOfNeighbor = 0;
+	for (int i=0; i<NewNumberOfNeighborGPU; i++) {
+		if (!particles[NewNeighborsGPU[i]].isActive)
+			continue;
+		this->NewNeighbors[_NewNumberOfNeighbor++] = NewNeighborsGPU[i];
+	}
+	this->NewNumberOfNeighbor = _NewNumberOfNeighbor;
 
 
 	for (int dim=0; dim<Dim; dim++) {
