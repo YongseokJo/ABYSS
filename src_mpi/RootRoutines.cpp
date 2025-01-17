@@ -11,7 +11,7 @@
 #include "Worker.h"
 #include "QueueScheduler.h"
 
-#define DEBUG
+#define noDEBUG
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
 void InitialAssignmentOfTasks(int data, int NumTask, int TAG);

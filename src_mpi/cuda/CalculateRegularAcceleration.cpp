@@ -315,7 +315,7 @@ void sendAllParticlesToGPU(double new_time) {
 		//std::cout << "(i , size) = "  << i << " " << size << std::endl;
 	} 
 
-	fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d\n", NumberOfParticle, size);
+	//fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d\n", NumberOfParticle, size);
 
 	//fprintf(stdout, "Sending particles to GPU...\n");
 	//fflush(stdout);
