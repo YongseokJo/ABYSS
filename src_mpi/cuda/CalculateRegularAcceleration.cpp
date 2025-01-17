@@ -289,11 +289,11 @@ void sendAllParticlesToGPU(double new_time) {
 
 
 	// allocate memory to the temporary variables
-	Mass     = new double[size];
-	Mdot     = new double[size];
-	Radius2  = new double[size];
-	Position = new double[size][Dim];
-	Velocity = new double[size][Dim];
+	Mass     = new double[NumberOfParticle];
+	Mdot     = new double[NumberOfParticle];
+	Radius2  = new double[NumberOfParticle];
+	Position = new double[NumberOfParticle][Dim];
+	Velocity = new double[NumberOfParticle][Dim];
 
 	Particle *ptcl;
 
