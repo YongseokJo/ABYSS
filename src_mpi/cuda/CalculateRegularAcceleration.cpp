@@ -289,11 +289,11 @@ void sendAllParticlesToGPU(double new_time) {
 
 
 	// allocate memory to the temporary variables
-	Mass     = new double[size];
-	Mdot     = new double[size];
-	Radius2  = new double[size];
-	Position = new double[size][Dim];
-	Velocity = new double[size][Dim];
+	Mass     = new double[NumberOfParticle];
+	Mdot     = new double[NumberOfParticle];
+	Radius2  = new double[NumberOfParticle];
+	Position = new double[NumberOfParticle][Dim];
+	Velocity = new double[NumberOfParticle][Dim];
 
 	Particle *ptcl;
 
@@ -315,7 +315,7 @@ void sendAllParticlesToGPU(double new_time) {
 		//std::cout << "(i , size) = "  << i << " " << size << std::endl;
 	} 
 
-	fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d\n", NumberOfParticle, size);
+	//fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d\n", NumberOfParticle, size);
 
 	//fprintf(stdout, "Sending particles to GPU...\n");
 	//fflush(stdout);
