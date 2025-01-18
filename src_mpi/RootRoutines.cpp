@@ -27,8 +27,12 @@ int writeParticle(double current_time, int outputNum);
 void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler &queue_scheduler);
 
 void formPrimordialBinaries(int beforeLastParticleIndex);
-void FBTermination(Particle* ptclCM);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int, int>& existing, std::unordered_map<int, int>& terminated);
+void FBTermination(Particle* ptclCM);
+
+#ifdef SEVN
+void StellarEvolution();
+#endif
 
 Worker* workers;
 
@@ -1219,6 +1223,10 @@ void RootRoutines() {
 			} // Regular Done.
 #endif
 			global_time = NextRegTimeBlock*time_step;
+
+#ifdef SEVN
+			StellarEvolution();
+#endif
 
 			// create output at appropriate time intervals
 			if (global_time >= outputTime) {

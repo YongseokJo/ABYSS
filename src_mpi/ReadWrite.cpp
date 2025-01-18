@@ -11,6 +11,9 @@ int getLineNumber();
 void write_out(std::ofstream& outputFile, const Particle* ptcl, const double *pos, const double *vel);
 void write_out_group(std::ofstream& outputFile, const Particle* ptcl, const Particle* members, const double *pos, const double *vel);
 void write_neighbor(std::ofstream& outputFile, const Particle* ptcl);
+#ifdef SEVN
+void initializeStellarEvolution();
+#endif
 const int NUM_COLUMNS = 7; // Define the number of columns
 const int width = 18;
 
@@ -80,6 +83,10 @@ int readData() {
 		particles[i].normalizeParticle();
 	}
 	inputFile.close();
+
+#ifdef SEVN
+	initializeStellarEvolution();
+#endif
 
 	/*
 	for (int i=0; i<particle.size(); i++) {

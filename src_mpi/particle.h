@@ -52,8 +52,8 @@ struct Particle {
 	// For SDAR
 	bool isActive;
 	bool isUpdateToDate;
-	double radius;
-	double dm; // Stellar mass which will be distributed to nearby gas cells
+	double radius; // used in SEVN too
+	double dm; // Stellar mass which will be distributed to nearby gas cells // used in SEVN too
 	double time_check; // time to check next interrupt
 	long long int binary_state; // contain two parts, low bits (first BINARY_STATE_ID_SHIFT bits) is binary interrupt state and high bits are pair ID
 	double a_spin[3]; // dimensionless spin parameter a
@@ -61,6 +61,13 @@ struct Particle {
 	bool isCMptcl; // do we need this? (Query) we can simply use if GroupInfo == nullptr right?
 	int CMPtclIndex; // added for write_out_group function by EW 2025.1.6
 
+#ifdef SEVN
+	// For SEVN
+	Star* StellarEvolution;
+	double FormationTime; // Myr // for restart
+	double WorldTime; // Myr // FormationTime + EvolutionTime
+	double Mzams; // Msol // Mass when it is zero-age main sequence // for restart & VMS (radius extrapolation)
+#endif
 
 	Particle() {
 		Position[0] = Position[1] = Position[2] = 0.0;
@@ -105,7 +112,12 @@ struct Particle {
 		isCMptcl = false; //(Query)
 		isUpdateToDate = true;
 		CMPtclIndex = -1;
-
+#ifdef SEVN
+		StellarEvolution = nullptr;
+		FormationTime = 0.0; // Myr
+		WorldTime = 0.0; // Myr
+		Mzams = 0.0;
+#endif
 	}
 
 	/*
@@ -148,9 +160,7 @@ struct Particle {
 		this->CMPtclIndex = -1;
 		this->isUpdateToDate = true;
 
-#ifdef SEVN
-		this->ParticleType = NormalStar+SingleStar;
-#else
+#ifndef SEVN
 		if (this->Mass*1e9 > 8) {
 			this->ParticleType = Blackhole+SingleStar;
 			this->radius = 6*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // innermost stable circular orbit around a Schwartzshild BH = 3 * R_sch
