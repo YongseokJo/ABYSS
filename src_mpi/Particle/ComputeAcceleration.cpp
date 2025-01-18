@@ -46,6 +46,9 @@ void Particle::computeAccelerationIrr() {
 
 		ptcl = &particles[this->Neighbors[i]];
 
+		if (!ptcl->isActive) {
+			fprintf(stderr, "this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
+		}
 		assert(ptcl->isActive); // debug by EW 2025.1.17
 
 		/*
