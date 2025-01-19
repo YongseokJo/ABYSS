@@ -18,7 +18,7 @@
 // CUDA kernel to compute the forces for a subset of particles
 __global__ void print_forces_subset(CUDA_REAL* result, int m, int n) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	int M = max(0, m-30);
+	int M = max(0, m-5);
 	if ((idx < m) && (idx >= M)) {
 		for (int j=0; j<n; j++){
 			printf("(%d %d) = %e\n", idx, j, result[j * m + idx]);
@@ -349,7 +349,7 @@ void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REA
 		// cublasDcopy(handle, m * n, diff + i, _six, d_matrix, 1);
 		const CUDA_REAL *component_diff = diff + i * m * n;
 
-        cublasDgemv(
+        cublasStatus_t stat = cublasDgemv(
             handle,
             CUBLAS_OP_T,  // Transpose
             n,            // Number of rows of the matrix A
@@ -363,12 +363,49 @@ void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REA
             result + i, // Pointer to the first element of the result vector
             _six             // Increment between elements of the result vector
         );
+		if (stat != CUBLAS_STATUS_SUCCESS) {
+			fprintf(stderr, "cublasDgemv error: %d on component %d\n", stat, i);
+			std::cout << "n: " << n << ", m: " << m << ", lda: " << n << std::endl;
+			cudaPointerAttributes attr;
+			cudaPointerGetAttributes(&attr, component_diff);
+			std::cout << "component_diff is on device: " << attr.device << std::endl;
+		}
     }
     // Cleanup
     delete[] h_ones;
     cudaFree(ones);
 	// cudaFree(d_matrix);
 }
+
+__global__ void reduce_forces_kernel(const double *diff,  // [6 * m * n] total
+                                     double       *result, // [6 * m] output
+                                     int n, // "rows" in each component
+                                     int m  // "columns"
+                                    )
+{
+    // Each thread handles one (component, column).
+    // We'll use a 2D block/grid: x -> column j, y -> component c
+
+    int col = blockIdx.x * blockDim.x + threadIdx.x; // j in [0..m-1]
+    int comp = blockIdx.y * blockDim.y + threadIdx.y; // c in [0..5]
+
+    // We only have 6 components total:
+    if (comp >= 6 || col >= m) return;
+
+    double sumVal = 0.0;
+    // sum over the "row" dimension i in [0..n-1]
+    // component c is offset by comp*m*n
+    // column j is offset by col*n
+    // row i is just + i
+    for (int i = 0; i < n; i++){
+        sumVal += diff[comp * m * n + (col * n) + i];
+    }
+
+    // store interleaved in the output: result[j*6 + comp]
+    // matching the cublasDgemv style: incY = 6
+    result[col * 6 + comp] = sumVal;
+}
+
 
 // using uint16 type?
 __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighbor, int* gathered_neighbor, int m) {
@@ -398,6 +435,7 @@ __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighb
 
 __global__ void gather_numneighbor(const int* numneighbor_block, int* gathered_numneighbor, int m) {
     int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks    
+	// NumTarget * GridDimY
     if (i >= m) return;
 
 	int temp = 0;

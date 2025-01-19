@@ -80,7 +80,9 @@ extern cudaStream_t stream;
 cudaStream_t stream;
 
 #ifdef MultiGPU
- cudaStream_t streams[4]; //Maximum 4 GPUs
+cudaStream_t streams[4]; //Maximum 4 GPUs
+cublasHandle_t cublasHandles[4];
+
 #endif
 extern CUDA_REAL *h_diff, *h_magnitudes;
 CUDA_REAL *h_diff, *h_magnitudes;
@@ -107,14 +109,7 @@ void GetAcceleration(
     // Instead of a single handle, each GPU has cublasHandles[i].
     // Also, each GPU has its own d_ptcl_array[i], d_diff_array[i], etc.
 	cudaGetDeviceCount(&deviceCount);
-	cublasHandle_t cublasHandles[4];
-	for (int i = 0; i < deviceCount; i++){
-		cudaSetDevice(i);
-		initializeCudaAndCublas(&cublasHandles[i]);	
-	    cublasSetStream(cublasHandles[i], streams[i]);
-
-		fprintf(stderr, "d_diff_array[%d] = %p\n", i, (void*)d_diff_array[i]);
-	}
+	// cublasHandle_t cublasHandles[4];
 	
 	fprintf(stderr, "Number of GPUs (GetAcceleration): %d\n", deviceCount);
 
@@ -152,7 +147,7 @@ void GetAcceleration(
                      d_target_array[i],
                      NumTarget,
                      streams[i]);
-			cudaDeviceSynchronize();
+			cudaStreamSynchronize(streams[i]);
 			
             // Prepare kernel dimensions
             dim3 blockDim(64, 1, 1);
@@ -175,11 +170,27 @@ void GetAcceleration(
 				deviceJStart, // j_start
 				NNB
             );
-			cudaDeviceSynchronize();
+			cudaStreamSynchronize(streams[i]);
 
+			/*
+			// ========== debug ========
+			fprintf(stdout, "debug_print2-2 %d %d\n",i, NumTarget); // 90 or 32300?
+			cudaStreamSynchronize(streams[i]);
+			print_forces_subset<<<gridDim2, blockDim2, 0, streams[i]>>>(d_diff_array[i], NumTarget, 6*GridDimY);
+			cudaStreamSynchronize(streams[i]);
 
-
-
+			cudaError_t err = cudaGetLastError();
+			if (err != cudaSuccess) {
+				std::cerr << "CUDA error: " << cudaGetErrorString(err) << std::endl;
+			}
+			cudaStream_t handleStream;
+			cublasGetStream(cublasHandles[i], &handleStream);
+			if (handleStream != streams[i]) {
+				std::cerr << "Error: cuBLAS handle stream mismatch on device " << i << std::endl;
+			} else {
+				std::cout << "cuBLAS handle successfully associated with stream on device " << i << std::endl;
+			}
+			// ========== debug ========
             // Next do reduce_forces_cublas on GPU i
             reduce_forces_cublas(
                 cublasHandles[i], 
@@ -188,11 +199,18 @@ void GetAcceleration(
                 GridDimY, 
                 NumTarget
             );
-			cudaDeviceSynchronize();
+			*/
+			dim3 blockDim3(16, 6);       // 16 threads along X, 6 along Y
+			dim3 gridDim3((NumTarget+15)/16, 1);
+			reduce_forces_kernel<<<gridDim3, blockDim3>>>(d_diff_array[i], d_result_array[i], GridDimY, NumTarget);
 
-			//fprintf(stdout, "debug_print2-1 %d \n",i);
-			//print_forces_subset<<<gridDim2, blockDim2, 0, streams[i]>>>(d_result_array[i], NumTarget, 6);
-			//cudaDeviceSynchronize();
+
+			cudaStreamSynchronize(streams[i]);
+
+			fprintf(stdout, "debug_print2-3 %d %d\n",i, NumTarget); // 90 or 32300?
+			cudaStreamSynchronize(streams[i]);
+			print_forces_subset<<<gridDim2, blockDim2, 0, streams[i]>>>(d_result_array[i], NumTarget, 6);
+			cudaStreamSynchronize(streams[i]);
 
             // Then gather neighbors
 			// dim3 gridDim2(NumTarget, 1);
@@ -206,7 +224,7 @@ void GetAcceleration(
 
 			//fprintf(stdout, "debug_print2-2 %d \n",i);
 			//print_forces_subset<<<gridDim2, blockDim2, 0, streams[i]>>>(d_result_array[i], NumTarget, 6);
-			cudaDeviceSynchronize();
+			cudaStreamSynchronize(streams[i]);
 
 
             gather_numneighbor<<<gridDim2, blockDim2, 0, streams[i]>>>(
@@ -214,14 +232,7 @@ void GetAcceleration(
                 d_num_neighbor_array[i], 
                 NumTarget
             );
-			//fprintf(stderr, "debug1-6_%d \n",i);
-			cudaDeviceSynchronize();
-
-			//fprintf(stdout, "debug_print2-3 %d \n",i);
-			//print_forces_subset<<<gridDim2, blockDim2, 0, streams[i]>>>(d_result_array[i], NumTarget, 6);
-			//cudaDeviceSynchronize();
-
-			// debugging
+			cudaStreamSynchronize(streams[i]);
 
 
         }
@@ -229,19 +240,18 @@ void GetAcceleration(
         // 2) Synchronize all devices, then copy results to host
         for (int i = 0; i < deviceCount; i++) {
             cudaSetDevice(i);
-            cudaStreamSynchronize(streams[i]);
 
             int deviceJStart = i * chunkPerGpu;
-            int deviceNumJ   = std::min(chunkPerGpu, variable_size - deviceJStart);
+            int deviceNumJ   = std::min(chunkPerGpu, NNB - deviceJStart);
             if (deviceNumJ <= 0) break;  // No more work
-			//fprintf(stderr, "debug2 \n");
+
             // Copy back partial results
             toHost(h_result_array[i],
                    d_result_array[i],
                    _six * NumTarget,
                    streams[i]);
 
-			cudaDeviceSynchronize();
+			cudaStreamSynchronize(streams[i]);
 			//fprintf(stderr, "debug3 \n");
 
             toHost(NeighborList_array[i],
@@ -249,14 +259,14 @@ void GetAcceleration(
                    NumTarget * NumNeighborMax,
                    streams[i]);
 			
-			cudaDeviceSynchronize();
+			cudaStreamSynchronize(streams[i]);
 			//fprintf(stderr, "debug4 \n");
 
             toHost(h_num_neighbor_array[i],
                    d_num_neighbor_array[i],
                    NumTarget,
                    streams[i]);
-			cudaDeviceSynchronize();
+			cudaStreamSynchronize(streams[i]);
         }
 		
 		for (int j = 0; j < NumTarget; j++) {
@@ -271,9 +281,8 @@ void GetAcceleration(
 
 			// Accumulate results across devices
 			for (int i = 0; i < deviceCount; i++) {
-				int device_offset = j * _six;
 				for (int k = 0; k < _six; k++) {
-					h_result[result_idx + k] += h_result_array[i][device_offset + k];
+					h_result[result_idx + k] += h_result_array[i][j * _six + k];
 				}
 				NumNeighbor[j] += h_num_neighbor_array[i][j];
 			}
@@ -338,12 +347,12 @@ void GetAcceleration(
 			#endif
 		}
     } // end of TargetStart loop
-
+	/*
 	for (int i = 0; i < deviceCount; i++){
 		cudaSetDevice(i);
 		cublasDestroy(cublasHandles[i]);
 	}
-
+	*/
 
 }
 
@@ -654,7 +663,8 @@ void _ReceiveFromHost(
 			my_free_d(d_r2_array, deviceCount);
 			my_free_d(d_diff_array, deviceCount);
 			my_free_d(d_neighbor_block_array, deviceCount);
-			my_free(h_neighbor, d_neighbor_array, deviceCount);
+			// my_free(h_neighbor, d_neighbor_array, deviceCount);
+			my_free_d(d_neighbor_array, deviceCount);
 			for (int i = 0; i < deviceCount; i++) {
 				cudaSetDevice(i);
 				cudaFreeHost(h_result_array[i]);
@@ -694,11 +704,11 @@ void _ReceiveFromHost(
 		// C * (m / N_device)
 		my_allocate_d(d_num_neighbor_block_array, GridDimY * target_size, deviceCount, 0);
 		my_allocate_d(d_neighbor_block_array, GridDimY * NNB_per_block * target_size, deviceCount, 0);
-		my_allocate(&h_neighbor     , d_neighbor_array, NumNeighborMax * target_size, deviceCount, 0);
+		my_allocate_d(d_neighbor_array, NumNeighborMax * target_size, deviceCount, 0);
 		for (int i = 0; i < deviceCount; i++) {
 			cudaSetDevice(i);
 			cudaMallocHost(&h_result_array[i], _six*variable_size * sizeof(CUDA_REAL));
-			cudaMallocHost(&h_num_neighbor_array[i], GridDimY*variable_size * sizeof(int));
+			cudaMallocHost(&h_num_neighbor_array[i], variable_size * sizeof(int));
 			cudaMallocHost(&NeighborList_array[i], variable_size * NumNeighborMax * sizeof(int));
 		}
 		#else
@@ -725,11 +735,18 @@ void _ReceiveFromHost(
 		// cudaMalloc((void**)&d_num_neighbor, GridDimY * variable_size * sizeof(int));
 		
 
-	} //end of if first
+	} //end of if (first) || (new_size(NNB) > variable_size)
 
 	size_t freeMem, totalMem;
-	cudaMemGetInfo(&freeMem, &totalMem);
-	//std::cout << "Free memory: " << freeMem << " bytes, Total memory: " << totalMem << " bytes" << std::endl;
+	for (int i = 0; i < deviceCount; i++) {
+		cudaSetDevice(i);
+		cudaMemGetInfo(&freeMem, &totalMem);
+		// std::cout << i << " Free memory: " << freeMem << " bytes, Total memory: " << totalMem << " bytes" << std::endl;
+		std::cout << "Device " << i 
+				<< " Free memory: " << freeMem / (1024.0 * 1024.0) << " MB, "
+				<< "Total memory: " << totalMem / (1024.0 * 1024.0) << " MB" 
+				<< std::endl;
+	}
 
 
 	//toDevice(h_background,d_background,variable_size);
@@ -747,7 +764,7 @@ void _ReceiveFromHost(
 		cudaSetDevice(i);
 		toDevice(h_ptcl, d_ptcl_array[i], _seven*NNB, streams[i]);
 		cudaDeviceSynchronize();
-		toDevice(r2    , d_r2_array[i]  ,        NNB, streams[i]); //why failed?
+		toDevice(r2    , d_r2_array[i]  ,        NNB, streams[i]);
 
 	}
 
@@ -795,10 +812,11 @@ void _InitializeDevice(int irank){
 	for (int deviceNum = 0; deviceNum < deviceCount; deviceNum++) {
 		cudaSetDevice(deviceNum);
 		cudaStreamCreate(&streams[deviceNum]);
+		initializeCudaAndCublas(&cublasHandles[deviceNum]);	
+	    cublasSetStream(cublasHandles[deviceNum], streams[deviceNum]);
 
         // Force runtime to initialize driver context for this device
         cudaFree(nullptr);
-		
 		}
 
 	// Use CUDA Driver API to get the device associated with the current context

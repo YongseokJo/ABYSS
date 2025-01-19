@@ -18,6 +18,11 @@ __global__ void gather_numneighbor(const int* numneighbor_block, int* gathered_n
 void force_reduction(cublasHandle_t handle, const double3 *acc, const double3 *adot, CUDA_REAL *result, int m, int n);
 
 void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REAL *result, int n, int m);
+__global__ void reduce_forces_kernel(const double *diff,  // [6 * m * n] total
+                                     double       *result, // [6 * m] output
+                                     int n, // "rows" in each component
+                                     int m  // "columns"
+                                    );
 /*
 __device__ void _addition(Result &result, const Result res);
 __device__ void _copy(Result &result, const Result res);
