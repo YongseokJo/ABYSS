@@ -147,7 +147,7 @@ void GetAcceleration(
                      d_target_array[i],
                      NumTarget,
                      streams[i]);
-			cudaStreamSynchronize(streams[i]);
+			//cudaStreamSynchronize(streams[i]);
 			
             // Prepare kernel dimensions
             dim3 blockDim(64, 1, 1);
@@ -170,7 +170,7 @@ void GetAcceleration(
 				deviceJStart, // j_start
 				NNB
             );
-			cudaStreamSynchronize(streams[i]);
+			//cudaStreamSynchronize(streams[i]);
 
 			/*
 			// ========== debug ========
@@ -205,13 +205,13 @@ void GetAcceleration(
 			reduce_forces_kernel<<<gridDim3, blockDim3>>>(d_diff_array[i], d_result_array[i], GridDimY, NumTarget);
 
 
-			cudaStreamSynchronize(streams[i]);
-
+			//cudaStreamSynchronize(streams[i]);
+			/*
 			fprintf(stdout, "debug_print2-3 %d %d\n",i, NumTarget); // 90 or 32300?
 			cudaStreamSynchronize(streams[i]);
 			print_forces_subset<<<gridDim2, blockDim2, 0, streams[i]>>>(d_result_array[i], NumTarget, 6);
 			cudaStreamSynchronize(streams[i]);
-
+			*/
             // Then gather neighbors
 			// dim3 gridDim2(NumTarget, 1);
             // dim3 blockDim2(GridDimY, 1);
@@ -224,7 +224,7 @@ void GetAcceleration(
 
 			//fprintf(stdout, "debug_print2-2 %d \n",i);
 			//print_forces_subset<<<gridDim2, blockDim2, 0, streams[i]>>>(d_result_array[i], NumTarget, 6);
-			cudaStreamSynchronize(streams[i]);
+			//cudaStreamSynchronize(streams[i]);
 
 
             gather_numneighbor<<<gridDim2, blockDim2, 0, streams[i]>>>(
@@ -232,7 +232,7 @@ void GetAcceleration(
                 d_num_neighbor_array[i], 
                 NumTarget
             );
-			cudaStreamSynchronize(streams[i]);
+			//cudaStreamSynchronize(streams[i]);
 
 
         }
@@ -251,7 +251,7 @@ void GetAcceleration(
                    _six * NumTarget,
                    streams[i]);
 
-			cudaStreamSynchronize(streams[i]);
+			//cudaStreamSynchronize(streams[i]);
 			//fprintf(stderr, "debug3 \n");
 
             toHost(NeighborList_array[i],
@@ -259,7 +259,7 @@ void GetAcceleration(
                    NumTarget * NumNeighborMax,
                    streams[i]);
 			
-			cudaStreamSynchronize(streams[i]);
+			//cudaStreamSynchronize(streams[i]);
 			//fprintf(stderr, "debug4 \n");
 
             toHost(h_num_neighbor_array[i],
