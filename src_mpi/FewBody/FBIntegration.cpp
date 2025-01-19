@@ -36,7 +36,6 @@ void GR_energy_loss(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTre
 void GR_energy_loss_iter(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin, double current_time, double next_time);
 
 void NewFBInitialization3(Group* group);
-// void FBTermination2(Group* group);
 
 
 // made 2024.08.12 by Eunwoo Chung
@@ -47,7 +46,6 @@ void NewFBInitialization3(Group* group);
 // If Intererrupt_mode != none, then bin_termination = true;
 void Group::ARIntegration(double next_time){
 
-// /*
     for (int dim=0; dim<Dim; dim++) {
         sym_int.particles.cm.Position[dim] = groupCM->Position[dim];
         sym_int.particles.cm.Velocity[dim] = groupCM->Velocity[dim];
@@ -58,7 +56,37 @@ void Group::ARIntegration(double next_time){
     sym_int.particles.cm.NumberOfNeighbor = groupCM->NumberOfNeighbor;
     for (int i=0; i<groupCM->NumberOfNeighbor; i++)
         sym_int.particles.cm.Neighbors[i] = groupCM->Neighbors[i];
-// */
+
+
+#ifdef SEVN
+    bool evolved = false;
+    bool kicked = false;
+    for (int i=0; i < sym_int.particles.getSize(); i++) {
+        Particle* members = &sym_int.particles[i];
+        if (members->Mass != particles[members->ParticleIndex].Mass) {
+            members->Mass = particles[members->ParticleIndex].Mass;
+            evolved = true;
+            if (particles[members->ParticleIndex].getBinaryInterruptState() == BinaryInterruptState::kicked) {
+                kicked = true;
+                break;
+            }
+        }
+    }
+    if (!kicked && evolved) { // Eunwoo: orbital parameters should be re-calculated due to mass changes during stellar evolution!
+        sym_int.particles.shiftToOriginFrame();
+        sym_int.info.generateBinaryTree(sym_int.particles,manager.interaction.gravitational_constant);
+        sym_int.initialIntegration(next_time*EnzoTimeStep);
+    }
+    if (kicked) {
+        for (int i = 0; i < sym_int.particles.getSize(); i++) {
+            Particle* members = &sym_int.particles[i];
+            particles[members->ParticleIndex].CurrentTimeIrr = CurrentTime;
+        }
+        isTerminate = true;
+        return; 
+    }
+#endif
+
 /*
     for (int i=0; i < sym_int.particles.getSize(); i++) {
 		Particle* members = &sym_int.particles[i];
@@ -140,7 +168,6 @@ void Group::ARIntegration(double next_time){
     std::cerr<<std::endl;
 */
 // /* PN corrections
-    // if (PNon && bin_interrupt.status == AR::InterruptStatus::none) { // Only particles with BH
     if (bin_interrupt.status == AR::InterruptStatus::none) { // Every bound orbit
         
         auto& bin_root = sym_int.info.getBinaryTreeRoot();
@@ -178,18 +205,6 @@ void Group::ARIntegration(double next_time){
             CurrentTime = bin_interrupt.time_now/EnzoTimeStep;
             groupCM->CurrentTimeIrr = CurrentTime;
 
-            // I don't use the following code anymore because it might take a long time by EW 2025.1.6
-            /*
-            for (int dim=0; dim<Dim; dim++) {
-                groupCM->Position[dim] = pos[dim];
-                groupCM->Velocity[dim] = vel[dim];
-                sym_int.particles.cm.Position[dim] = pos[dim];
-                sym_int.particles.cm.Velocity[dim] = vel[dim];
-            }
-            sym_int.particles.shiftToOriginFrame();
-            sym_int.particles.template writeBackMemberAll<Particle>();
-            */
-
             assert(!sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.6
             for (int i = 0; i < sym_int.particles.getSize(); i++) {
                 Particle* members = &sym_int.particles[i];
@@ -204,23 +219,11 @@ void Group::ARIntegration(double next_time){
 
             isTerminate = true;
 
-            // FBTermination2(this);
-
             return;   
         }
         else {
 
             CurrentTime = bin_interrupt.time_now/EnzoTimeStep;
-
-            // I don't use the following code anymore because it might take a long time by EW 2025.1.6
-            /*
-            for (int dim=0; dim<Dim; dim++) {
-                sym_int.particles.cm.Position[dim] = groupCM->Position[dim];
-                sym_int.particles.cm.Velocity[dim] = groupCM->Velocity[dim];
-            }
-            sym_int.particles.shiftToOriginFrame();
-            sym_int.particles.template writeBackMemberAll<Particle>();
-            */
 
             assert(!sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.6
             for (int i = 0; i < sym_int.particles.getSize(); i++) {
@@ -237,74 +240,6 @@ void Group::ARIntegration(double next_time){
             return;
         }
     }
-#ifdef SEVN
-    if (useSEVN) {
-
-        bool breakEvolution = false;
-        bool evolved = false;
-        while (EvolutionTime + EvolutionTimeStep < next_time*EnzoTimeStep*1e4) {
-
-            evolved = true;
-
-            // if (groupCM->PID == -10917) {
-            //     fprintf(stderr, "Stellar evolution!\n");
-            //     fflush(stderr);
-            // }
-
-            EvolutionTime += EvolutionTimeStep;
-
-            REAL dt_evolve_next = NUMERIC_FLOAT_MAX; // Myr
-
-            for (int i=0; i < sym_int.particles.getSize(); i++) {
-                Particle* members = &sym_int.particles[i];
-                if (members->star == nullptr || members->star->amiremnant())
-                    continue;
-                members->star->sync_with(EvolutionTimeStep);
-                members->EvolutionTime += members->star->getp(Timestep::ID);
-                // fprintf(SEVNout, "INT. PID: %d. GT: %e, ET: %e\n", members->PID, CurrentTime*EnzoTimeStep*1e4, members->EvolutionTime);
-                // fflush(SEVNout);
-                members->star->evolve();
-                // fprintf(SEVNout, "INT. After. PID: %d, ET: %e, WT: %e\n", members->PID, members->EvolutionTime, members->star->getp(Worldtime::ID));
-                // fflush(SEVNout);
-                UpdateEvolution(members);
-                // fprintf(SEVNout, "Int. PID: %d, Mass: %e, Radius: %e, EvolutionTime: %e\n", members->PID, members->Mass*mass_unit, members->radius*position_unit, members->EvolutionTime);
-                // fflush(SEVNout);
-                if (members->star->amiempty() || members->star->vkick[3] > 0.0) {
-                    breakEvolution = true;
-                    break;
-                }
-                if (members->star->amiBH())
-                    PNon = true;
-                if (!members->star->amiremnant() && members->star->getp(Timestep::ID) < dt_evolve_next)
-                    dt_evolve_next = members->star->getp(Timestep::ID);
-            }
-            EvolutionTimeStep = dt_evolve_next;
-            // fprintf(SEVNout, "INT. EvolutionTimeStep: %e\n", EvolutionTimeStep);
-            // fflush(SEVNout);
-        }
-
-        useSEVN = false;
-        for (int i=0; i < sym_int.particles.getSize(); i++) {
-            Particle* members = &sym_int.particles[i];
-            if (members->star != nullptr && !members->star->amiremnant()) {
-                useSEVN = true;
-                break;
-            }
-        }
-        if (breakEvolution) { // break SDAR
-            sym_int.particles.shiftToOriginFrame();
-            sym_int.particles.template writeBackMemberAll<Particle>();
-
-            FBTermination2(groupCM, next_time, particle);
-            return;
-        }
-        if (evolved) { // Eunwoo: orbital parameters should be re-calculated due to mass changes during stellar evolution!
-            sym_int.particles.shiftToOriginFrame();
-            sym_int.info.generateBinaryTree(sym_int.particles,manager.interaction.gravitational_constant);
-            sym_int.initialIntegration(next_time*EnzoTimeStep);
-        }
-    }
-#endif
 
     // for write_out_group function by EW 2025.1.6
     assert(!sym_int.particles.isOriginFrame()); // for debugging by EW 2025.1.6

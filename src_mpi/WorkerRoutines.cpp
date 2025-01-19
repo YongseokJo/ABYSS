@@ -212,14 +212,13 @@ void WorkerRoutines() {
 
 				ptcl->NewNumberOfNeighbor = 0;
 
-				if (ptcl->binary_state == 0) {
-					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
-						ptcl->checkNewGroup();
+				if (ptcl->getBinaryInterruptState()== BinaryInterruptState::manybody) {
+					ptcl->checkNewGroup2();
+					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 				}
 				else {
-					assert(ptcl->binary_state == -1); // for debugging by EW 2025.1.7
-					ptcl->checkNewGroup2();
-					ptcl->binary_state = 0;
+					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
+						ptcl->checkNewGroup();
 				}
 				// std::cerr << "FB search of particle  " << ptcl_id << " is successfully finished on rank " << MyRank << "." <<std::endl;
 
@@ -268,7 +267,7 @@ void WorkerRoutines() {
 				}
 				
 				ptcl->GroupInfo->ARIntegration(next_time);
-				if (!ptcl->GroupInfo->isMerger)
+				if (!ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
 					ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
 				else if (ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
 					ptcl->GroupInfo->isMerger = false;

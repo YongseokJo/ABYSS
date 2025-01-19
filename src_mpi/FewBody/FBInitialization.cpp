@@ -6,10 +6,6 @@
 #include "../global.h"
 #include "../def.h"
 
-#ifdef SEVN
-void UpdateEvolution(Particle* ptcl);
-#endif
-
 // REAL getNewTimeStepIrr(REAL f[3][4], REAL df[3][4]);
 // void getBlockTimeStep(REAL dt, int& TimeLevel, ULL &TimeBlock, REAL &TimeStep);
 // bool UpdateComputationChain(Particle* ptcl);
@@ -166,93 +162,6 @@ void NewFBInitialization(Particle* ptclCM) {
     }
 
 	fprintf(binout, "Starting time CurrentTimeIrr (Myr): %e\n", ptcl->CurrentTimeIrr*EnzoTimeStep*1e4);
-
-#ifdef SEVN
-	ptclGroup->useSEVN = false;
-	REAL dt_evolve_next = NUMERIC_FLOAT_MAX; // Myr
-	for (Particle* members : ptclGroup->Members) {
-		if (members->star == nullptr || members->star->amiremnant())
-			continue;
-		REAL dt_evolve = ptcl->CurrentTimeIrr*EnzoTimeStep*1e4 - members->EvolutionTime; // Myr
-		
-    	if (dt_evolve > 0) {
-			members->star->sync_with(dt_evolve);
-			members->EvolutionTime += members->star->getp(Timestep::ID);
-			// assert(members->EvolutionTime == ptcl->CurrentTimeIrr*EnzoTimeStep*1e4);
-			members->star->evolve();
-			// fprintf(SEVNout, "INI. After. PID: %d, ET: %e, WT: %e\n", members->PID, members->EvolutionTime, members->star->getp(Worldtime::ID));
-			// fflush(SEVNout);
-			// fprintf(SEVNout, "CurrentTimeIrr: %e, PID: %d, EvolutionTime: %e\n", ptcl->CurrentTimeIrr*EnzoTimeStep*1e4, members->PID, members->EvolutionTime);
-			UpdateEvolution(members);
-			if (members->star->vkick[3] > 0.0) {
-				for (Particle* members : group->Members)
-					members->isGroup = false;
-				delete ptclGroup;
-				ptclGroup = nullptr;
-				delete group;
-				group = nullptr;
-				return;
-			}
-			else if (members->star->amiempty()) {
-				for (Particle* members : group->Members)
-					members->isGroup = false;
-				delete ptclGroup;
-				ptclGroup = nullptr;
-				delete group;
-				group = nullptr;
-
-				members->isErase = true;
-
-				particle.erase(
-					std::remove_if(particle.begin(), particle.end(),
-						[](Particle* p) {
-						bool to_remove = p->isErase;
-						//if (to_remove) delete p;
-						return to_remove;
-						}),
-					particle.end());
-
-				RegularList.erase(
-					std::remove_if(RegularList.begin(), RegularList.end(),
-						[](Particle* p) {
-						bool to_remove = p->isErase;
-						//if (to_remove) delete p;
-						return to_remove;
-						}),
-					RegularList.end());
-
-				for (int i=0; i<particle.size(); i++) {
-					particle[i]->ParticleIndex = i;
-
-					// This might be not necessary because we're moving to the regular acceleration routine, and re-set neighbors.
-					// Should be checked again later.
-					particle[i]->ACList.erase(
-							std::remove_if(particle[i]->ACList.begin(), particle[i]->ACList.end(),
-								[](Particle* p) {
-								return p->isErase; }),
-							particle[i]->ACList.end());
-
-					particle[i]->NumberOfAC = particle[i]->ACList.size();
-				}
-				return;
-			}
-		}
-		if (!members->star->amiremnant()) {
-			ptclGroup->useSEVN = true;
-			if (members->star->getp(Timestep::ID) < dt_evolve_next)
-				dt_evolve_next = members->star->getp(Timestep::ID);
-		}
-		
-	}
-	if (ptclGroup->useSEVN) {
-		ptclGroup->EvolutionTime = ptcl->CurrentTimeIrr*EnzoTimeStep*1e4;
-		ptclGroup->EvolutionTimeStep = dt_evolve_next;
-		// fprintf(SEVNout, "INI. ETS: %e\n", ptclGroup->EvolutionTimeStep);
-		// fflush(SEVNout);
-		// fprintf(binout, "EvolutionTimeStep: %e Myr\n", ptclGroup->EvolutionTimeStep);
-		// fflush(binout);
-	}
-#endif
 
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[ptclCM->NewNeighbors[i]];
@@ -503,11 +412,6 @@ void NewFBInitialization3(Group* group) {
 	ptclGroup->isTerminate = group->isTerminate;
 	ptclGroup->isMerger = group->isMerger;
 	ptclGroup->CurrentTime = group->CurrentTime;
-#ifdef SEVN
-	ptclGroup->useSEVN = group->useSEVN;
-	ptclGroup->EvolutionTime = group->EvolutionTime;
-	ptclGroup->EvolutionTimeStep = group->EvolutionTimeStep;
-#endif
 
 	ptclCM->NewNumberOfNeighbor = 0;
 	for (int i = 0; i < group->sym_int.particles.getSize(); i++) {

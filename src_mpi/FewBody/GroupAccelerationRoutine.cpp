@@ -171,7 +171,7 @@ void deleteNeighbors(int newOrder) {
 	ptclCM->isActive = true;
 	ptclCM->isCMptcl = true;
 	ptclCM->RadiusOfNeighbor = ACRadius*ACRadius;
-	ptclCM->binary_state = 0;
+	ptclCM->setBinaryInterruptState(BinaryInterruptState::none);
 
 	Particle* members;
 
@@ -209,27 +209,6 @@ void makePrimordialGroup(Particle* ptclCM) {
 	Group* ptclGroup = new Group();
 
 	ptclGroup->groupCM = ptclCM;
-
-#ifdef SEVN
-	ptclGroup->useSEVN = false;
-	REAL dt_evolve_next = NUMERIC_FLOAT_MAX; // Myr
-	for (Particle* members : group->Members) {
-		if (members->star == nullptr || members->star->amiremnant())
-			continue;
-		else {
-			ptclGroup->useSEVN = true;
-			assert(members->EvolutionTime == 0.0);
-			if (members->star->getp(Timestep::ID) < dt_evolve_next)
-				dt_evolve_next = members->star->getp(Timestep::ID);
-		}
-	}
-	if (ptclGroup->useSEVN) {
-		ptclGroup->EvolutionTime = 0.0;
-		ptclGroup->EvolutionTimeStep = dt_evolve_next;
-		// fprintf(binout, "EvolutionTimeStep: %e Myr\n", ptclGroup->EvolutionTimeStep);
-		// fflush(binout);
-	}
-#endif
 
 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
 

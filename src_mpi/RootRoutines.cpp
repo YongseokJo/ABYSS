@@ -469,8 +469,8 @@ void RootRoutines() {
 			
 #ifdef DEBUG
 				// print out particlelist
-				// /*
 				fprintf(stdout, "(IRR_FORCE) next_time: %e Myr\n", next_time*EnzoTimeStep*1e4);
+				/*
 				fprintf(stdout, "PID: %d. CurrentTimeIrr: %e Myr, TimeStepIrr: %e Myr\n", 
 							particles[ThisLevelNode->ParticleList[0]].PID, 
 							particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr*EnzoTimeStep*1e4, 
@@ -487,7 +487,7 @@ void RootRoutines() {
 				}
 				fprintf(stdout, "\n");
 				// fflush(stdout);
-				// */
+				*/
 #endif
 
 				// Irregular Force
@@ -1225,7 +1225,8 @@ void RootRoutines() {
 			global_time = NextRegTimeBlock*time_step;
 
 #ifdef SEVN
-			StellarEvolution();
+			StellarEvolution(); // How about evolving particles inside RegularList only? by EW 2025.1.19
+								// Currently, evolving all the particles upto global_time
 #endif
 
 			// create output at appropriate time intervals

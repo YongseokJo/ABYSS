@@ -12,7 +12,14 @@
 #include "star.h" // Eunwoo added for SEVN
 #endif SEVN
 
-enum class BinaryInterruptState:int {none = 0, form = 1, exchange = 2, collision = 3}; // Eunwoo
+enum class BinaryInterruptState:int {
+	none = 0, 
+	form = 1, 
+	exchange = 2, 
+	collision = 3,
+	manybody = 4, // many-body (>2) group terminated // added by EW 2025.1.19
+	kicked = 5 // kicked or exploded as PISN during stellar evolution // added by EW 2025.1.19
+};
 #define BINARY_STATE_ID_SHIFT 4 // Eunwoo
 #define BINARY_INTERRUPT_STATE_MASKER 0xF // Eunwoo
 
@@ -107,7 +114,7 @@ struct Particle {
 		radius = 0.;
 		dm = 0.0;
 		time_check = NUMERIC_FLOAT_MAX;
-		binary_state = 0;
+		setBinaryInterruptState(BinaryInterruptState::none);
 		GroupInfo = nullptr;
 		isCMptcl = false; //(Query)
 		isUpdateToDate = true;
@@ -151,7 +158,7 @@ struct Particle {
 		this->ParticleIndex			= PID;
 		this->dm = 0.0;
 		this->time_check = NUMERIC_FLOAT_MAX;
-		this->binary_state = 0;
+		this->setBinaryInterruptState(BinaryInterruptState::none);
 		this->GroupInfo = nullptr;
 		this->isCMptcl = false;
 		this->a_spin[0] = 0.;
@@ -186,7 +193,7 @@ struct Particle {
 		GroupInfo = nullptr;
 		isCMptcl = false;
 		CMPtclIndex = -1;
-		binary_state = 0;
+		setBinaryInterruptState(BinaryInterruptState::none);
     }
 
 	void normalizeParticle() {

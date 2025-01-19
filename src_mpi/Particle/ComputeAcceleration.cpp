@@ -13,7 +13,13 @@ void calculateSingleAcceleration(Particle *ptcl2, double *pos, double *vel, doub
 
 void Particle::computeAccelerationIrr() {
 
-	if (NumberOfNeighbor == 0) return; // IAR modified
+	if (NumberOfNeighbor == 0) {
+		for (int dim=0; dim<Dim; dim++){
+			this->NewPosition[dim] = this->Position[dim];
+			this->NewVelocity[dim] = this->Velocity[dim];
+		}
+		return;
+	}
 
 	double dt, mdot, epsilon=1e-6;
 	double new_time; // 0 for current and 1 for advanced times

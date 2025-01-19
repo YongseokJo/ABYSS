@@ -250,8 +250,18 @@ void write_out(std::ofstream& outputFile, const Particle* ptcl, const double *po
                     << std::setw(width) << pos[1]*position_unit
                     << std::setw(width) << pos[2]*position_unit
                     << std::setw(width) << vel[0]*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << vel[1]*velocity_unit/yr*pc/1e5
-                    << std::setw(width) << vel[2]*velocity_unit/yr*pc/1e5 << '\n';
+                    << std::setw(width) << vel[1]*velocity_unit/yr*pc/1e5;
+#ifdef SEVN
+		outputFile	<< std::setw(width) << vel[2]*velocity_unit/yr*pc/1e5;
+		if (ptcl->StellarEvolution == nullptr)
+			outputFile << std::setw(width) << "1" << '\n'; // Main-sequence star;
+		else if (!ptcl->StellarEvolution->amiremnant())
+			outputFile << std::setw(width) << int(ptcl->StellarEvolution->getp(Phase::ID)) << '\n';
+		else
+			outputFile << std::setw(width) << 8+int(ptcl->StellarEvolution->getp(RemnantType::ID)) << '\n';
+#else
+		outputFile	<< std::setw(width) << vel[2]*velocity_unit/yr*pc/1e5 << '\n';
+#endif
 }
 
 // This function is for group members cause group members have pos, vel in original frame, not predicted values.
@@ -266,13 +276,13 @@ void write_out_group(std::ofstream& outputFile, const Particle* ptclCM, const Pa
                     << std::setw(width) << (vel[0] - ptclCM->Velocity[0] + ptcl->Velocity[0])*velocity_unit/yr*pc/1e5
                     << std::setw(width) << (vel[1] - ptclCM->Velocity[1] + ptcl->Velocity[1])*velocity_unit/yr*pc/1e5;
 #ifdef SEVN
-		outputFile << std::setw(width) << (vel[2] - ptclCM->Velocity[2] + ptcl->Velocity[2])*velocity_unit/yr*pc/1e5;
-		if (ptcl->star == nullptr)
+		outputFile	<< std::setw(width) << (vel[2] - ptclCM->Velocity[2] + ptcl->Velocity[2])*velocity_unit/yr*pc/1e5;
+		if (ptcl->StellarEvolution == nullptr)
 			outputFile << std::setw(width) << "1" << '\n';
-		else if (!ptcl->star->amiremnant())
-			outputFile << std::setw(width) << int(ptcl->star->getp(Phase::ID)) << '\n';
+		else if (!ptcl->StellarEvolution->amiremnant())
+			outputFile << std::setw(width) << int(ptcl->StellarEvolution->getp(Phase::ID)) << '\n';
 		else
-			outputFile << std::setw(width) << 8+int(ptcl->star->getp(RemnantType::ID)) << '\n';
+			outputFile << std::setw(width) << 8+int(ptcl->StellarEvolution->getp(RemnantType::ID)) << '\n';
 #else
 		outputFile << std::setw(width) << (vel[2] - ptclCM->Velocity[2] + ptcl->Velocity[2])*velocity_unit/yr*pc/1e5 << '\n';
 #endif

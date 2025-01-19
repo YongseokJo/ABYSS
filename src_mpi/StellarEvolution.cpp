@@ -2,6 +2,7 @@
 
 #include "global.h"
 #include "def.h"
+#include <random>
 
 // Start SEVN stellar evolution
 // Set stellar radii, BH spin, etc
@@ -135,6 +136,8 @@ void UpdateEvolution(Particle* ptcl) {
             fprintf(SEVNout, "\tKicked velocity: (%e, %e, %e) [km/s]\n", ptcl->StellarEvolution->vkick[0], ptcl->StellarEvolution->vkick[1], ptcl->StellarEvolution->vkick[2]);
             for(int i=0; i<Dim; i++)
                 ptcl->Velocity[i] += ptcl->StellarEvolution->vkick[i]/(velocity_unit/yr*pc/1e5);
+            if (ptcl->CMPtclIndex != -1)
+                ptcl->setBinaryInterruptState(BinaryInterruptState::kicked);
         }
     }
     else if (ptcl->StellarEvolution->amiNS()) {
@@ -147,6 +150,8 @@ void UpdateEvolution(Particle* ptcl) {
             fprintf(SEVNout, "\tKicked velocity: (%e, %e, %e) [km/s]\n", ptcl->StellarEvolution->vkick[0], ptcl->StellarEvolution->vkick[1], ptcl->StellarEvolution->vkick[2]);
             for(int i=0; i<Dim; i++)
                 ptcl->Velocity[i] += ptcl->StellarEvolution->vkick[i]/(velocity_unit/yr*pc/1e5);
+            if (ptcl->CMPtclIndex != -1)
+                ptcl->setBinaryInterruptState(BinaryInterruptState::kicked);
         }
     }
     else if (ptcl->StellarEvolution->amiBH()) {
@@ -157,19 +162,26 @@ void UpdateEvolution(Particle* ptcl) {
         ptcl->Mass = ptcl->StellarEvolution->getp(Mass::ID)/mass_unit;
         ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit; // this might be wrong!
         ptcl->WorldTime = NUMERIC_FLOAT_MAX;
-        ptcl->ParticleType = Blackhole+SingleParticle;
+        ptcl->ParticleType = Blackhole+SingleStar;
         if (ptcl->StellarEvolution->vkick[3] > 0.0) {
             fprintf(SEVNout, "\tKicked velocity: (%e, %e, %e) [km/s]\n", ptcl->StellarEvolution->vkick[0], ptcl->StellarEvolution->vkick[1], ptcl->StellarEvolution->vkick[2]);
             for(int i=0; i<Dim; i++)
                 ptcl->Velocity[i] += ptcl->StellarEvolution->vkick[i]/(velocity_unit/yr*pc/1e5);
+            if (ptcl->CMPtclIndex != -1)
+                ptcl->setBinaryInterruptState(BinaryInterruptState::kicked);
         }
     }
     else if (ptcl->StellarEvolution->amiempty()) {
         fprintf(SEVNout, "Empty. PID: %d, Mass: %e Msol, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, ptcl->StellarEvolution->getp(Mass::ID), ptcl->WorldTime, ptcl->getp(Worldtime::ID));
         ptcl->dm += ptcl->Mass; // Eunwoo: dm should be 0 after it distributes its mass to the nearby gas cells.
         ptcl->Mass = 0.0;
-        ptcl->isActive = false;
-        NumberOfParticle--;
+        if (ptcl->CMPtclIndex != -1) {
+            ptcl->setBinaryInterruptState(BinaryInterruptState::kicked);
+        }
+        else {
+            ptcl->isActive = false;
+            NumberOfParticle--;
+        }
     }
 }
 

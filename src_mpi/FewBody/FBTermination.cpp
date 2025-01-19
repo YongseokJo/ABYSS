@@ -65,9 +65,11 @@ void FBTermination(Particle* ptclCM) {
 
 		members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
 
-		// For 3-body & 4-body termination case by EW 2025.1.6
+		// For 3-body & 4-body termination case by EW 2025.1.19
 		if (ptclCM->NewNumberOfNeighbor > 2)
-			members->binary_state = -1;
+			members->setBinaryInterruptState(BinaryInterruptState::manybody);
+		else
+			members->setBinaryInterruptState(BinaryInterruptState::none);
 		
 		members->RadiusOfNeighbor	= ptclCM->RadiusOfNeighbor;
 
