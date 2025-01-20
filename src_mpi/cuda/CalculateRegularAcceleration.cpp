@@ -9,6 +9,10 @@
 #include "../QueueScheduler.h"
 #include "cuda_functions.h"
 
+#ifdef NSIGHT
+#include <nvToolsExt.h>
+#endif
+
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
 void InitialAssignmentOfTasks(int data, int NumTask, int TAG);
@@ -116,9 +120,13 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 	_time.reg_gpu.markStart();
 #endif
 */
-
+	#ifdef NSIGHT
+	nvtxRangePushA("CalculateAccelerationOnDevice");
+	#endif
 	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive);
-
+	#ifdef NSIGHT
+	nvtxRangePop();
+	#endif
 	/*
 #ifdef time_trace
 	_time.reg_gpu.markEnd();

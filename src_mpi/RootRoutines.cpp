@@ -12,6 +12,10 @@
 #include "QueueScheduler.h"
 
 
+#ifdef NSIGHT
+#include <nvToolsExt.h>
+#endif
+
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
 void InitialAssignmentOfTasks(int data, int NumTask, int TAG);
@@ -799,7 +803,13 @@ void RootRoutines() {
 				next_time = NextRegTimeBlock*time_step;
 
 				//fprintf(stdout, "Regular starts\n");
+				#ifdef NSIGHT
+				nvtxRangePushA("calculateRegAccelerationOnGPU");
+				#endif
 				calculateRegAccelerationOnGPU(RegularList, queue_scheduler);
+				#ifdef NSIGHT
+				nvtxRangePop();
+				#endif
 
 				// Update Regular
 				queue_scheduler.initialize(REG_CUDA_UPDATE);

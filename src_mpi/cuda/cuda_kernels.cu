@@ -212,6 +212,8 @@ __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighb
 
 #else
 // in this stage this is the same function as the one above
+
+
 __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ diff, int m, int n, const int* __restrict__ subset, int* __restrict__ neighbor, int* num_neighbor, int i_start, int j_start, int NNB){
 	// define i and j. in this code, grid is 2D and block is 1D
     int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
@@ -224,7 +226,7 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 	int j_end = (blockIdx.y + 1) * n / gridDim.y;
 	if (blockIdx.y == gridDim.y - 1) j_end = n;  // Ensure the last block covers all remaining elements
 	
-	while (i < m + BatchSize){ // even with i > m, the last block needs tid for the shared memory
+	while (i < m + BatchSize){ // even with i > m, the last block needs to assign the shared memory for each tid
 		int i_ptcl;
 		(i < m) ? i_ptcl = subset[i + i_start] : i_ptcl = subset[m - 1 + i_start]; //assign dummy values for the last block	
 
@@ -238,7 +240,9 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 		
 		int NumNeighbor = 0;
 		int idx_save = i * gridDim.y + blockIdx.y;
-		CUDA_REAL save_acc[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+		// CUDA_REAL save_acc[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+		CUDA_REAL ax=0, ay=0, az=0;
+		CUDA_REAL jx=0, jy=0, jz=0;
 		int* BlockNeighbor = &neighbor[NNB_per_block*idx_save]; // Pointer to the neighbor list of the current block
 
 		for (int j=j_begin; j < j_end; j+=BatchSize){ // total particles
@@ -290,12 +294,12 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 						// Calculate adot_temp
 						CUDA_REAL common_factor = 3.0 * (dx*dvx + dy*dvy + dz*dvz) * inv_m0;
 						
-						save_acc[0] += scale * dx;
-						save_acc[1] += scale * dy;
-						save_acc[2] += scale * dz;
-						save_acc[3] += scale * (dvx - common_factor * dx);
-						save_acc[4] += scale * (dvy - common_factor * dy);
-						save_acc[5] += scale * (dvz - common_factor * dz);
+						ax += scale * dx;
+						ay += scale * dy;
+						az += scale * dz;
+						jx += scale * (dvx - common_factor * dx);
+						jy += scale * (dvy - common_factor * dy);
+						jz += scale * (dvz - common_factor * dz);
 						
 						if (i == 0){
 							// printf("dx, mag, mass, sh_mass, save_acc[0]: %.3e, %.3e %.3e %.3e %.3e\n", dx, magnitude0, ptcl[i_ptcl + 6 * n], sh_mass[jj], save_acc[0]);
@@ -312,12 +316,12 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 		}// end of j loop
 		if (i < m){
 			// printf("i, bIdx.y, i_ptcl: (ax, adotx): %d, %d, %d, %.3e, %.3e, %.3e, %d %d %d\n", i, blockIdx.y, i_ptcl, save_acc[2], save_acc[5], pi_x, NumNeighbor, j_begin, j_end);
-			diff[idx_save] = save_acc[0];
-			diff[idx_save + idx_save_size] = save_acc[1];
-			diff[idx_save + 2 * idx_save_size] = save_acc[2];
-			diff[idx_save + 3 * idx_save_size] = save_acc[3];
-			diff[idx_save + 4 * idx_save_size] = save_acc[4];
-			diff[idx_save + 5 * idx_save_size] = save_acc[5];
+			diff[idx_save] = ax;
+			diff[idx_save + idx_save_size] = ay;
+			diff[idx_save + 2 * idx_save_size] = az;
+			diff[idx_save + 3 * idx_save_size] = jx;
+			diff[idx_save + 4 * idx_save_size] = jy;
+			diff[idx_save + 5 * idx_save_size] = jz;
 			num_neighbor[idx_save] = NumNeighbor;
 		}
 		i += gridDim.x * blockDim.x;
