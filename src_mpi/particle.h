@@ -16,9 +16,12 @@ enum class BinaryInterruptState:int {
 	none = 0, 
 	form = 1, 
 	exchange = 2, 
-	collision = 3,
-	manybody = 4, // many-body (>2) group terminated // added by EW 2025.1.19
-	kicked = 5 // kicked or exploded as PISN during stellar evolution // added by EW 2025.1.19
+	collisioncandidate = 3,
+	collision = 4,
+	manybody = 5,	// many-body (>2) group terminated // added by EW 2025.1.19
+	kicked = 6,		// kicked or exploded as PISN during stellar evolution // added by EW 2025.1.19
+	terminated = 7,	// CM particle only; terminated // added by EW 2025.1.20
+	merger = 8		// CM particle only; merger inside // added by EW 2025.1.20
 };
 #define BINARY_STATE_ID_SHIFT 4 // Eunwoo
 #define BINARY_INTERRUPT_STATE_MASKER 0xF // Eunwoo
@@ -168,15 +171,19 @@ struct Particle {
 		this->isUpdateToDate = true;
 
 #ifndef SEVN
+		this->ParticleType = NormalStar+SingleStar;
+		this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // stellar radius in code unit
+		/*
 		if (this->Mass*1e9 > 8) {
 			this->ParticleType = Blackhole+SingleStar;
-			this->radius = 6*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // innermost stable circular orbit around a Schwartzshild BH = 3 * R_sch
+			this->radius = 2*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzshild radius
 			// initialBHspin(this);
 		}
 		else {
 			this->ParticleType = NormalStar+SingleStar;
 			this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // stellar radius in code unit
 		}
+		*/
 #endif
 	}
 

@@ -42,6 +42,12 @@ EXEC = abyss_mpi.exe
 # Main target
 all: $(EXEC)
 
+# SEVN build
+sevn: CXXFLAGS += -DSEVN -I./../SEVN/include
+sevn: LDFLAGS += -L./../SEVN/lib -lsevn_lib_shared
+sevn: CXX_SRCS += StellarEvolution.cpp
+sevn: $(EXEC)
+
 # Link object files into the executable
 $(EXEC): $(OBJS)
 	#$(NVCC) $(NVCCFLAGS) $(OBJS) -o $@ $(LDFLAGS)

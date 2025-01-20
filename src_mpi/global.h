@@ -72,7 +72,9 @@ extern double outputTimeStep;
 
 extern FILE* binout;
 extern FILE* mergerout;
-
+#ifdef SEVN
+extern FILE* SEVNout;
+#endif
 
 #ifdef PerformanceTrace
 // Performance trace

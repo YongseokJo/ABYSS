@@ -1,3 +1,7 @@
+#ifdef SEVN
+#include "sevn.h"
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <iostream>
@@ -34,6 +38,11 @@ int main(int argc, char *argv[]) {
 	mergerout = fopen("merger_output.txt", "w");
 	fprintf(mergerout, "Starting nbody - Merger OUTPUT\n");
 	fflush(mergerout);
+#ifdef SEVN
+	SEVNout = fopen("SEVN_output.txt", "w");
+	fprintf(SEVNout, "Starting nbody - SEVN OUTPUT\n");
+	fflush(SEVNout);
+#endif
 
 	/* MPI Initialization */
 	initializeMPI(argc, argv);

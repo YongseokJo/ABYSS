@@ -17,6 +17,7 @@ void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
 // void FBTermination(Group* group);
 void FBdeleteGroup(Group* group);
+void NewFBInitialization3(Group* group);
 
 void WorkerRoutines() {
 
@@ -269,11 +270,29 @@ void WorkerRoutines() {
 				ptcl->GroupInfo->ARIntegration(next_time);
 				if (!ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
 					ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
-				else if (ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
-					ptcl->GroupInfo->isMerger = false;
 
 				if (ptcl->GroupInfo->isTerminate)
 					FBdeleteGroup(ptcl->GroupInfo);
+
+				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
+				break;
+			
+			case 27: // Merger insided many-body (>2) group
+
+				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				
+				ptcl = &particles[ptcl_id];
+				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << std::endl;
+
+				if (!ptcl->isCMptcl || ptcl->GroupInfo == nullptr) {
+					fprintf(stderr, "Something is wrong. ptcl->isCMptcl=%d ptcl->GroupInfo=%p\n", ptcl->isCMptcl, ptcl->GroupInfo);
+					exit(EXIT_FAILURE);
+				}
+
+				NewFBInitialization3(ptcl->GroupInfo);
+
+				ptcl->GroupInfo->isMerger = false;
+				ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 
 				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
 				break;

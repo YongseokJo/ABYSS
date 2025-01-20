@@ -29,6 +29,7 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 void formPrimordialBinaries(int beforeLastParticleIndex);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int, int>& existing, std::unordered_map<int, int>& terminated);
 void FBTermination(Particle* ptclCM);
+void Merge(Particle* p1, Particle* p2);
 
 #ifdef SEVN
 void StellarEvolution();
@@ -595,9 +596,63 @@ void RootRoutines() {
 				int OriginalSize = ThisLevelNode->ParticleList.size();
 				for (int i=0; i<OriginalSize; i++ ){
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
-					if (ptcl->isCMptcl && !ptcl->isActive) {
+					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::merger ||
+						ptcl->getBinaryInterruptState() == BinaryInterruptState::terminated) {
+
+						assert(ptcl->isCMptcl); // for debugging by EW 2025.1.20
+					
+#ifdef SEVN
+						if (ptcl->getBinaryInterruptState() == BinaryInterruptState::merger) {
+							if (ptcl->NewNumberOfNeighbor == 2) { // binary merger
+
+								Particle* donor = &particles[ptcl->NewNeighbors[0]];
+								Particle* accretor = &particles[ptcl->NewNeighbors[1]];
+
+								Merge(donor, accretor);
+								
+							}
+							else { // from NewFBInitialization3
+
+								assert(ptcl->NewNumberOfNeighbor > 2); // for debugging by EW 2025.1.20
+
+								Particle* donor;
+								Particle* accretor;
+
+								for (int j=0; j<ptcl->NewNumberOfNeighbor; j++) {
+									if (particles[ptcl->NewNeighbors[j]].getBinaryInterruptState() == BinaryInterruptState::collision) {
+										donor = &particles[ptcl->NewNeighbors[j]];
+										accretor = &particles[donor->getBinaryPairID()];
+
+										assert(accretor->getBinaryInterruptState() == BinaryInterruptState::collision);
+										assert(accretor->getBinaryPairID() == donor->ParticleIndex);
+										break;
+									}
+								}
+
+								Merge(donor, accretor);
+
+								queue_scheduler.initialize(27);
+								int total_queues = 1;
+								int rank = CMPtclWorker[ptcl->ParticleIndex];
+								queue.task = 27;
+								queue.pid = ptcl->ParticleIndex;
+								workers[rank].addQueue(queue);
+								queue_scheduler.WorkersToGo.insert(&workers[rank]);
+
+								queue_scheduler.setTotalQueue(total_queues);
+								do
+								{
+									queue_scheduler.runQueueAuto();
+									queue_scheduler.waitQueue(0);
+								} while (queue_scheduler.isComplete());
+								
+								continue;
+							}
+						}
+#endif
 
 						bin_termination = true;
+						ptcl->isActive = false;
 
 						PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
 						CMPtclWorker.erase(ptcl->ParticleIndex);

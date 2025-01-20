@@ -23,6 +23,8 @@ void insertNeighbors(Particle* ptclCM) {
 				ptcl->NumberOfNeighbor--;
 
 				for (int k=0; i<ptclCM->NewNumberOfNeighbor; k++) {
+					if (particles[ptclCM->NewNeighbors[k]].Mass == 0.0)
+						continue;
 					ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->NewNeighbors[k];
 					ptcl->NumberOfNeighbor++;
 				}
@@ -37,16 +39,18 @@ void FBdeleteGroup(Group* group) {
 
 	Particle* ptclCM = group->groupCM;
 
-	ptclCM->isActive = false;
+	if (ptclCM->getBinaryInterruptState() == BinaryInterruptState::none)
+		ptclCM->setBinaryInterruptState(BinaryInterruptState::terminated);
+	else 
+		assert(ptclCM->getBinaryInterruptState() == BinaryInterruptState::merger); // for debugging by EW 2025.1.20
+
 	ptclCM->NewNumberOfNeighbor = 0;
 	
 	for (int i=0; i<group->sym_int.particles.getSize(); i++) {
 		Particle* members = &particles[group->sym_int.particles[i].ParticleIndex];
-		if (members->Mass != 0.0) {
 
-			ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = members->ParticleIndex;
-			ptclCM->NewNumberOfNeighbor++;
-		}
+		ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = members->ParticleIndex;
+		ptclCM->NewNumberOfNeighbor++;
 	}
 
 	delete group;
@@ -62,6 +66,9 @@ void FBTermination(Particle* ptclCM) {
 	Particle* members;
 	for (int i=0; i<ptclCM->NewNumberOfNeighbor; i++) {
 		members = &particles[ptclCM->NewNeighbors[i]];
+
+		if (members->Mass == 0.0)
+			continue;
 
 		members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
 
