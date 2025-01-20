@@ -369,12 +369,12 @@ void SendAllParticlesToGPU(std::vector <Particle*> &particle) {
 
 	// copy the data of particles to the arrays to be sent
 	for (int i=0; i<NNB; i++) {
-		Mass[i] = particle[i]->Mass;
+		Mass[i] = (CUDA_REAL) particle[i]->Mass;
 		Mdot[i] = 0; //particle[i]->Mass;
 
 		for (int dim=0; dim<Dim; dim++) {
-			Position[i][dim] = particle[i]->PredPosition[dim];
-			Velocity[i][dim] = particle[i]->PredVelocity[dim];
+			Position[i][dim] = (CUDA_REAL) particle[i]->PredPosition[dim];
+			Velocity[i][dim] = (CUDA_REAL) particle[i]->PredVelocity[dim];
 		}
 	}
 

@@ -15,11 +15,12 @@ __global__ void print_forces_subset(CUDA_REAL* result, int m, int n);
 __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ diff, int m, int n, const int* __restrict__ subset, int* __restrict__ neighbor, int* num_neighbor, int i_start, int j_start, int NNB);
 __global__ void gather_neighbor(const int*  neighbor_block, const int*  num_neighbor, int* gathered_neighbor, int  m);
 __global__ void gather_numneighbor(const int* numneighbor_block, int* gathered_numneighbor, int m);
-void force_reduction(cublasHandle_t handle, const double3 *acc, const double3 *adot, CUDA_REAL *result, int m, int n);
 
-void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REAL *result, int n, int m);
-__global__ void reduce_forces_kernel(const double *diff,  // [6 * m * n] total
-                                     double       *result, // [6 * m] output
+// void force_reduction(cublasHandle_t handle, const double3 *acc, const double3 *adot, CUDA_REAL *result, int m, int n);
+// void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REAL *result, int n, int m);
+
+__global__ void reduce_forces_kernel(const CUDA_REAL *diff,  // [6 * m * n] total
+                                     CUDA_REAL       *result, // [6 * m] output
                                      int n, // "rows" in each component
                                      int m  // "columns"
                                     );

@@ -48,6 +48,10 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 	double (*AccRegDotReceive)[Dim];
 	double (*AccIrr)[Dim];
 	double (*AccIrrDot)[Dim];
+	#ifdef CUDA_FLOAT
+		CUDA_REAL (*AccRegReceive_f)[Dim];
+		CUDA_REAL (*AccRegDotReceive_f)[Dim];
+	#endif 
 	//int (*ACListReceive)[NumNeighborMax];
 
 	//double* PotSend;
@@ -79,6 +83,10 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 	AccIrr           = new double[ListSize][Dim];
 	AccIrrDot        = new double[ListSize][Dim];
 
+	#ifdef CUDA_FLOAT
+		AccRegReceive_f    = new CUDA_REAL[ListSize][Dim];
+		AccRegDotReceive_f = new CUDA_REAL[ListSize][Dim];
+	#endif 
 	NumNeighborReceive  = new int[ListSize];
 
 	// ACListReceive      = new int*[ListSize];
@@ -91,6 +99,10 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 			AccRegDotReceive[i][dim] = 0;
 			AccIrr[i][dim]           = 0;
 			AccIrrDot[i][dim]        = 0;
+			#ifdef CUDA_FLOAT
+				AccRegReceive_f[i][dim]    = 0;
+				AccRegDotReceive_f[i][dim]    = 0;
+			#endif 
 		}
 	}
 	sendAllParticlesToGPU(new_time);  // needs to be updated
@@ -123,10 +135,24 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 	#ifdef NSIGHT
 	nvtxRangePushA("CalculateAccelerationOnDevice");
 	#endif
-	CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive);
+	
+	#ifdef CUDA_FLOAT
+		CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive_f, AccRegDotReceive_f, NumNeighborReceive, ACListReceive);
+	#else
+		CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive);
+	#endif
+
 	#ifdef NSIGHT
 	nvtxRangePop();
 	#endif
+
+
+	for (int i=0; i<ListSize; i++) {
+		for (int dim=0; dim<Dim; dim++) {
+			AccRegReceive[i][dim]    = (CUDA_REAL) AccRegReceive_f[i][dim];
+			AccRegDotReceive[i][dim] = (CUDA_REAL) AccRegDotReceive_f[i][dim];
+		}
+	}
 	/*
 #ifdef time_trace
 	_time.reg_gpu.markEnd();
@@ -255,6 +281,41 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 
 void sendAllParticlesToGPU(double new_time) {
 
+	
+
+	#ifdef CUDA_FLOAT
+	// variables for saving variables to send to GPU
+	CUDA_REAL * Mass;
+	CUDA_REAL * Mdot;
+	CUDA_REAL * Radius2;
+	CUDA_REAL(*Position)[Dim];
+	CUDA_REAL(*Velocity)[Dim];
+	int size = NumberOfParticle;
+	
+	// allocate memory to the temporary variables
+	Mass     = new CUDA_REAL[size];
+	Mdot     = new CUDA_REAL[size];
+	Radius2  = new CUDA_REAL[size];
+	Position = new CUDA_REAL[size][Dim];
+	Velocity = new CUDA_REAL[size][Dim];
+
+	Particle *ptcl;
+
+	// copy the data of particles to the arrays to be sent
+	for (int i=0; i<size; i++) {
+		ptcl       = &particles[i];
+		if (!ptcl->isActive) continue;
+
+		Mass[i]    = (CUDA_REAL)ptcl->Mass;
+		Mdot[i]    = 0; //particle[i]->Mass;
+		Radius2[i] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass wieght?
+
+		if (ptcl->NumberOfNeighbor == 0)
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[i], Velocity[i]);
+		else
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[i], Velocity[i]);
+	}
+	#else
 	// variables for saving variables to send to GPU
 	double * Mass;
 	double * Mdot;
@@ -286,10 +347,15 @@ void sendAllParticlesToGPU(double new_time) {
 		else
 			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[i], Velocity[i]);
 	}
+	#endif
+
+
 
 	//fprintf(stdout, "Sending particles to GPU...\n");
 	//fflush(stdout);
 	// send the arrays to GPU
+	#ifdef CUDA_FLOAT
+	#endif
 	SendToDevice(&size, Mass, Position, Velocity, Radius2, Mdot);
 
 	//fprintf(stdout, "Done.\n");
@@ -301,4 +367,5 @@ void sendAllParticlesToGPU(double new_time) {
 	delete[] Position;
 	delete[] Velocity;
 }
+
 

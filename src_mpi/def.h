@@ -68,7 +68,13 @@ typedef unsigned long long ULL;
 #define ABS(a) static_cast<double>(std::abs(a))
 #define MIN(a,b) std::min(RCAST(a),RCAST(b))
 
+#define CUDA_FLOAT
+#ifdef CUDA_FLOAT
+#define CUDA_REAL float
+#else
 #define CUDA_REAL double
+#endif
+
 #define nbodymax 100000000 //100000000 for node14
 #define BatchSize 64 // 64. each thread calculates BatchSize particles with a single shared memory
 #define GridDimY 64 // 32 original //  each block calcuates NNB/GridDimY particles

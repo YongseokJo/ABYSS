@@ -29,7 +29,7 @@ __global__ void print_forces_subset(CUDA_REAL* result, int m, int n) {
 // NTHREAED = 64;
 // NJBlock = 28
 // NNB_per_block = 256;
-#ifdef CUDA_FLOAT
+#ifdef CUDA_FLOAT_old
 __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_REAL* __restrict__ r2, CUDA_REAL* __restrict__ diff, int m, int n, const int* __restrict__ subset, int* __restrict__ neighbor, int* num_neighbor, int start){
 	// define i and j. in this code, grid is 2D and block is 1D
     int i = threadIdx.x + blockIdx.x * blockDim.x; // Unique thread index across all blocks
@@ -210,6 +210,58 @@ __global__ void gather_neighbor(const int* neighbor_block, const int* num_neighb
 }
 
 
+void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REAL *result, int n, int m) {
+	// CUDA_REAL *d_matrix;
+    // cudaMalloc(&d_matrix, m * n * sizeof(CUDA_REAL));
+
+    // Create a vector of ones for the summation
+    CUDA_REAL *ones;
+    cudaMalloc(&ones, n * sizeof(CUDA_REAL));
+    CUDA_REAL *h_ones = new CUDA_REAL[n];
+    for (int i = 0; i < n; ++i) {
+        h_ones[i] = 1.0;
+    }
+    cudaMemcpy(ones, h_ones, n * sizeof(CUDA_REAL), cudaMemcpyHostToDevice);
+    // Initialize result array to zero
+    // cudaMemset(result, 0, m * 6 * sizeof(double));
+
+    const CUDA_REAL alpha = 1.0;
+    const CUDA_REAL beta = 0.0;
+
+    // Sum over the second axis (n) for each of the 6 elements
+    for (int i = 0; i < _six; ++i) {
+
+		// cublasDcopy(handle, m * n, diff + i, _six, d_matrix, 1);
+		const CUDA_REAL *component_diff = diff + i * m * n;
+
+        cublasStatus_t stat = cublasDgemv(
+            handle,
+            CUBLAS_OP_T,  // Transpose
+            n,            // Number of rows of the matrix A
+            m,            // Number of columns of the matrix A
+            &alpha,       // Scalar alpha
+            component_diff, // Pointer to the first element of the i-th sub-matrix
+            n,     // Leading dimension of the sub-matrix
+            ones,         // Pointer to the vector x
+            1,            // Increment between elements of x
+            &beta,        // Scalar beta
+            result + i, // Pointer to the first element of the result vector
+            _six             // Increment between elements of the result vector
+        );
+		if (stat != CUBLAS_STATUS_SUCCESS) {
+			fprintf(stderr, "cublasDgemv error: %d on component %d\n", stat, i);
+			std::cout << "n: " << n << ", m: " << m << ", lda: " << n << std::endl;
+			cudaPointerAttributes attr;
+			cudaPointerGetAttributes(&attr, component_diff);
+			std::cout << "component_diff is on device: " << attr.device << std::endl;
+		}
+    }
+    // Cleanup
+    delete[] h_ones;
+    cudaFree(ones);
+	// cudaFree(d_matrix);
+}
+s
 #else
 // in this stage this is the same function as the one above
 
@@ -329,60 +381,8 @@ __global__ void compute_forces(const CUDA_REAL* __restrict__ ptcl, const CUDA_RE
 }
 
 
-void reduce_forces_cublas(cublasHandle_t handle, const CUDA_REAL *diff, CUDA_REAL *result, int n, int m) {
-	// CUDA_REAL *d_matrix;
-    // cudaMalloc(&d_matrix, m * n * sizeof(CUDA_REAL));
-
-    // Create a vector of ones for the summation
-    CUDA_REAL *ones;
-    cudaMalloc(&ones, n * sizeof(CUDA_REAL));
-    CUDA_REAL *h_ones = new CUDA_REAL[n];
-    for (int i = 0; i < n; ++i) {
-        h_ones[i] = 1.0;
-    }
-    cudaMemcpy(ones, h_ones, n * sizeof(CUDA_REAL), cudaMemcpyHostToDevice);
-    // Initialize result array to zero
-    // cudaMemset(result, 0, m * 6 * sizeof(double));
-
-    const CUDA_REAL alpha = 1.0;
-    const CUDA_REAL beta = 0.0;
-
-    // Sum over the second axis (n) for each of the 6 elements
-    for (int i = 0; i < _six; ++i) {
-
-		// cublasDcopy(handle, m * n, diff + i, _six, d_matrix, 1);
-		const CUDA_REAL *component_diff = diff + i * m * n;
-
-        cublasStatus_t stat = cublasDgemv(
-            handle,
-            CUBLAS_OP_T,  // Transpose
-            n,            // Number of rows of the matrix A
-            m,            // Number of columns of the matrix A
-            &alpha,       // Scalar alpha
-            component_diff, // Pointer to the first element of the i-th sub-matrix
-            n,     // Leading dimension of the sub-matrix
-            ones,         // Pointer to the vector x
-            1,            // Increment between elements of x
-            &beta,        // Scalar beta
-            result + i, // Pointer to the first element of the result vector
-            _six             // Increment between elements of the result vector
-        );
-		if (stat != CUBLAS_STATUS_SUCCESS) {
-			fprintf(stderr, "cublasDgemv error: %d on component %d\n", stat, i);
-			std::cout << "n: " << n << ", m: " << m << ", lda: " << n << std::endl;
-			cudaPointerAttributes attr;
-			cudaPointerGetAttributes(&attr, component_diff);
-			std::cout << "component_diff is on device: " << attr.device << std::endl;
-		}
-    }
-    // Cleanup
-    delete[] h_ones;
-    cudaFree(ones);
-	// cudaFree(d_matrix);
-}
-
-__global__ void reduce_forces_kernel(const double *diff,  // [6 * m * n] total
-                                     double       *result, // [6 * m] output
+__global__ void reduce_forces_kernel(const CUDA_REAL *diff,  // [6 * m * n] total
+                                     CUDA_REAL       *result, // [6 * m] output
                                      int n, // "rows" in each component
                                      int m  // "columns"
                                     )
@@ -396,7 +396,7 @@ __global__ void reduce_forces_kernel(const double *diff,  // [6 * m * n] total
     // We only have 6 components total:
     if (comp >= 6 || col >= m) return;
 
-    double sumVal = 0.0;
+    CUDA_REAL sumVal = 0.0;
     // sum over the "row" dimension i in [0..n-1]
     // component c is offset by comp*m*n
     // column j is offset by col*n
