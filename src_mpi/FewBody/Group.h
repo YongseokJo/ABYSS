@@ -14,7 +14,6 @@
 #include "AR/information.h"
 #include "ar_interaction.hpp"
 #include "ar_perturber.hpp"
-// #define SEVN
 
 struct Particle;
 struct Group
@@ -29,28 +28,8 @@ struct Group
 	AR::TimeTransformedSymplecticIntegrator<Particle, Particle, Perturber, Interaction, AR::Information<Particle,Particle>> sym_int;
 	AR::TimeTransformedSymplecticManager<Interaction> manager;
 
-#ifdef SEVN
-	bool useSEVN;		// true if one of the group members has Star class as its member.
-	double EvolutionTime; // Myr
-	double EvolutionTimeStep; // Myr
-#endif
-
-
 
 	// Constructor
-#ifdef SEVN
-	Group(void) 
-		: groupCM(nullptr),
-		isTerminate(false),
-		isMerger(false),
-		CurrentTime(0.0),
-		sym_int(),
-		manager(),
-		useSEVN(false),
-		EvolutionTime(0.0),
-		EvolutionTimeStep(0.0)
-	{}
-#else
 	Group(void) 
 		: groupCM(nullptr),
 		isTerminate(false),
@@ -59,7 +38,6 @@ struct Group
 		sym_int(),
 		manager()
 	{}
-#endif
 
 	~Group() {
 		sym_int.clear();
@@ -67,25 +45,6 @@ struct Group
 		manager.step.clear();
 		groupCM = nullptr;
 	}
-
-/*
-	// custom initializer
-	// initializer added YS 2025.1.2
-	void initialize(void)
-	{
-		groupCMOrder = -1;
-		isTerminate = false;
-		isMerger = false;
-		CurrentTime = 0.0;
-		new(&sym_int) AR::TimeTransformedSymplecticIntegrator<Particle, Particle, Perturber, Interaction, AR::Information<Particle,Particle>>();
-		new(&manager) AR::TimeTransformedSymplecticManager<Interaction>();
-#ifdef SEVN // initializer for SEVN by EW 2024.1.3
-		useSEVN = false;
-		EvolutionTime = 0.0;
-		EvolutionTimeStep = 0.0;
-#endif
-	}
-*/
 
 	void ARIntegration(double next_time);
 	bool CheckBreak();

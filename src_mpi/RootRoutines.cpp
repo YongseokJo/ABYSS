@@ -11,10 +11,10 @@
 #include "Worker.h"
 #include "QueueScheduler.h"
 
-
 #ifdef NSIGHT
 #include <nvToolsExt.h>
 #endif
+#define noDEBUG
 
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
@@ -30,9 +30,14 @@ bool updateSkipList(SkipList *skiplist, int ptcl_id);
 int writeParticle(double current_time, int outputNum);
 void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler &queue_scheduler);
 
-void formPrimordialBinaries(int beforeNumberOfParticle);
-void insertNeighbors(int Order);
+void formPrimordialBinaries(int beforeLastParticleIndex);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int, int>& existing, std::unordered_map<int, int>& terminated);
+void FBTermination(Particle* ptclCM);
+void Merge(Particle* p1, Particle* p2);
+
+#ifdef SEVN
+void StellarEvolution();
+#endif
 
 Worker* workers;
 
@@ -58,7 +63,7 @@ void RootRoutines() {
 	// unordered_set? by EW 2025.1.11
 	// merged particles & PISN will be contained here
 	// new single Particle formed in Enzo can be formed in ParticleIndex of these ptcls
-	// if empty, NumberOfParticle++
+	// if empty, LastParticleIndex++
 	
 
 
@@ -83,7 +88,7 @@ void RootRoutines() {
 	/*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			fprintf(stdout, "PID=%d, pos=(%lf, %lf, %lf), vel=(%lf, %lf, %lf)\n",
 					ptcl->PID,
@@ -99,9 +104,9 @@ void RootRoutines() {
 	}*/
 
 	std::vector<int> PIDs;
-	PIDs.reserve(NumberOfParticle);
-	PIDs.resize(NumberOfParticle);
-	for (int i = 0; i < NumberOfParticle; i++)
+	PIDs.reserve(LastParticleIndex+1);
+	PIDs.resize(LastParticleIndex+1);
+	for (int i = 0; i <= LastParticleIndex; i++)
 	{
 		PIDs[i] = i;
 	}
@@ -110,9 +115,9 @@ void RootRoutines() {
 	{
 		/*
 		std::vector<int> PIDs;
-		PIDs.reserve(NumberOfParticle);
-		PIDs.resize(NumberOfParticle);
-		for (int i = 0; i < NumberOfParticle; i++)
+		PIDs.reserve(LastParticleIndex+1);
+		PIDs.resize(LastParticleIndex+1);
+		for (int i = 0; i <= LastParticleIndex; i++)
 		{
 			PIDs[i] = i;
 		}
@@ -161,15 +166,15 @@ void RootRoutines() {
 		// example code by EW 2025.1.7
 		Queue queue;
 		int rank;
-		int OriginalNumberOfParticle = NumberOfParticle;
-		formPrimordialBinaries(OriginalNumberOfParticle);
-		assert(OriginalNumberOfParticle <= NumberOfParticle); // for debugging by EW 2025.1.4
+		int OriginalLastParticleIndex = LastParticleIndex;
+		formPrimordialBinaries(OriginalLastParticleIndex);
+		assert(OriginalLastParticleIndex <= LastParticleIndex); // for debugging by EW 2025.1.4
 		assert(CMPtclWorker.empty()); // for debugging by EW 2025.1.4
-		if (OriginalNumberOfParticle != NumberOfParticle) {
-			std::cout << "In total, " << OriginalNumberOfParticle - NumberOfParticle
+		if (OriginalLastParticleIndex != LastParticleIndex) {
+			std::cout << "In total, " << LastParticleIndex - OriginalLastParticleIndex
 					  << " primordial binaries are created." << std::endl;
 			queue_scheduler.initialize(23);
-			for (int i=OriginalNumberOfParticle; i<NumberOfParticle; i++) {
+			for (int i=OriginalLastParticleIndex+1; i<=LastParticleIndex; i++) {
 				std::cout << "New Primordial Binary of PID="
 						  << i << " is created with being assigned to a worker of rank "
 						  << rank << "." << std::endl;
@@ -181,7 +186,7 @@ void RootRoutines() {
 				queue.task = 23;
 				queue.pid = ptcl->ParticleIndex;
 				workers[rank].addQueue(queue);
-				queue_scheduler.WorkersToGo.insert(&workers[rank]);
+				queue_scheduler.assignWorker(&workers[rank]);
 			}
 			queue_scheduler.setTotalQueue(CMPtclWorker.size());
 			do {
@@ -192,7 +197,9 @@ void RootRoutines() {
 		else {
 			std::cout << "There is no primordial binary." << std::endl;
 		}
-		fprintf(stdout, "PrimordialBinariesRoutine has ended...\nThe total number of particles is  %d\n", NumberOfParticle);
+		fprintf(stdout, "PrimordialBinariesRoutine has ended...\n"
+						"The total number of particles is  %d\n",
+				NumberOfParticle);
 		fflush(stdout);
 #endif
 
@@ -207,7 +214,7 @@ void RootRoutines() {
 		} while(queue_scheduler.isComplete());
 
 		/*
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			if (ptcl->isActive)
 				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
@@ -239,7 +246,7 @@ void RootRoutines() {
 	/* timestep correction */
 	{
 		std::cout << "Time Step correction." << std::endl;
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 
 			if (!ptcl->isActive)
@@ -262,7 +269,7 @@ void RootRoutines() {
 		block_max = static_cast<ULL>(pow(2, -time_block));
 		time_step = pow(2,time_block);
 
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 
 			if (!ptcl->isActive)
@@ -281,7 +288,7 @@ void RootRoutines() {
 	}
 
 	/*
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			if (ptcl->isActive)
 				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
@@ -330,7 +337,7 @@ void RootRoutines() {
 	/*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			fprintf(stdout, "%d(%d)=",ptcl->PID,ptcl->NumberOfNeighbor);
 			for (int j=0;j<ptcl->NumberOfNeighbor;j++) {
@@ -339,7 +346,7 @@ void RootRoutines() {
 			fprintf(stdout, "\n");
 		}
 	}
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"\
 					"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"\
@@ -399,10 +406,10 @@ void RootRoutines() {
 	}
 	*/
 	/* Particle Initialization Check */
-	// /*
+	/*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<NumberOfParticle; i++) {
+		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 			if (ptcl->isActive)
 				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
@@ -424,7 +431,7 @@ void RootRoutines() {
 						ptcl->NumberOfNeighbor);
 		}
 	}
-	// */
+	*/
 
 
 	/* Actual Loop */
@@ -464,21 +471,35 @@ void RootRoutines() {
 				ThisLevelNode = skiplist->getFirstNode();
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
-
+			
+#ifdef DEBUG
 				// print out particlelist
+				fprintf(stdout, "(IRR_FORCE) next_time: %e Myr\n", next_time*EnzoTimeStep*1e4);
 				/*
-				fprintf(stdout, "(IRR_FORCE) PID (%d) = ", ThisLevelNode->ParticleList.size());
+				fprintf(stdout, "PID: %d. CurrentTimeIrr: %e Myr, TimeStepIrr: %e Myr\n", 
+							particles[ThisLevelNode->ParticleList[0]].PID, 
+							particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr*EnzoTimeStep*1e4, 
+							particles[ThisLevelNode->ParticleList[0]].TimeStepIrr*EnzoTimeStep*1e4);
+
+				// fprintf(stdout, "PID (%d) = ", ThisLevelNode->ParticleList.size());
 				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++) {
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
-					fprintf(stdout, "%d, ", ptcl->PID);
+					// fprintf(stdout, "%d, ", ptcl->PID);
+					fprintf(stdout, "PID: %d. %e Myr, %e Myr\n", 
+							ptcl->PID,
+							ptcl->CurrentTimeIrr*EnzoTimeStep*1e4,
+							ptcl->TimeStepIrr*EnzoTimeStep*1e4);
 				}
 				fprintf(stdout, "\n");
-				fflush(stdout);
+				// fflush(stdout);
 				*/
+#endif
 
 				// Irregular Force
 #ifdef FEWBODY
-				// std::cout << "Irr force starts" << std::endl;
+#ifdef DEBUG
+				std::cout << "Irr force starts" << std::endl;
+#endif
 				int cm_pid;
 				Queue queue;
 				queue_scheduler.initializeIrr(IRR_FORCE, next_time, ThisLevelNode->ParticleList);
@@ -487,6 +508,7 @@ void RootRoutines() {
 				{
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
+					// queue_scheduler.printStatus();
 					do { 
 						worker = queue_scheduler.waitQueue(1); // non-blocking wait
 						// if there's any CMPtcl
@@ -505,12 +527,18 @@ void RootRoutines() {
 									goto skip_to_next;
 								}
 							}
+							//queue_scheduler.printFreeWorker();
+							//queue_scheduler.printWorkerToGo();
+							//std::cout << "before: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
 							queue.task = FB_SDAR;
 							queue.pid = cm_pid;
 							queue.next_time = next_time;
 							workers[CMPtclWorker[cm_pid]].addQueue(queue);
 							queue_scheduler.assignWorker(&workers[CMPtclWorker[cm_pid]]);
 							iter = queue_scheduler.CMPtcls.erase(iter);
+							//std::cout << "after: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
+							//queue_scheduler.printFreeWorker();
+							//queue_scheduler.printWorkerToGo();
 						skip_to_next:;
 						}
 						if (worker != nullptr) 
@@ -519,9 +547,11 @@ void RootRoutines() {
 						}
 					} while (worker == nullptr);
 					queue_scheduler.callback(worker);
-				} while (queue_scheduler.isComplete() || queue_scheduler.CMPtcls.size() > 0);
-
-				// std::cout << "Irregular Force done" << std::endl;
+					//queue_scheduler.printStatus();
+				} while (queue_scheduler.isComplete());
+#ifdef DEBUG
+				 std::cout << "Irregular Force done" << std::endl;
+#endif
 #else
 				queue_scheduler.initialize(IRR_FORCE, next_time);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -554,23 +584,89 @@ void RootRoutines() {
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
 
-#ifdef FEWBODY
+				for (int i: ThisLevelNode->ParticleList) {
+					ptcl = &particles[i];
+					if (ptcl->CurrentTimeIrr != next_time) {
+						fprintf(stdout, "Error! PID: %d, CurrentTimeIrr: %e Myr, next_time: %e Myr\n", ptcl->PID, ptcl->CurrentTimeIrr*EnzoTimeStep*1e4, next_time*EnzoTimeStep*1e4);
+						assert(ptcl->CurrentTimeIrr == next_time);
+					}
+				}
+#ifdef DEBUG
+				 std::cout << "Irregular update done" << std::endl;
+#endif
+
+#ifdef FEWBODY		
+
 				int OriginalSize = ThisLevelNode->ParticleList.size();
 				for (int i=0; i<OriginalSize; i++ ){
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
-					if (ptcl->isCMptcl && !ptcl->isActive) {
+					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::merger ||
+						ptcl->getBinaryInterruptState() == BinaryInterruptState::terminated) {
+
+						assert(ptcl->isCMptcl); // for debugging by EW 2025.1.20
+					
+#ifdef SEVN
+						if (ptcl->getBinaryInterruptState() == BinaryInterruptState::merger) {
+							if (ptcl->NewNumberOfNeighbor == 2) { // binary merger
+
+								Particle* donor = &particles[ptcl->NewNeighbors[0]];
+								Particle* accretor = &particles[ptcl->NewNeighbors[1]];
+
+								Merge(donor, accretor);
+								
+							}
+							else { // from NewFBInitialization3
+
+								assert(ptcl->NewNumberOfNeighbor > 2); // for debugging by EW 2025.1.20
+
+								Particle* donor;
+								Particle* accretor;
+
+								for (int j=0; j<ptcl->NewNumberOfNeighbor; j++) {
+									if (particles[ptcl->NewNeighbors[j]].getBinaryInterruptState() == BinaryInterruptState::collision) {
+										donor = &particles[ptcl->NewNeighbors[j]];
+										accretor = &particles[donor->getBinaryPairID()];
+
+										assert(accretor->getBinaryInterruptState() == BinaryInterruptState::collision);
+										assert(accretor->getBinaryPairID() == donor->ParticleIndex);
+										break;
+									}
+								}
+
+								Merge(donor, accretor);
+
+								queue_scheduler.initialize(27);
+								int total_queues = 1;
+								int rank = CMPtclWorker[ptcl->ParticleIndex];
+								queue.task = 27;
+								queue.pid = ptcl->ParticleIndex;
+								workers[rank].addQueue(queue);
+								queue_scheduler.WorkersToGo.insert(&workers[rank]);
+
+								queue_scheduler.setTotalQueue(total_queues);
+								do
+								{
+									queue_scheduler.runQueueAuto();
+									queue_scheduler.waitQueue(0);
+								} while (queue_scheduler.isComplete());
+								
+								continue;
+							}
+						}
+#endif
+
+						bin_termination = true;
+						ptcl->isActive = false;
 
 						PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
 						CMPtclWorker.erase(ptcl->ParticleIndex);
-
-						insertNeighbors(ptcl->ParticleIndex);
 
 						for (int j=0; j < ptcl->NewNumberOfNeighbor; j++) {
 							ThisLevelNode->ParticleList.push_back(ptcl->NewNeighbors[j]);
 							particles[ptcl->NewNeighbors[j]].isActive = true;
 						}
 
-						bin_termination = true;
+						FBTermination(ptcl);
 					}
 				}
 
@@ -584,6 +680,20 @@ void RootRoutines() {
 					ThisLevelNode->ParticleList.end()
 				);
 
+				/* by YS 2025.1.14 */
+				/*
+				if (ThisLevelNode->ParticleList.size() == 0) {
+					// current_time_irr = particles[].CurrentBlockIrr * time_step; 
+					//(Query) current_time_irr should be updated somewhere.
+					skiplist->deleteFirstNode();
+					continue; // this happened there was one CM ptcl and it terminated.
+							  // this skips the rest of the loop and goes to the next time step.
+				}
+				*/
+#ifdef DEBUG
+				std::cout << "FB search starts" << std::endl;
+#endif
+				// std::cerr << "FB search starts" << std::endl;
 				// Few-body group search
 				queue_scheduler.initialize(22);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -592,13 +702,28 @@ void RootRoutines() {
 				{
 					queue_scheduler.assignQueueAuto();
 					queue_scheduler.runQueueAuto();
+					// queue_scheduler.printStatus();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
 
+				// std::cerr << "FB search ended" << std::endl;
+#ifdef DEBUG
+				std::cout << "FB search ended" << std::endl;
+#endif
+
 				int OriginalParticleListSize = ThisLevelNode->ParticleList.size();
 				int rank_delete, rank_new;
+#ifdef DEBUG
+				std::cout << "formBinaries starts" << std::endl;
+#endif
 				formBinaries(ThisLevelNode->ParticleList, newCMptcls, CMPtclWorker, PrevCMPtclWorker);
+#ifdef DEBUG
+				std::cout << "formBinaries ended" << std::endl;
+#endif
 				if (OriginalParticleListSize != ThisLevelNode->ParticleList.size()) {
+#ifdef DEBUG
+					std::cout << "New Binary!" << std::endl;
+#endif
 					new_binaries = true;
 					for (int i=OriginalParticleListSize; i<ThisLevelNode->ParticleList.size(); i++) {
 						ptcl = &particles[ThisLevelNode->ParticleList[i]];
@@ -642,8 +767,8 @@ void RootRoutines() {
 
 						queue_scheduler.initialize(24);
 						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
-						fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
-						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->ParticleIndex, rank_new);
+						// fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
+						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->PID, rank_new);
 						queue.task = 24;
 						queue.pid = ptclCM->ParticleIndex;
 						workers[rank_new].addQueue(queue);
@@ -665,9 +790,14 @@ void RootRoutines() {
 
 				// std::cout << "erase success" << std::endl;
 #endif
-
+#ifdef DEBUG
+				std::cout << "updateSkipList starts" << std::endl;
+#endif
 				for (int i=0; i<ThisLevelNode->ParticleList.size(); i++)
 					updateSkipList(skiplist, ThisLevelNode->ParticleList[i]);
+#ifdef DEBUG
+				std::cout << "updateSkipList ended" << std::endl;
+#endif
 
 				//std::cout << "update success" << std::endl;
 				//skiplist->display();
@@ -735,7 +865,13 @@ void RootRoutines() {
 				}
 				*/
 				current_time_irr = particles[ThisLevelNode->ParticleList[0]].CurrentBlockIrr*time_step;
+#ifdef DEBUG
+				std::cout << "skiplist->deleteFirstNode() starts" << std::endl;
+#endif
 				skiplist->deleteFirstNode();
+#ifdef DEBUG
+				std::cout << "skiplist->deleteFirstNode() ended" << std::endl;
+#endif
 
 				//std::cout << "deleteFirstNode success" << std::endl;
 				//ThisLevelNode = skiplist->getFirstNode();
@@ -787,14 +923,24 @@ void RootRoutines() {
 				}
 #endif
 			} // Irr
+#ifdef DEBUG
 			delete skiplist;
+			std::cout << "delete skiplist" << std::endl;
+#endif
 			skiplist = nullptr;
 			//exit(SUCCESS);
 
 #ifdef FEWBODY
-			if (bin_termination || new_binaries)
+			if (bin_termination || new_binaries) {
+#ifdef DEBUG
+			std::cout << "(FB) updateNextRegTime starts" << std::endl;
+#endif
 				updateNextRegTime(RegularList);
-			// std::cout << "updateNextRegTime done" << std::endl;
+#ifdef DEBUG
+			std::cout << "(FB) updateNextRegTime done" << std::endl;
+			std::cout << "(FB) RegularList size: " << RegularList.size() << std::endl;
+#endif
+			}
 #endif
 
 #ifdef CUDA
@@ -803,6 +949,7 @@ void RootRoutines() {
 				next_time = NextRegTimeBlock*time_step;
 
 				//fprintf(stdout, "Regular starts\n");
+
 				#ifdef NSIGHT
 				nvtxRangePushA("calculateRegAccelerationOnGPU");
 				#endif
@@ -810,6 +957,20 @@ void RootRoutines() {
 				#ifdef NSIGHT
 				nvtxRangePop();
 				#endif
+
+#ifdef DEBUG
+				std::cout << "calculateRegAccelerationOnGPU starts" << std::endl;
+				std::cout << "RegularList size: " << RegularList.size() << std::endl;
+#endif
+				calculateRegAccelerationOnGPU(RegularList, queue_scheduler);
+#ifdef DEBUG
+				std::cout << "calculateRegAccelerationOnGPU ended" << std::endl;
+#endif
+
+#ifdef DEBUG
+				std::cout << "update regular starts" << std::endl;
+#endif
+
 
 				// Update Regular
 				queue_scheduler.initialize(REG_CUDA_UPDATE);
@@ -820,6 +981,9 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
+#ifdef DEBUG
+				std::cout << "update regular ended" << std::endl;
+#endif
 
 				//fprintf(stdout, "Regular done\n");
 #ifdef unused
@@ -1129,6 +1293,11 @@ void RootRoutines() {
 #endif
 			global_time = NextRegTimeBlock*time_step;
 
+#ifdef SEVN
+			StellarEvolution(); // How about evolving particles inside RegularList only? by EW 2025.1.19
+								// Currently, evolving all the particles upto global_time
+#endif
+
 			// create output at appropriate time intervals
 			if (global_time >= outputTime) {
 				writeParticle(global_time, outNum++);
@@ -1160,7 +1329,7 @@ void updateNextRegTime(std::vector<int>& RegularList) {
 
 	RegularList.clear();
 
-	for (int i=0; i<NumberOfParticle; i++)
+	for (int i=0; i<=LastParticleIndex; i++)
 	{
 		//std::cout << i << std::endl;
 		ptcl = &particles[i];
@@ -1207,7 +1376,7 @@ bool createSkipList(SkipList *skiplist) {
 
 	Particle* ptcl;
 
-	for (int i=0; i<NumberOfParticle; i++) {
+	for (int i=0; i<=LastParticleIndex; i++) {
 		ptcl =  &particles[i];
 
 		// if ((ptcl->NumberOfNeighbor != 0) && (ptcl->NextBlockIrr <= NextRegTimeBlock)) { // IAR original

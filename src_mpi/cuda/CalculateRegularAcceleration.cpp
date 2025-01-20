@@ -105,7 +105,13 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 			#endif 
 		}
 	}
+#ifdef DEBUG
+	std::cout << "sendAllParticlesToGPU starts" << std::endl;
+#endif
 	sendAllParticlesToGPU(new_time);  // needs to be updated
+#ifdef DEBUG
+	std::cout << "sendAllParticlesToGPU ended" << std::endl;
+#endif
 	
 	
 	for (int i=0; i<ListSize; i++) {
@@ -132,20 +138,28 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 	_time.reg_gpu.markStart();
 #endif
 */
+
 	#ifdef NSIGHT
 	nvtxRangePushA("CalculateAccelerationOnDevice");
 	#endif
+  
+  #ifdef DEBUG
+	std::cout << "CalculateAccelerationOnDevice starts" << std::endl;
+  #endif
 	
 	#ifdef CUDA_FLOAT
 		CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive_f, AccRegDotReceive_f, NumNeighborReceive, ACListReceive);
 	#else
 		CalculateAccelerationOnDevice(&ListSize, IndexList, AccRegReceive, AccRegDotReceive, NumNeighborReceive, ACListReceive);
 	#endif
+  
+  #ifdef DEBUG
+	std::cout << "CalculateAccelerationOnDevice ended" << std::endl;
+  #endif
 
 	#ifdef NSIGHT
 	nvtxRangePop();
 	#endif
-
 
 	for (int i=0; i<ListSize; i++) {
 		for (int dim=0; dim<Dim; dim++) {
@@ -183,7 +197,9 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 	std::cout << std::endl;
 	*/
 
-
+#ifdef DEBUG
+	std::cout << "Adjust Regular Gravity starts" << std::endl;
+#endif
 
 	// Adjust Regular Gravity
 	int i=0, task=REG_CUDA;
@@ -194,7 +210,7 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 		queue_scheduler.assignQueueAuto();
         for (auto worker = queue_scheduler.WorkersToGo.begin(); worker != queue_scheduler.WorkersToGo.end();)
         {
-            if ((*worker)->NumberOfQueues > 0)
+            if ((*worker)->NumberOfQueues > 0) // original
             {
 				//std::cout << "(REG_CUDA) My Rank =" << (*worker)->MyRank << std::endl;
 				MPI_Send(&task, 1, MPI_INT, (*worker)->MyRank, TASK_TAG, MPI_COMM_WORLD);
@@ -204,19 +220,37 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 				MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 12, MPI_COMM_WORLD);
 				MPI_Send(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 13, MPI_COMM_WORLD);
 				((*worker))->onDuty = true;
+				/*
 				(*worker)->CurrentQueue++;
 				(*worker)->CurrentQueue %= MAX_QUEUE;
 				(*worker)->NumberOfQueues--;
+				*/
                 worker = queue_scheduler.WorkersToGo.erase(worker);
 				i++;
+#ifdef DEBUG
+				std::cout << "i: " << i << std::endl;
+#endif
             }
 			else
 			{
                 ++worker;
+#ifdef DEBUG
+				std::cout << "worker MyRank: " << (*worker)->MyRank << std::endl;
+#endif
 			}
         }
+#ifdef DEBUG
+		std::cout << "queue_scheduler.waitQueue(0) starts" << std::endl;
+#endif
 		queue_scheduler.waitQueue(0); // blocking wait
+#ifdef DEBUG
+		std::cout << "queue_scheduler.waitQueue(0) ended" << std::endl;
+#endif
 	} while (queue_scheduler.isComplete());
+
+#ifdef DEBUG
+	std::cout << "Adjust Regular Gravity ended" << std::endl;
+#endif
 
 
 #ifdef nouse
@@ -322,34 +356,39 @@ void sendAllParticlesToGPU(double new_time) {
 	double * Radius2;
 	double(*Position)[Dim];
 	double(*Velocity)[Dim];
-	int size = NumberOfParticle;
+	//int size = NumberOfParticle;
+	int size=0, i=0;
+
 
 	// allocate memory to the temporary variables
-	Mass     = new double[size];
-	Mdot     = new double[size];
-	Radius2  = new double[size];
-	Position = new double[size][Dim];
-	Velocity = new double[size][Dim];
+	Mass     = new double[NumberOfParticle];
+	Mdot     = new double[NumberOfParticle];
+	Radius2  = new double[NumberOfParticle];
+	Position = new double[NumberOfParticle][Dim];
+	Velocity = new double[NumberOfParticle][Dim];
 
 	Particle *ptcl;
 
 	// copy the data of particles to the arrays to be sent
-	for (int i=0; i<size; i++) {
-		ptcl       = &particles[i];
+		
+	while (size < NumberOfParticle) {
+		ptcl       = &particles[i++];
 		if (!ptcl->isActive) continue;
 
-		Mass[i]    = ptcl->Mass;
-		Mdot[i]    = 0; //particle[i]->Mass;
-		Radius2[i] = ptcl->RadiusOfNeighbor; // mass wieght?
+		Mass[size]    = ptcl->Mass;
+		Mdot[size]    = 0; //particle[i]->Mass;
+		Radius2[size] = ptcl->RadiusOfNeighbor; // mass weight?
 
 		if (ptcl->NumberOfNeighbor == 0)
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[i], Velocity[i]);
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[size], Velocity[size]);
 		else
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[i], Velocity[i]);
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
+		size++;
+		//std::cout << "(i , size) = "  << i << " " << size << std::endl;
 	}
-	#endif
+  #endif
 
-
+	//fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d\n", NumberOfParticle, size);
 
 	//fprintf(stdout, "Sending particles to GPU...\n");
 	//fflush(stdout);

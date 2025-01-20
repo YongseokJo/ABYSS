@@ -15,7 +15,9 @@ void CalculateAcceleration23(Particle* ptcl1);
 void makePrimordialGroup(Particle* ptclCM);
 void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
-void FBTermination(Group* group);
+// void FBTermination(Group* group);
+void FBdeleteGroup(Group* group);
+void NewFBInitialization3(Group* group);
 
 void WorkerRoutines() {
 
@@ -81,8 +83,7 @@ void WorkerRoutines() {
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
-				if (ptcl->NumberOfNeighbor != 0) // IAR modified, (Query) what do you mean? 2025.01.04
-					ptcl->updateParticle();
+				ptcl->updateParticle();
 				ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
 				ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
 				//std::cout << "pid=" << ptcl_id << ", CurrentBlockIrr=" << particles[ptcl_id].CurrentBlockIrr << std::endl;
@@ -208,18 +209,19 @@ void WorkerRoutines() {
 			case 22: // Few-body group search
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
+				// std::cerr << "FB search of particle  " << ptcl_id << " is initiated on rank " << MyRank << "." <<std::endl;
 
 				ptcl->NewNumberOfNeighbor = 0;
 
-				if (ptcl->binary_state == 0) {
+				if (ptcl->getBinaryInterruptState()== BinaryInterruptState::manybody) {
+					ptcl->checkNewGroup2();
+					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+				}
+				else {
 					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
 						ptcl->checkNewGroup();
 				}
-				else {
-					assert(ptcl->binary_state == -1); // for debugging by EW 2025.1.7
-					ptcl->checkNewGroup2();
-					ptcl->binary_state = 0;
-				}
+				// std::cerr << "FB search of particle  " << ptcl_id << " is successfully finished on rank " << MyRank << "." <<std::endl;
 
 				break;
 
@@ -236,7 +238,7 @@ void WorkerRoutines() {
 				ptcl = &particles[ptcl_id];
 
 				NewFBInitialization(ptcl);
-				std::cout << "FewBody object of particle " << ptcl_id
+				std::cout << "FewBody object of particle " << ptcl->PID
 						  << " is successfully initialized on rank " << MyRank << "." <<std::endl;
 				break;
 
@@ -249,8 +251,9 @@ void WorkerRoutines() {
 			case 26: // SDAR for few body encounters
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
-				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
+				
 				ptcl = &particles[ptcl_id];
+				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << std::endl;
 
 				/* (Query) this will be done already. 
 				ptcl->computeAccelerationIrr();
@@ -265,15 +268,33 @@ void WorkerRoutines() {
 				}
 				
 				ptcl->GroupInfo->ARIntegration(next_time);
-				if (!ptcl->GroupInfo->isMerger)
+				if (!ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
 					ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
-				else if (ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
-					ptcl->GroupInfo->isMerger = false;
 
-				if (!ptcl->GroupInfo->isMerger && ptcl->GroupInfo->isTerminate)
-					FBTermination(ptcl->GroupInfo);
+				if (ptcl->GroupInfo->isTerminate)
+					FBdeleteGroup(ptcl->GroupInfo);
 
-				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl_id << " done!" <<std::endl;
+				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
+				break;
+			
+			case 27: // Merger insided many-body (>2) group
+
+				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				
+				ptcl = &particles[ptcl_id];
+				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << std::endl;
+
+				if (!ptcl->isCMptcl || ptcl->GroupInfo == nullptr) {
+					fprintf(stderr, "Something is wrong. ptcl->isCMptcl=%d ptcl->GroupInfo=%p\n", ptcl->isCMptcl, ptcl->GroupInfo);
+					exit(EXIT_FAILURE);
+				}
+
+				NewFBInitialization3(ptcl->GroupInfo);
+
+				ptcl->GroupInfo->isMerger = false;
+				ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+
+				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
 				break;
 #endif 
 

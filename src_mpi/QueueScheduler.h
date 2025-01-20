@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <iomanip>
 #include "mpi.h"
 #include "def.h"
 #include "particle.h"
@@ -45,6 +46,8 @@ public:
     }
 
     void assignQueueAuto() {
+        if (_queue_list.size() == 0)
+            return;
         for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)
         {
             if (_queue_list.size() > 0 && (*worker)->NumberOfQueues == 0)
@@ -68,7 +71,7 @@ public:
     void runQueueAuto() {
         for (auto worker = WorkersToGo.begin(); worker != WorkersToGo.end();)
         {
-            if ((*worker)->NumberOfQueues > 0)
+            if ((*worker)->NumberOfQueues > 0 && !(*worker)->onDuty)
             {
                 (*worker)->runQueue();
                 worker = WorkersToGo.erase(worker);
@@ -83,6 +86,9 @@ public:
 
 
     Worker* waitQueue(int type) {
+        if (_total_queues == 0) // in case of no queue
+            return nullptr;
+
         if (type == 0) // blocking
         {
             MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &_status);
@@ -117,6 +123,8 @@ public:
 
     // this is only for a non-blocking wait.
     void callback(Worker* worker) {
+        if (worker->getCurrentQueue()->task == FB_SDAR) 
+            _completed_cm_queues++;
         worker->callback();
         _completed_queues++;
         if (worker->NumberOfQueues > 0)
@@ -130,30 +138,67 @@ public:
 
     bool isComplete() {
         if (_completed_queues == _total_queues && _assigned_queues == _total_queues)
-            return _complete;
+            return _complete; // but returns false
         else
             return _not_complete; 
     }
 
+
     void printFreeWorker() {
-        std::cout << "<FreeWorkers List>" << std::endl;
+        std::cout << std::left << "FreeWorker List: ";
         for (Worker* worker: _FreeWorkers) {
-            std::cout << "MyRank=" << worker->MyRank << std::endl;
+            std::cout << std::setw(3) << worker->MyRank;
         }
+        std::cout << std::endl;
     }
 
     void printWorkerToGo() {
-        std::cout << "<WorkersToGo List>" << std::endl;
+        std::cout << std::left << "WorkersToGo List: ";
         for (Worker* worker: WorkersToGo) {
-            std::cout << "MyRank=" << worker->MyRank << std::endl;
+            std::cout << std::setw(3) << worker->MyRank;
         }
+        std::cout << std::endl;
+    }
+
+    void printStatus() {
+        std::cout << "-----------Queue Status-----------" << std::endl;
+        std::cout << "Total Queues = " << _total_queues << std::endl;
+        std::cout << "Assigned Queues = " << _assigned_queues << std::endl;
+        std::cout << "Completed Queues = " << _completed_queues << std::endl;
+        std::cout << "Total CM Queues = " << _total_cm_queues << std::endl;
+        std::cout << "Completed CM Queues = " << _completed_cm_queues << std::endl;
+
+        std::cout << "-----------Worker Status-----------" << std::endl;
+        std::cout << std::left << std::setw(10) << "MyRank";
+        for (int i=1; i<=NumberOfWorker; i++) {
+            std::cout << "|  " << std::setw(4) << workers[i].MyRank;
+        }
+        std::cout << std::endl;
+
+        std::cout << std::left << std::setw(10) << "OnDuty";
+        for (int i=1; i<=NumberOfWorker; i++) {
+            std::cout << "|  " << std::setw(4) << workers[i].onDuty ? "T" : "F" ;
+        }
+        std::cout << std::endl;
+
+        std::cout << std::left << std::setw(10) << "#ofQueue";
+        for (int i=1; i<=NumberOfWorker; i++) {
+            std::cout << "|  " << std::setw(4) << workers[i].NumberOfQueues;
+        }
+        std::cout << std::endl;
+        std::cout << "-----------Details-----------" << std::endl;
+        printFreeWorker();
+        printWorkerToGo();
     }
 
     void setTotalQueue(int total_queues) {_total_queues = total_queues;}
 
     void assignWorker(Worker *worker) {
-        WorkersToGo.insert(worker);
-        _FreeWorkers.erase(worker);
+        if (!(worker->onDuty)) {
+            WorkersToGo.insert(worker);
+            _FreeWorkers.erase(worker);
+        }
+        _assigned_queues++;
     }
 
 #ifdef FEWBODY
@@ -173,6 +218,8 @@ public:
         _queue_list.reserve(_total_queues);
         _queue_list.resize(_total_queues);
         int single_ptcl=0, cm_ptcl=_total_queues-1;
+        _total_cm_queues=0;
+        _completed_cm_queues=0;
 
         for (int i=0; i<_total_queues; i++)
         {
@@ -186,12 +233,10 @@ public:
             {
                 _queue_list[cm_ptcl--] = pid;
                 CMPtcls.insert(pid);
+                _total_cm_queues++;
             }
         }
-
-        //fb_total_tasks = CMPtcls.size(); // this is for the SDAR computations by YS 2025.01.06
-        //fb_assigned_tasks = 0; // this is for the SDAR computations by YS 2025.01.06
-        //UpdatedCMPtcl.resize(fb_total_tasks);
+        _total_queues += _total_cm_queues;
     }
 
     /* check the neighbors of CM particles if they're up to date
@@ -227,10 +272,11 @@ private:
     int _task, _rank, _flag;
     double _next_time;
     int _total_queues, _assigned_queues, _completed_queues;
+    int _total_cm_queues, _completed_cm_queues;
     const bool _complete = false;
     const bool _not_complete = true;
-    MPI_Request _request;  // Pointer to the request handle
     MPI_Status _status;    // Pointer to the status object
+    MPI_Request _request;    // Pointer to the status object
 
 
 
@@ -243,7 +289,7 @@ private:
         }
         _total_queues=0;
         _assigned_queues=0;
-        _completed_queues=0;;
+        _completed_queues=0;
     }
 
 #ifdef unuse
