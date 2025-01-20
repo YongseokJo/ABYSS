@@ -31,6 +31,7 @@
 #ifdef SEVN
 void UpdateEvolution(Particle* ptcl);
 void Mix(Star* star1, Star* star2);
+void SetRadius(Particle* ptcl);
 #endif
 
 
@@ -334,14 +335,13 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
         fprintf(mergerout, "PID: %d. Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->PID, p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
         fprintf(mergerout, "PID: %d. Mass (Msol) - %e, \n", p2->PID, p2->Mass*mass_unit);
 
-
         double mcm = p1->Mass + p2->Mass * 0.5; // If TDE happens, the half of the mass of star is accreted to a BH.
         for (int k=0; k<3; k++) {
             p1->Position[k] = (p1->Mass*p1->Position[k] + p2->Mass*p2->Position[k])/mcm;
             p1->Velocity[k] = (p1->Mass*p1->Velocity[k] + p2->Mass*p2->Velocity[k])/mcm;
         }
 
-        p1->radius = 2*p1->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzschild radius
+        p1->radius = 2*p1->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzschild radius in code unit
 
         p1->dm += 0.5 * p2->Mass;
         p1->Mass = mcm;
@@ -420,7 +420,7 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
                 p1->FormationTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
                 p1->WorldTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
                 p1->Mzams = p1->StellarEvolution->get_zams();
-                p1->radius = p1->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit;
+                SetRadius(p1);
                 fprintf(SEVNout, "New Star class made!\n");
                 fprintf(SEVNout, "PID: %d. Mass: %e Msol, Radius: %e pc\n", p1->PID, p1->Mass*mass_unit, p1->radius*position_unit);
             }
@@ -434,13 +434,17 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
         else if (p1->StellarEvolution != nullptr && p2->StellarEvolution != nullptr) {
 
             Mix(p1->StellarEvolution, p2->StellarEvolution);
-            UpdateEvolution(p1);
-            UpdateEvolution(p2);
             fprintf(SEVNout, "Mix done!\n");
 
             if (p1->StellarEvolution->amiempty() && !p2->StellarEvolution->amiempty()) {
                 p1->Mass = 0.0;
+
+                p2->Mass = p2->StellarEvolution->getp(Mass::ID)/mass_unit;
+                // p2->dm += p1->dm // not yet by EW 2025.1.20
+                // p1->dm = 0.0; // not yet by EW 2025.1.20
+                SetRadius(p2);
                 p2->Mzams = p1->Mzams + p2->Mzams;
+
                 fprintf(mergerout, "---------------Merger remnant properties---------------\n");
                 fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
                 fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p2->Velocity[0]*velocity_unit/yr*pc/1e5, p2->Velocity[1]*velocity_unit/yr*pc/1e5, p2->Velocity[2]*velocity_unit/yr*pc/1e5);
@@ -453,7 +457,13 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
             }
             else if (!p1->StellarEvolution->amiempty() && p2->StellarEvolution->amiempty()) {
                 p2->Mass = 0.0;
+
+                p1->Mass = p1->StellarEvolution->getp(Mass::ID)/mass_unit;
+                // p1->dm += p2->dm // not yet by EW 2025.1.20
+                // p2->dm = 0.0; // not yet by EW 2025.1.20
+                SetRadius(p1);
                 p1->Mzams = p1->Mzams + p2->Mzams;
+
                 fprintf(mergerout, "---------------Merger remnant properties---------------\n");
                 fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
                 fprintf(mergerout, "Velocity (km/s) - vx:%e, vy:%e, vz:%e, \n", p1->Velocity[0]*velocity_unit/yr*pc/1e5, p1->Velocity[1]*velocity_unit/yr*pc/1e5, p1->Velocity[2]*velocity_unit/yr*pc/1e5);
@@ -465,7 +475,7 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
                 fprintf(mergerout, "---------------------END-OF-MERGER---------------------\n\n");
             }
             else if (p1->StellarEvolution->amiempty() && p2->StellarEvolution->amiempty()) { // Type Ia supernova
-                p1->dm += p1->Mass; // Eunwoo: dm should be 0 after it distributes its mass to the nearby gas cells.
+                p1->dm += p1->Mass;
                 p1->Mass = 0.0;
                 p2->dm += p2->Mass;
                 p2->Mass = 0.0;
@@ -485,7 +495,8 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
             else
                 p2->StellarEvolution->find_new_track_after_merger();
 
-            UpdateEvolution(p2);
+            p2->Mass = p2->StellarEvolution->getp(Mass::ID)/mass_unit;
+            SetRadius(p2);
             p1->Mass = 0.0;
             p2->Mzams = p1->Mzams + p2->Mzams;
 
@@ -509,7 +520,8 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
             else
                 p1->StellarEvolution->find_new_track_after_merger();
 
-            UpdateEvolution(p1);
+            p1->Mass = p1->StellarEvolution->getp(Mass::ID)/mass_unit;
+            SetRadius(p1);
             p2->Mass = 0.0;
             p1->Mzams = p1->Mzams + p2->Mzams;
 
@@ -765,6 +777,24 @@ void recoilKick(Particle* p1, Particle* p2) {
     fflush(mergerout);
 }
 
+#ifdef SEVN
+// Use this function when merger happened
+void SetRadius(Particle* ptcl) {
 
+    if (!ptcl->StellarEvolution->amiremnant())
+        ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit;
+    else if (ptcl->StellarEvolution->amiWD()) {
+        double RNS = 11/(velocity_unit/yr*pc/1e5); // 11 km/s in code unit
+        double Mch = 1.41/mass_unit;
+        double RWD = 0.0115*std::sqrt(pow(Mch/ptcl->Mass,0.6666666667) -  pow(ptcl->Mass/Mch,0.6666666667));
+        
+        ptcl->radius = std::max(RNS,RWD);
+    }
+    else if (ptcl->StellarEvolution->amiNS())
+        ptcl->radius = 11/(velocity_unit/yr*pc/1e5); // 11 km/s in code unit
+    else if (ptcl->StellarEvolution->amiBH())
+        ptcl->radius = 2*ptcl->Mass/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzschild radius in code unit
+}
+#endif
 
 #endif

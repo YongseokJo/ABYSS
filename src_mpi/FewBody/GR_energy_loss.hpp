@@ -22,7 +22,7 @@
 
 inline void GR_energy_loss(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin, double current_time, double next_time) {
 
-    const double c = 299752.458 / (velocity_unit / yr * pc / 1e5); // speed of light in your units
+    const double c = 299752.458 / (velocity_unit / yr * pc / 1e5); // speed of light in code unit
     const double m1 = _bin.m1;
     const double m2 = _bin.m2;
     const double mtot = m1 + m2;

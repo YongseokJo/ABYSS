@@ -181,6 +181,7 @@ void UpdateEvolution(Particle* ptcl) {
             ptcl->setBinaryInterruptState(BinaryInterruptState::kicked);
         }
         else {
+            assert(ptcl->isActive); // for debugging by EW 2025.1.20
             ptcl->isActive = false;
             NumberOfParticle--;
         }

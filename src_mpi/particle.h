@@ -176,7 +176,7 @@ struct Particle {
 		/*
 		if (this->Mass*1e9 > 8) {
 			this->ParticleType = Blackhole+SingleStar;
-			this->radius = 2*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzshild radius
+			this->radius = 2*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzshild radius in code unit
 			// initialBHspin(this);
 		}
 		else {

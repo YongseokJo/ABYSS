@@ -658,6 +658,8 @@ void RootRoutines() {
 						CMPtclWorker.erase(ptcl->ParticleIndex);
 
 						for (int j=0; j < ptcl->NewNumberOfNeighbor; j++) {
+							if (particles[ptcl->NewNeighbors[j]].Mass == 0.0)
+								continue;
 							ThisLevelNode->ParticleList.push_back(ptcl->NewNeighbors[j]);
 							particles[ptcl->NewNeighbors[j]].isActive = true;
 						}

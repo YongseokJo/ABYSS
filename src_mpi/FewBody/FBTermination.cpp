@@ -32,7 +32,6 @@ void insertNeighbors(Particle* ptclCM) {
 			}
 		}
 	}
-	NumberOfParticle += ptclCM->NewNumberOfNeighbor - 1;
 }
 
 void FBdeleteGroup(Group* group) {
@@ -62,6 +61,8 @@ void FBTermination(Particle* ptclCM) {
 	fprintf(binout,"In FBTermination.cpp... (CM PID: %d)\n\n", ptclCM->PID);
 	fprintf(binout, "CurrentTimeIrr of ptclCM (Myr): %e\n", ptclCM->CurrentTimeIrr*EnzoTimeStep*1e4);
 	fprintf(binout, "CurrentTimeIrr of the first member (Myr): %e\n", particles[ptclCM->NewNeighbors[0]].CurrentTimeIrr*EnzoTimeStep*1e4);
+
+	NumberOfParticle--; // CM particle should be inactive by EW 2025.1.20
 	
 	Particle* members;
 	for (int i=0; i<ptclCM->NewNumberOfNeighbor; i++) {
@@ -69,6 +70,8 @@ void FBTermination(Particle* ptclCM) {
 
 		if (members->Mass == 0.0)
 			continue;
+
+		NumberOfParticle++; // by EW 2025.1.20
 
 		members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
 

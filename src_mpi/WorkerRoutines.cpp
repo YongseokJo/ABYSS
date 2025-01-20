@@ -15,7 +15,6 @@ void CalculateAcceleration23(Particle* ptcl1);
 void makePrimordialGroup(Particle* ptclCM);
 void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
-// void FBTermination(Group* group);
 void FBdeleteGroup(Group* group);
 void NewFBInitialization3(Group* group);
 
