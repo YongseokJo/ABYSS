@@ -24,6 +24,7 @@ extern int NumberOfCommunication;
 extern GlobalVariable *global_variable;
 extern GlobalVariable *global_variable_original;
 
+extern int ActiveIndexToPID[MaxNumberOfParticle];
 
 // the numer of particles for load balancing
 extern int LoadBalanceParticle; 

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdio.h>
 #include "global.h"
+#include "def.h"
 #include "GlobalVariable.h"
 #include <mpi.h>
 
@@ -17,6 +18,7 @@ int MyRank;
 int NumberOfProcessor;
 int NumberOfWorker;
 int NumberOfCommunication;
+int ActiveIndexToPID[MaxNumberOfParticle];
 
 
 int LoadBalanceParticle;

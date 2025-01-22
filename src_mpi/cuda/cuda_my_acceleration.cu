@@ -16,6 +16,7 @@
 #endif
 
 extern int MyRank;
+extern int ActiveIndexToPID[MaxNumberOfParticle];
 const int ROOT = 0;
 
 static int NNB;
@@ -224,7 +225,7 @@ void GetAcceleration(
 				// Loop over each neighbor in the current block
 				for (int n = 0; n < numNeighborsInBlock; n++) {
 					if (k < NumNeighborMax){
-						targetNeighborList[k++] = blockNeighborList[n];
+						targetNeighborList[k++] = ActiveIndexToPID[blockNeighborList[n]]; // added by YS 2025.01.22
 					}
 					else {
 						fprintf(stderr, "Number of neighbors exceeds the maximum number of neighbors %d\n", k);

@@ -298,9 +298,12 @@ void sendAllParticlesToGPU(double new_time) {
 
 	// copy the data of particles to the arrays to be sent
 		
-	while (size < NumberOfParticle) {
-		ptcl       = &particles[i++];
-		if (!ptcl->isActive) continue;
+	for (int i=0; i<LastParticleIndex+1; i++) {
+		ptcl = &particles[i];
+		if (!ptcl->isActive) {
+			fprintf(stdout, "Skipping inactive particle (%d)\n", ptcl->PID);
+			continue;
+		}
 
 		Mass[size]    = ptcl->Mass;
 		Mdot[size]    = 0; //particle[i]->Mass;
@@ -310,11 +313,12 @@ void sendAllParticlesToGPU(double new_time) {
 			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[size], Velocity[size]);
 		else
 			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
-		size++;
+
+		ActiveIndexToPID[size++] = i;
 		//std::cout << "(i , size) = "  << i << " " << size << std::endl;
 	} 
 
-	//fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d\n", NumberOfParticle, size);
+	fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d, TotalNumberOfParticle=%d\n", NumberOfParticle, size, LastParticleIndex+1);
 
 	//fprintf(stdout, "Sending particles to GPU...\n");
 	//fflush(stdout);

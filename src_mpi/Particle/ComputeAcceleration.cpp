@@ -402,20 +402,26 @@ void Particle::computeAccelerationReg() {
 
 void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNeighborGPU, double *new_a, double *new_adot) {
 
-	/*
 	std::cerr <<  "in here!" << std::endl;
 	int NeighborIndex;
 	std::cerr <<  "Compute: MyPID=" <<  this->PID;
-	std::cerr <<  "(" << NewNumberOfNeighborGPU << ") " << std::endl;
-	//std::cout <<  "(" << ptcl->RadiusOfAC << ")" << std::endl;
+	std::cerr <<  "(" << NumberOfNeighbor << ") " << std::endl;
 	std::cerr <<  "NeighborIndex = ";
-	for (int j=0;  j<NewNumberOfNeighborGPU; j++) {
-		NeighborIndex = NewNeighborsGPU[index*NumNeighborMax+j];  // gained neighbor particle (in next time list)
+	for (int j=0;  j<NumberOfNeighbor; j++) {
+		NeighborIndex = Neighbors[j];  // gained neighbor particle (in next time list)
 		std::cerr <<  NeighborIndex << "  (" << particles[NeighborIndex].PID << "), ";
 		//std::cout <<  particles[NeighborIndex].PID << ", ";
 	}
 	std::cerr << std::endl;
-	*/
+
+	std::cerr <<  "(" << NewNumberOfNeighborGPU << ") " << std::endl;
+	std::cerr <<  "NewNeighborIndex = ";
+	for (int j=0;  j<NewNumberOfNeighborGPU; j++) {
+		NeighborIndex = NewNeighborsGPU[j];  // gained neighbor particle (in next time list)
+		std::cerr <<  NeighborIndex << "  (" << particles[NeighborIndex].PID << "), ";
+		//std::cout <<  particles[NeighborIndex].PID << ", ";
+	}
+	std::cerr << std::endl;
 
 	double new_time = this->CurrentTimeReg+this->TimeStepReg;
 	double pos[Dim], vel[Dim];

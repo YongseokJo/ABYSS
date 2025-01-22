@@ -1,5 +1,6 @@
 #ifdef FEWBODY
 #include "../global.h"
+#include <random>
 
 #ifdef SEVN
 void Mix(Star* star1, Star* star2);
