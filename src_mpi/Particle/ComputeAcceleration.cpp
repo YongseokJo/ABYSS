@@ -401,7 +401,7 @@ void Particle::computeAccelerationReg() {
 
 
 void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNeighborGPU, double *new_a, double *new_adot) {
-
+/*
 	std::cerr <<  "in here!" << std::endl;
 	int NeighborIndex;
 	std::cerr <<  "Compute: MyPID=" <<  this->PID;
@@ -422,7 +422,16 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 		//std::cout <<  particles[NeighborIndex].PID << ", ";
 	}
 	std::cerr << std::endl;
-
+*/
+	if (this->PID == 28621) {
+		std::cerr << "NumberOfNeighbor: " << this->NumberOfNeighbor << "NewNumberOfNeighborGPU: " << NewNumberOfNeighborGPU << std::endl;
+		for (int j=0;  j<NewNumberOfNeighborGPU; j++) {
+			int NeighborIndex = NewNeighborsGPU[j];  // gained neighbor particle (in next time list)
+			std::cerr <<  NeighborIndex << "  (" << particles[NeighborIndex].PID << "), ";
+			//std::cout <<  particles[NeighborIndex].PID << ", ";
+		}
+		std::cerr << std::endl << std::endl;
+	}
 	double new_time = this->CurrentTimeReg+this->TimeStepReg;
 	double pos[Dim], vel[Dim];
 	if (this->NumberOfNeighbor == 0)
@@ -449,13 +458,19 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 	for (int i=0; i<size; i++) {
 		if (i < NewNumberOfNeighborGPU) {
-			if (!particles[NewNeighborsGPU[i]].isActive)
-				continue;
+			if (!particles[NewNeighborsGPU[i]].isActive) {
+				fprintf(stderr, "this PID: %d, inActive PID: %d\n", this->PID, particles[NewNeighborsGPU[i]].PID);
+				assert(particles[NewNeighborsGPU[i]].isActive); // for debugging by EW 2025.1.23
+			}
+				// continue;
 			hashTableNew.insert({NewNeighborsGPU[i], i});
 		}
 		if (i < this->NumberOfNeighbor) {
-			if (!particles[this->Neighbors[i]].isActive)
-				continue;
+			if (!particles[this->Neighbors[i]].isActive) {
+				fprintf(stderr, "this PID: %d, inActive PID: %d\n", this->PID, particles[Neighbors[i]].PID);
+				assert(particles[NewNeighborsGPU[i]].isActive); // for debugging by EW 2025.1.23
+			}
+				// continue;
 			hashTableOld.insert({this->Neighbors[i], i});
 		}
 	}
@@ -478,9 +493,12 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 				//fprintf(stderr, "in old, not in new = %d\n",this->Neighbors[i]);
 				//std::cerr <<  "in old, not in new =" <<  this->Neighbors[i] << std::endl;
 				ptcl = &particles[this->Neighbors[i]];
-
-				if (!ptcl->isActive)
-					continue;
+				
+				if (!ptcl->isActive) {
+					fprintf(stderr, "this PID: %d, inActive PID: %d\n", this->PID, ptcl->PID);
+					assert(ptcl->isActive); // for debugging by EW 2025.1.23
+				}
+					// continue;
 
 				if (ptcl->NumberOfNeighbor == 0)
 					ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
@@ -510,8 +528,11 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 		if ( i < NewNumberOfNeighborGPU ) {
 			ptcl = &particles[NewNeighborsGPU[i]];
 
-			if (!ptcl->isActive)
-				continue;
+			if (!ptcl->isActive) {
+				fprintf(stderr, "this PID: %d, inActive PID: %d\n", this->PID, ptcl->PID);
+				assert(ptcl->isActive); // for debugging by EW 2025.1.23
+			}
+				// continue;
 
 			if (ptcl->NumberOfNeighbor == 0)
 				ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, pos_neighbor, vel_neighbor);
@@ -607,8 +628,11 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 	int _NewNumberOfNeighbor = 0;
 	for (int i=0; i<NewNumberOfNeighborGPU; i++) {
-		if (!particles[NewNeighborsGPU[i]].isActive)
-			continue;
+		if (!particles[NewNeighborsGPU[i]].isActive) {
+			fprintf(stderr, "this PID: %d, inActive PID: %d\n", this->PID, particles[NewNeighborsGPU[i]].PID);
+			assert(particles[NewNeighborsGPU[i]].isActive); // for debugging by EW 2025.1.23
+		}
+			// continue;
 		this->NewNeighbors[_NewNumberOfNeighbor++] = NewNeighborsGPU[i];
 	}
 	this->NewNumberOfNeighbor = _NewNumberOfNeighbor;

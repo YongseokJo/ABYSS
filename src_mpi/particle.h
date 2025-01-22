@@ -10,7 +10,7 @@
 #include <iomanip>
 #ifdef SEVN
 #include "star.h" // Eunwoo added for SEVN
-#endif SEVN
+#endif
 
 enum class BinaryInterruptState:int {
 	none = 0, 
