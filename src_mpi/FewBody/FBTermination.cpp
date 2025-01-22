@@ -1,16 +1,12 @@
 #ifdef FEWBODY
-#include "stdio.h"
-#include <vector>
-#include <iostream>
-#include <cmath>
-#include <algorithm>
 #include "../global.h"
-#include "../def.h"
 
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
 
 void insertNeighbors(Particle* ptclCM) {
+
+	std::cout << "CM ptcl PID: " << ptclCM->PID << ", NewNumberOfNeighbor: " << ptclCM->NewNumberOfNeighbor << std::endl;
 
 	for (int i=0; i<=LastParticleIndex; i++) {
 		Particle* ptcl = &particles[i];
@@ -19,15 +15,19 @@ void insertNeighbors(Particle* ptclCM) {
 		
 		for (int j = 0; j < ptcl->NumberOfNeighbor; ++j) {
 			if (ptcl->Neighbors[j] == ptclCM->ParticleIndex) {
+				std::cout << "Terminated neighbor PID: " << particles[ptcl->Neighbors[j]].PID << " of particle PID: " << ptcl->PID << std::endl;
+				std::cout << "Original NumberOfNeighbor: " << ptcl->NumberOfNeighbor << std::endl;
 				ptcl->Neighbors[j] = ptcl->Neighbors[ptcl->NumberOfNeighbor - 1];
 				ptcl->NumberOfNeighbor--;
 
-				for (int k=0; i<ptclCM->NewNumberOfNeighbor; k++) {
+				for (int k=0; k<ptclCM->NewNumberOfNeighbor; k++) {
 					if (particles[ptclCM->NewNeighbors[k]].Mass == 0.0)
 						continue;
 					ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->NewNeighbors[k];
+					std::cout << "Newly added neighbor PID: " << particles[ptclCM->NewNeighbors[k]].PID << std::endl;
 					ptcl->NumberOfNeighbor++;
 				}
+				std::cout << "After NumberOfNeighbor: " << ptcl->NumberOfNeighbor << std::endl;
 				break;
 			}
 		}
@@ -98,7 +98,7 @@ void FBTermination(Particle* ptclCM) {
 		CalculateAcceleration23(members);
 
 		if (members->CurrentTimeIrr != ptclCM->CurrentTimeIrr) {
-			assert(members->CurrentTimeIrr < ptclCM->CurrentTimeIrr);
+			assert(members->CurrentTimeIrr < ptclCM->CurrentTimeIrr); // for debugging by EW
 			fprintf(stdout, "SDAR: binary merger happened!\n");
 
 			double pos[Dim], vel[Dim];

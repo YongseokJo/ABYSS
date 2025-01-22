@@ -1,11 +1,7 @@
 #ifdef FEWBODY
-#include <iostream>
 #include <map>
 #include <unordered_map>
 #include "../global.h"
-#include "../def.h"
-#include <cassert> // Eunwoo debug
-
 
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
@@ -191,15 +187,28 @@ void deleteNeighbors(int newOrder) {
 		auto newEnd = std::remove_if(
 			ptcl->Neighbors, 
 			ptcl->Neighbors + ptcl->NumberOfNeighbor, 
+			// /* // for debuggin by EW 2025.1.22
+			[ptcl, &particles](int j) {
+				if (!particles[j].isActive) {
+					std::cout << "Inactive neighbor PID: " << particles[j].PID << " of particle PID: " << ptcl->PID << std::endl;
+					return true;
+				}
+				return false;
+			// */
+			/* // original code by EW 2025.1.22
 			[&particles](int j) {
 				return !particles[j].isActive;
+			*/
 			}
 		);
 
 		if (newEnd != ptcl->Neighbors + ptcl->NumberOfNeighbor) {
+			std::cout << "Original NumberOfNeighbor: " << ptcl->NumberOfNeighbor << std::endl;
 			ptcl->NumberOfNeighbor = newEnd - ptcl->Neighbors;
 			ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->ParticleIndex;
+			std::cout << "newly added CM ptcl PID: " << ptclCM->PID << std::endl;
 			ptcl->NumberOfNeighbor++;
+			std::cout << "New NumberOfNeighbor: " <<ptcl->NumberOfNeighbor << std::endl;
 		}
 	}
 }

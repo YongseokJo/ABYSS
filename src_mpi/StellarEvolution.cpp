@@ -41,7 +41,6 @@ void initializeStellarEvolution() {
         ptcl->WorldTime = 0.0;
 
         if (ptcl->Mass*mass_unit < 2.2) {
-            ptcl->Mzams = ptcl->Mass*mass_unit;
 			ptcl->radius = 2.25461e-8/position_unit*pow(ptcl->Mass*mass_unit, 1/3);
             // stellar radius in code unit
             // extrapolated from the solar radius (it is assumed that low-mass stars have the same stellar density to the sun)
@@ -56,7 +55,6 @@ void initializeStellarEvolution() {
         size_t id = ptcl->PID;
         ptcl->StellarEvolution = new Star(sevnio, init_params, id, false);
 
-        ptcl->Mzams = ptcl->StellarEvolution->get_zams();
 		ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit; // stellar radius in code unit
     }
 }
@@ -127,6 +125,8 @@ void UpdateEvolution(Particle* ptcl) {
         ptcl->dm += ptcl->Mass - ptcl->StellarEvolution->getp(Mass::ID)/mass_unit; // Eunwoo: dm should be 0 after it distributes its mass to the nearby gas cells.
         ptcl->Mass = ptcl->StellarEvolution->getp(Mass::ID)/mass_unit;
         ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit;
+        if (ptcl->Mass*mass_unit > ptcl->StellarEvolution->get_max_zams()) // VMS correction; constant stellar density is assumed
+            ptcl->radius *= pow(ptcl->Mass*1e9/ptcl->StellarEvolution->get_max_zams(), 1./3);
     }
     else if (ptcl->StellarEvolution->amiWD()) {
         fprintf(SEVNout, "WD. PID: %d, Mass: %e Msol, Radius: %e Rsol, Time: %e Myr, Worldtime: %e Myr\n", ptcl->PID, ptcl->StellarEvolution->getp(Mass::ID), ptcl->StellarEvolution->getp(Radius::ID), ptcl->WorldTime, ptcl->StellarEvolution->getp(Worldtime::ID));

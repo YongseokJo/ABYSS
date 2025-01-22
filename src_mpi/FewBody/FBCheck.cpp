@@ -1,6 +1,5 @@
 #ifdef FEWBODY
 #include "../global.h"
-#include "ar_interaction.hpp"
 
 // calculate dr dv of a pair
 Float calcDrDv(const double *pos1, const double *pos2, const double *vel1, const double *vel2) {

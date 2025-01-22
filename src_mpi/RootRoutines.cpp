@@ -601,7 +601,6 @@ void RootRoutines() {
 
 						assert(ptcl->isCMptcl); // for debugging by EW 2025.1.20
 					
-#ifdef SEVN
 						if (ptcl->getBinaryInterruptState() == BinaryInterruptState::merger) {
 							if (ptcl->NewNumberOfNeighbor == 2) { // binary merger
 
@@ -649,7 +648,6 @@ void RootRoutines() {
 								continue;
 							}
 						}
-#endif
 
 						bin_termination = true;
 						ptcl->isActive = false;

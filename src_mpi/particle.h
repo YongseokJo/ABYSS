@@ -76,7 +76,6 @@ struct Particle {
 	Star* StellarEvolution;
 	double FormationTime; // Myr // for restart
 	double WorldTime; // Myr // FormationTime + EvolutionTime
-	double Mzams; // Msol // Mass when it is zero-age main sequence // for restart & VMS (radius extrapolation)
 #endif
 
 	Particle() {
@@ -126,7 +125,6 @@ struct Particle {
 		StellarEvolution = nullptr;
 		FormationTime = 0.0; // Myr
 		WorldTime = 0.0; // Myr
-		Mzams = 0.0;
 #endif
 	}
 

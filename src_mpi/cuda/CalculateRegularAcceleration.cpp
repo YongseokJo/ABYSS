@@ -4,7 +4,6 @@
 #include <cassert>
 #include <algorithm>
 #include <mpi.h>
-#include "../def.h"
 #include "../global.h"
 #include "../QueueScheduler.h"
 #include "cuda_functions.h"

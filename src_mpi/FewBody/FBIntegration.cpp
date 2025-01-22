@@ -1,41 +1,12 @@
 #ifdef FEWBODY
-#define ASSERT(x) assert(x)
-
-#include <iostream>
-#include <fstream>
-#include <getopt.h>
-#include <string.h>
-#include <string>
-#include <stdlib.h>
-#include <iomanip>
-#include <cmath>
-#include <cassert>
-
-#include "stdio.h"
-#include <vector>
-#include <algorithm>
 #include "../global.h"
-#include "../def.h"
-
-
-#include "Common/binary_tree.h"
-#include "Common/Float.h"
-#include "Common/io.h"
-#include "AR/symplectic_integrator.h"
-#include "AR/information.h"
-#include "ar_interaction.hpp"
-#include "ar_perturber.hpp"
-#include "GR_energy_loss.hpp"
-
 
 #ifdef SEVN
-void UpdateEvolution(Particle* ptcl);
 void Mix(Star* star1, Star* star2);
 void SetRadius(Particle* ptcl);
 #endif
 
 
-void GR_energy_loss(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin, double current_time, double next_time);
 void GR_energy_loss_iter(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin, double current_time, double next_time);
 void remnantSpinMass(Particle* p1, Particle* p2);
 void recoilKick(Particle* p1, Particle* p2);
@@ -175,15 +146,8 @@ void Group::ARIntegration(double next_time){
         
         auto& bin_root = sym_int.info.getBinaryTreeRoot();
 
-        if (bin_root.getMemberN() == 2) {
-            bin_root.calcOrbit(double(1.0));
-            if (bin_root.ecc < 1) {
-                GR_energy_loss(bin_interrupt, bin_root, CurrentTime, next_time);    
-            }
-        }
-        else {
-            GR_energy_loss_iter(bin_interrupt, bin_root, CurrentTime, next_time);
-        }
+        GR_energy_loss_iter(bin_interrupt, bin_root, CurrentTime, next_time);
+
         if (bin_interrupt.status == AR::InterruptStatus::none)
             sym_int.initialIntegration(next_time*EnzoTimeStep); // Eunwoo: this should be fixed later // Eunwoo: I don't think so!
     }    
@@ -262,6 +226,119 @@ void Group::ARIntegration(double next_time){
     
     CurrentTime = next_time;
     return; 
+}
+
+// made 2024.09.19 by Eunwoo Chung
+
+// reference: tides3.f from Nbody6++GPU (Rizzuto et al. 2020, Arca Sedda et al. 2023)
+// Gravitational wave energy loss of hard binaries according to the orbit averaged approximation of Peters & Mathews 1963.
+// Calculate average change of energy and angular momentum per orbit.
+// Modify semi-major axis, eccentricity, omega(argument of periapsis) per time step in SDAR.
+// Orbit shrinking by PN2.5
+// Precession by PN1.0 & PN2.0
+
+void GR_energy_loss(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin, double current_time, double next_time) {
+
+    const double c = 299752.458 / (velocity_unit / yr * pc / 1e5); // speed of light in code unit
+    const double m1 = _bin.m1;
+    const double m2 = _bin.m2;
+    const double mtot = m1 + m2;
+    const double cost = pow(c, -5) * m1 * m2 * mtot;
+
+    double dt = (next_time - current_time) * EnzoTimeStep;
+
+    double e = _bin.ecc;
+    double semi = _bin.semi;
+    
+    // Define the derivative functions for `e`, `semi`, and `rot_self`
+    auto de_dt = [&](double e, double semi) {
+        double e2 = e * e;
+        double FE2 = e * pow((1 - e2), -2.5) * (1 + 121.0 / 304.0 * e2);
+        return 304.0 / 15.0 * cost * pow(semi, -4.0) * FE2;
+    };
+    auto dsemi_dt = [&](double e, double semi) {
+        double e2 = e * e;
+        double e4 = e2 * e2;
+        double FE1 = pow((1 - e2), -3.5) * (1.0 + 73.0 / 24.0 * e2 + 37.0 / 96.0 * e4);
+        return 64.0 / 5.0 * cost * pow(semi, -3.0) * FE1;
+    };
+    auto domega_dt = [&](double e, double semi) {
+        double e2 = e * e;
+        return (6.0 * M_PI / (c * c * _bin.period) * mtot / (semi * (1 - e2)) +
+                3.0 * (18.0 + e2) * M_PI / (2 * pow(c, 4) * _bin.period) * pow((mtot / (semi * (1 - e2))), 2.0));
+    };
+
+    // Runge-Kutta 4th Order Method
+    // k1
+    double k1_de = de_dt(e, semi) * dt;
+    double k1_dsemi = dsemi_dt(e, semi) * dt;
+    double k1_domega = domega_dt(e, semi) * dt;
+
+    // k2
+    double k2_de = de_dt(e - 0.5 * k1_de, semi - 0.5 * k1_dsemi) * dt;
+    double k2_dsemi = dsemi_dt(e - 0.5 * k1_de, semi - 0.5 * k1_dsemi) * dt;
+    double k2_domega = domega_dt(e - 0.5 * k1_de, semi - 0.5 * k1_dsemi) * dt;
+
+    // k3
+    double k3_de = de_dt(e - 0.5 * k2_de, semi - 0.5 * k2_dsemi) * dt;
+    double k3_dsemi = dsemi_dt(e - 0.5 * k2_de, semi - 0.5 * k2_dsemi) * dt;
+    double k3_domega = domega_dt(e - 0.5 * k2_de, semi - 0.5 * k2_dsemi) * dt;
+
+    // k4
+    double k4_de = de_dt(e - k3_de, semi - k3_dsemi) * dt;
+    double k4_dsemi = dsemi_dt(e - k3_de, semi - k3_dsemi) * dt;
+    double k4_domega = domega_dt(e - k3_de, semi - k3_dsemi) * dt;
+
+    // Update variables using weighted sum of Runge-Kutta increments
+    _bin.ecc -= (k1_de + 2 * k2_de + 2 * k3_de + k4_de) / 6.0;
+    _bin.semi -= (k1_dsemi + 2 * k2_dsemi + 2 * k3_dsemi + k4_dsemi) / 6.0;
+    _bin.rot_self += (k1_domega + 2 * k2_domega + 2 * k3_domega + k4_domega) / 6.0;  
+
+    // Check for invalid state
+    if (!(_bin.ecc > 0) || !(_bin.semi > 0)) {
+        fprintf(mergerout, "GW driven Merger happened! (a < da)\n");
+        fprintf(mergerout, "ecc: %e, semi: %e pc, dsemi: %e pc, timestep: %e Myr\n", _bin.ecc, _bin.semi*position_unit, (k1_dsemi + 2 * k2_dsemi + 2 * k3_dsemi + k4_dsemi) / 6.0*position_unit, dt*1e4);
+        fflush(mergerout);
+
+        // _bin_interrupt.time_now = current_time * EnzoTimeStep + dt * num;
+        _bin_interrupt.time_now = next_time * EnzoTimeStep;
+
+        auto* p1 = _bin.getLeftMember();
+        auto* p2 = _bin.getRightMember();
+
+        p1->setBinaryInterruptState(BinaryInterruptState::collision);
+        p2->setBinaryInterruptState(BinaryInterruptState::collision);
+        p1->setBinaryPairID(p2->ParticleIndex);
+        p2->setBinaryPairID(p1->ParticleIndex);
+        _bin_interrupt.status = AR::InterruptStatus::merge;
+        _bin_interrupt.adr = &_bin;
+        return;
+    }
+
+    _bin.calcParticles(double(1.0));
+    for (int dim = 0; dim < Dim; dim++) {
+        _bin.getLeftMember()->Position[dim] += _bin.Position[dim];
+        _bin.getLeftMember()->Velocity[dim] += _bin.Velocity[dim];
+        _bin.getRightMember()->Position[dim] += _bin.Position[dim];
+        _bin.getRightMember()->Velocity[dim] += _bin.Velocity[dim];
+    }
+}
+
+
+void GR_energy_loss_iter(AR::InterruptBinary<Particle>& _bin_interrupt, AR::BinaryTree<Particle>& _bin, double current_time, double next_time) {
+    if (_bin.getMemberN() == 2) {
+        _bin.calcOrbit(double(1.0));
+        if (_bin.ecc < 1)
+            GR_energy_loss(_bin_interrupt, _bin, current_time, next_time);
+    }
+    else {
+        for (int k=0; k<2; k++) {
+            if (_bin.isMemberTree(k)) {
+                auto memberTree = _bin.getMemberAsTree(k);
+                GR_energy_loss_iter(_bin_interrupt, *memberTree, current_time, next_time);
+            }
+        }
+    }
 }
 
 
@@ -419,7 +496,6 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
 
                 p1->FormationTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
                 p1->WorldTime = p1->CurrentTimeIrr*EnzoTimeStep*1e4;
-                p1->Mzams = p1->StellarEvolution->get_zams();
                 SetRadius(p1);
                 fprintf(SEVNout, "New Star class made!\n");
                 fprintf(SEVNout, "PID: %d. Mass: %e Msol, Radius: %e pc\n", p1->PID, p1->Mass*mass_unit, p1->radius*position_unit);
@@ -443,7 +519,6 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
                 // p2->dm += p1->dm // not yet by EW 2025.1.20
                 // p1->dm = 0.0; // not yet by EW 2025.1.20
                 SetRadius(p2);
-                p2->Mzams = p1->Mzams + p2->Mzams;
 
                 fprintf(mergerout, "---------------Merger remnant properties---------------\n");
                 fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p2->Position[0]*position_unit, p2->Position[1]*position_unit, p2->Position[2]*position_unit);
@@ -462,7 +537,6 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
                 // p1->dm += p2->dm // not yet by EW 2025.1.20
                 // p2->dm = 0.0; // not yet by EW 2025.1.20
                 SetRadius(p1);
-                p1->Mzams = p1->Mzams + p2->Mzams;
 
                 fprintf(mergerout, "---------------Merger remnant properties---------------\n");
                 fprintf(mergerout, "Position (pc) - x:%e, y:%e, z:%e, \n", p1->Position[0]*position_unit, p1->Position[1]*position_unit, p1->Position[2]*position_unit);
@@ -488,17 +562,18 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
         }
         else if (p1->StellarEvolution == nullptr && p2->StellarEvolution != nullptr) {
 
-            p2->StellarEvolution->update_from_binary(Mass::ID, p1->Mass*mass_unit);
-            p2->StellarEvolution->update_from_binary(dMcumul_binary::ID, p1->Mass*mass_unit);
-            if (p2->StellarEvolution->aminakedhelium())
-                p2->StellarEvolution->jump_to_normal_tracks();
-            else
-                p2->StellarEvolution->find_new_track_after_merger();
+            if (!p2->StellarEvolution->amiremnant()) {
+                p2->StellarEvolution->update_from_binary(Mass::ID, p1->Mass*mass_unit);
+                p2->StellarEvolution->update_from_binary(dMcumul_binary::ID, p1->Mass*mass_unit);
+                if (p2->StellarEvolution->aminakedhelium())
+                    p2->StellarEvolution->jump_to_normal_tracks();
+                else
+                    p2->StellarEvolution->find_new_track_after_merger();
 
-            p2->Mass = p2->StellarEvolution->getp(Mass::ID)/mass_unit;
-            SetRadius(p2);
-            p1->Mass = 0.0;
-            p2->Mzams = p1->Mzams + p2->Mzams;
+                p2->Mass = p2->StellarEvolution->getp(Mass::ID)/mass_unit;
+                SetRadius(p2);
+                p1->Mass = 0.0;
+            }            
 
             fprintf(SEVNout, "Mix with no done!\n");
             fprintf(mergerout, "---------------Merger remnant properties---------------\n");
@@ -513,17 +588,18 @@ void Merge(Particle* p1, Particle* p2) { // Stellar merger
         }
         else if (p1->StellarEvolution != nullptr && p2->StellarEvolution == nullptr) {
 
-            p1->StellarEvolution->update_from_binary(Mass::ID, p2->Mass*mass_unit);
-            p1->StellarEvolution->update_from_binary(dMcumul_binary::ID, p2->Mass*mass_unit);
-            if (p1->StellarEvolution->aminakedhelium())
-                p1->StellarEvolution->jump_to_normal_tracks();
-            else
-                p1->StellarEvolution->find_new_track_after_merger();
+            if (!p1->StellarEvolution->amiremnant()) {
+                p1->StellarEvolution->update_from_binary(Mass::ID, p2->Mass*mass_unit);
+                p1->StellarEvolution->update_from_binary(dMcumul_binary::ID, p2->Mass*mass_unit);
+                if (p1->StellarEvolution->aminakedhelium())
+                    p1->StellarEvolution->jump_to_normal_tracks();
+                else
+                    p1->StellarEvolution->find_new_track_after_merger();
 
-            p1->Mass = p1->StellarEvolution->getp(Mass::ID)/mass_unit;
-            SetRadius(p1);
-            p2->Mass = 0.0;
-            p1->Mzams = p1->Mzams + p2->Mzams;
+                p1->Mass = p1->StellarEvolution->getp(Mass::ID)/mass_unit;
+                SetRadius(p1);
+                p2->Mass = 0.0;
+            }
 
             fprintf(SEVNout, "Mix with no done!\n");
             fprintf(mergerout, "---------------Merger remnant properties---------------\n");
@@ -781,8 +857,11 @@ void recoilKick(Particle* p1, Particle* p2) {
 // Use this function when merger happened
 void SetRadius(Particle* ptcl) {
 
-    if (!ptcl->StellarEvolution->amiremnant())
+    if (!ptcl->StellarEvolution->amiremnant()) {
         ptcl->radius = ptcl->StellarEvolution->getp(Radius::ID)/(utilities::parsec_to_Rsun)/position_unit;
+        if (ptcl->Mass*mass_unit > ptcl->StellarEvolution->get_max_zams()) // VMS correction; constant stellar density is assumed
+            ptcl->radius *= pow(ptcl->Mass*1e9/ptcl->StellarEvolution->get_max_zams(), 1./3);
+    }
     else if (ptcl->StellarEvolution->amiWD()) {
         double RNS = 11/(velocity_unit/yr*pc/1e5); // 11 km/s in code unit
         double Mch = 1.41/mass_unit;

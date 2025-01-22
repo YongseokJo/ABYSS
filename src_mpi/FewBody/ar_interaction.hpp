@@ -2,16 +2,11 @@
 #define AR_INTERACTION_H
 #ifdef FEWBODY
 //#pragma once
-#include <cmath>
-// #include <random>
 
 extern double EnzoTimeStep;
 extern FILE* mergerout;
 extern Particle *particles;
 
-#include "Common/Float.h"
-#include "Common/binary_tree.h"
-#include "AR/force.h"
 #include "ar_perturber.hpp"
 #include <cassert>
 

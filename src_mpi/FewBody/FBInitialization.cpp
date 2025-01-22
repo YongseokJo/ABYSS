@@ -1,10 +1,5 @@
 #ifdef FEWBODY
-#include <vector>
-#include <iostream>
-#include <cmath>
-#include <algorithm>
 #include "../global.h"
-#include "../def.h"
 
 // REAL getNewTimeStepIrr(REAL f[3][4], REAL df[3][4]);
 // void getBlockTimeStep(REAL dt, int& TimeLevel, ULL &TimeBlock, REAL &TimeStep);
