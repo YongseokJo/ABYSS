@@ -45,6 +45,7 @@ public:
         _total_queues = _queue_list.size();
     }
 
+
     void assignQueueAuto() {
         if (_queue_list.size() == 0)
             return;
@@ -68,6 +69,11 @@ public:
         }
     }
 
+
+
+
+
+
     void runQueueAuto() {
         for (auto worker = WorkersToGo.begin(); worker != WorkersToGo.end();)
         {
@@ -79,6 +85,36 @@ public:
             else
             {
                 ++worker;
+            }
+        }
+    }
+
+
+    void takeQueueRegularList(std::unordered_set<int> &queue_list) {
+        _queue_list_ = queue_list;
+        _total_queues = _queue_list_.size();
+    }
+
+    void assignQueueRegularList() {
+        if (_queue_list_.size() == 0)
+            return;
+        for (auto worker = _FreeWorkers.begin(); worker != _FreeWorkers.end();)
+        {
+            if (_queue_list_.size() > 0 && (*worker)->NumberOfQueues == 0)
+            {
+                auto it = _queue_list_.begin();
+                _queue.task = _task;
+                _queue.pid = *it;
+                _queue_list_.erase(it);
+                _queue.next_time = _next_time;
+                (*worker)->addQueue(_queue);
+                WorkersToGo.insert(*worker);
+                _assigned_queues++;
+                worker = _FreeWorkers.erase(worker);
+                //_queue.print();
+            }
+            else {
+               ++worker; 
             }
         }
     }
@@ -268,6 +304,7 @@ public:
 private:
     std::unordered_set<Worker*> _FreeWorkers;
     std::vector<int> _queue_list;
+    std::unordered_set<int> _queue_list_;
     Queue _queue;
     int _task, _rank, _flag;
     double _next_time;

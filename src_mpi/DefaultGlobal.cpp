@@ -9,16 +9,18 @@
 
 Particle *particles_original;
 Particle *particles;
+int *ActiveIndexToOriginalIndex;
+int *ActiveIndexToOriginalIndex_orginal;
 
 MPI_Win win;
 MPI_Win win2;
+MPI_Win win3;
 
 MPI_Comm shared_comm;
 int MyRank;
 int NumberOfProcessor;
 int NumberOfWorker;
 int NumberOfCommunication;
-int ActiveIndexToPID[MaxNumberOfParticle];
 
 
 int LoadBalanceParticle;

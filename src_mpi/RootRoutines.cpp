@@ -20,11 +20,11 @@ void broadcastFromRoot(double &data);
 void broadcastFromRoot(ULL &data);
 void broadcastFromRoot(int &data);
 void ParticleSynchronization();
-void updateNextRegTime(std::vector<int>& RegularList);
+void updateNextRegTime(std::unordered_set<int>& RegularList);
 bool createSkipList(SkipList *skiplist);
 bool updateSkipList(SkipList *skiplist, int ptcl_id);
 int writeParticle(double current_time, int outputNum);
-void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler &queue_scheduler);
+void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler);
 
 void formPrimordialBinaries(int beforeLastParticleIndex);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int, int>& existing, std::unordered_map<int, int>& terminated);
@@ -63,7 +63,7 @@ void RootRoutines() {
 	
 
 
-	std::vector<int> RegularList;
+	std::unordered_set<int> RegularList;
 	//MPI_Request requests[NumberOfProcessor];  // Pointer to the request handle
 	//MPI_Status statuses[NumberOfProcessor];    // Pointer to the status object
 	MPI_Request request;  // Pointer to the request handle
@@ -960,10 +960,10 @@ void RootRoutines() {
 
 				// Update Regular
 				queue_scheduler.initialize(REG_CUDA_UPDATE);
-				queue_scheduler.takeQueue(RegularList);
+				queue_scheduler.takeQueueRegularList(RegularList);
 				do
 				{
-					queue_scheduler.assignQueueAuto();
+					queue_scheduler.assignQueueRegularList();
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
@@ -1308,7 +1308,7 @@ void RootRoutines() {
 
 
 
-void updateNextRegTime(std::vector<int>& RegularList) {
+void updateNextRegTime(std::unordered_set<int>& RegularList) {
 
 	ULL time_tmp=0, time=block_max;
 	Particle *ptcl;
@@ -1331,7 +1331,8 @@ void updateNextRegTime(std::vector<int>& RegularList) {
 				RegularList.clear();
 				time = time_tmp;
 			}
-			RegularList.push_back(ptcl->ParticleIndex);
+			//RegularList.push_back(ptcl->ParticleIndex);
+			RegularList.insert(ptcl->ParticleIndex);
 		}
 	}
 	NextRegTimeBlock = time;

@@ -12,7 +12,7 @@ void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumT
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
 void InitialAssignmentOfTasks(int data, int NumTask, int TAG);
 void InitialAssignmentOfTasks(int* data, int NumTask, int TAG);
-void sendAllParticlesToGPU(double new_time);
+void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList);
 void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, double acc[][3], double adot[][3], int NumNeighbor[], int *NeighborList);
 
 /*
@@ -21,7 +21,7 @@ void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, doub
  *  Date    : 2024.01.18  by Seoyoung Kim
  *
  */
-void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler &queue_scheduler){
+void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler){
 
 
 
@@ -91,15 +91,17 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 #ifdef DEBUG
 	std::cout << "sendAllParticlesToGPU starts" << std::endl;
 #endif
-	sendAllParticlesToGPU(new_time);  // needs to be updated
+	sendAllParticlesToGPU(new_time, RegularList, IndexList);  // needs to be updated
 #ifdef DEBUG
 	std::cout << "sendAllParticlesToGPU ended" << std::endl;
 #endif
 	
 	
+	/*
 	for (int i=0; i<ListSize; i++) {
 		IndexList[i] = RegularList[i];
 	} // endfor copy info
+	*/
 
 
 	//std::cout <<  "Starting Calculation On Device ..." << std::endl;
@@ -166,17 +168,18 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 	// Adjust Regular Gravity
 	int i=0, task=REG_CUDA;
 	queue_scheduler.initialize(REG_CUDA);
-	queue_scheduler.takeQueue(RegularList);
+	queue_scheduler.takeQueueRegularList(RegularList);
 	do
 	{
-		queue_scheduler.assignQueueAuto();
+		queue_scheduler.assignQueueRegularList();
+
         for (auto worker = queue_scheduler.WorkersToGo.begin(); worker != queue_scheduler.WorkersToGo.end();)
         {
             if ((*worker)->NumberOfQueues > 0) // original
             {
 				//std::cout << "(REG_CUDA) My Rank =" << (*worker)->MyRank << std::endl;
 				MPI_Send(&task, 1, MPI_INT, (*worker)->MyRank, TASK_TAG, MPI_COMM_WORLD);
-				MPI_Send(&RegularList[i], 1, MPI_INT, (*worker)->MyRank, PTCL_TAG, MPI_COMM_WORLD);
+				MPI_Send(&ActiveIndexToOriginalIndex[IndexList[i]], 1, MPI_INT, (*worker)->MyRank, PTCL_TAG, MPI_COMM_WORLD);
 				MPI_Send(&NumNeighborReceive[i], 1, MPI_INT, (*worker)->MyRank, 10, MPI_COMM_WORLD);
 				MPI_Send(&ACListReceive[i * NumNeighborMax], NumNeighborReceive[i], MPI_INT, (*worker)->MyRank, 11, MPI_COMM_WORLD);
 				MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 12, MPI_COMM_WORLD);
@@ -275,7 +278,7 @@ void calculateRegAccelerationOnGPU(std::vector<int> RegularList, QueueScheduler 
 
 
 
-void sendAllParticlesToGPU(double new_time) {
+void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList, int *IndexList) {
 
 	// variables for saving variables to send to GPU
 	double * Mass;
@@ -284,7 +287,7 @@ void sendAllParticlesToGPU(double new_time) {
 	double(*Position)[Dim];
 	double(*Velocity)[Dim];
 	//int size = NumberOfParticle;
-	int size=0, i=0;
+	int size=0, j=0;
 
 
 	// allocate memory to the temporary variables
@@ -298,12 +301,19 @@ void sendAllParticlesToGPU(double new_time) {
 
 	// copy the data of particles to the arrays to be sent
 		
-	for (int i=0; i<LastParticleIndex+1; i++) {
+	for (int i=0; i<=LastParticleIndex; i++) {
 		ptcl = &particles[i];
+
 		if (!ptcl->isActive) {
 			fprintf(stdout, "Skipping inactive particle (%d)\n", ptcl->PID);
 			continue;
 		}
+
+		if (RegularList.find(i) != RegularList.end()) {
+			IndexList[j] = size;
+			j++;
+		}
+
 
 		Mass[size]    = ptcl->Mass;
 		Mdot[size]    = 0; //particle[i]->Mass;
@@ -314,8 +324,9 @@ void sendAllParticlesToGPU(double new_time) {
 		else
 			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
 
-		ActiveIndexToPID[size++] = i;
-		//std::cout << "(i , size) = "  << i << " " << size << std::endl;
+		ActiveIndexToOriginalIndex[size] = i;
+		std::cout << "(size , i) = "  << size << " " << i << std::endl;
+		size++;
 	} 
 
 	fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d, TotalNumberOfParticle=%d\n", NumberOfParticle, size, LastParticleIndex+1);
