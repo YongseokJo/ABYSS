@@ -39,7 +39,7 @@ void Particle::checkNewGroup() {
 		ptcl2 = &particles[this->Neighbors[i]];
 
         // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
-        if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > tbin) // fiducial: 1e-5 but for rbin = 0.00025 pc, 1e-6 Myr seems good
+        if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
             continue;
 
         double dt;
@@ -62,7 +62,7 @@ void Particle::checkNewGroup() {
         //     r_min = dr; // Eunwoo test
 
         // distance criterion
-        Float r_crit = rbin/position_unit;
+        Float r_crit = RSEARCH/position_unit;
         // Float r_crit_sq = r_crit*r_crit;
         
         if (dr < r_crit) {
@@ -172,7 +172,7 @@ void Particle::checkNewGroup2() {
         double energy = v2/2 - (this->Mass + ptcl2->Mass)/dr;
 
         // distance criterion
-        Float r_crit = rbin/position_unit;
+        Float r_crit = RSEARCH/position_unit;
         
         if (dr < r_crit && energy < 0) {
             this->NewNeighbors[this->NewNumberOfNeighbor] = this->Neighbors[i];
@@ -199,7 +199,7 @@ bool Group::CheckBreak() {
     // check whether periapsis distance >  2e-3 pc
     // Periapsis is too far and binary is not close enough to use regularized technique.
     // if (bin_root.semi*(1-bin_root.ecc) > 2e-3/position_unit){ // test7
-    if (bin_root.semi*(1-bin_root.ecc) > rbin/position_unit && bin_root.r > 2 * rbin/position_unit){ // test8 // fiducial
+    if (bin_root.semi*(1-bin_root.ecc) > RSEARCH/position_unit && bin_root.r > 2 * RSEARCH/position_unit){ // test8 // fiducial
     // if (bin_root.semi*(1-bin_root.ecc) > 1.2e-3/position_unit){ // test12
         fprintf(binout, "Break group: too far periapsis!\n\t");
         fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
@@ -221,7 +221,7 @@ bool Group::CheckBreak() {
         outgoing_flag = true;
         // check whether separation is larger than distance criterion. 
         // /*
-        if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 2 * rbin/position_unit) { // test8 // fiducial
+        if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 2 * RSEARCH/position_unit) { // test8 // fiducial
         // if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 1.2e-3/position_unit) { // test12
             fprintf(binout, "Break group: binary escape!\n\t");
             fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
@@ -315,7 +315,7 @@ bool Group::CheckBreak() {
         if (drdv>0.0) {
             outgoing_flag = true;
             // check distance criterion
-            if (bin_root.r > 2 * rbin/position_unit) { // test8 // seems good! // fiducial
+            if (bin_root.r > 2 * RSEARCH/position_unit) { // test8 // seems good! // fiducial
             // if (bin_root.r > 1.2e-3/position_unit) { // test12
                 fprintf(binout, "Break group: hyperbolic escape!\n\t");
                 fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
@@ -414,7 +414,7 @@ bool Group::CheckBreak() {
             // in binary case, only break when apo is larger than distance criterion
             Float apo = bin_root.semi * (1.0 + bin_root.ecc);
             // if (apo>sym_int.info.r_break_crit||bin_root.semi<0.0) {
-            if (apo>sym_int.info.r_break_crit && bin_root.r > 2 * rbin/position_unit) { // test8 // fiducial
+            if (apo>sym_int.info.r_break_crit && bin_root.r > 2 * RSEARCH/position_unit) { // test8 // fiducial
             // if ((apo>sym_int.info.r_break_crit && bin_root.r > 1.2e-3/position_unit)||bin_root.semi<0.0) { // test12
                 auto& sd_root = sym_int.info.getBinaryTreeRoot().slowdown;
 

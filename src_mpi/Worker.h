@@ -5,8 +5,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "mpi.h"
-#include "def.h"
-#include "particle.h"
 #include "global.h"
 #include "Queue.h"
 

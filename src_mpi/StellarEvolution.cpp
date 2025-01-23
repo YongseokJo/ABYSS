@@ -32,6 +32,11 @@ void initializeStellarEvolution() {
     sevnio = new IO;
     sevnio->load(c_args.size(), c_args.data());
 
+    std::ostringstream oss;
+	oss << sevnio->svpar;
+	fprintf(SEVNout, "%s\n\n\n\n\n", oss.str().c_str());
+	fflush(SEVNout);
+
     for (int i=0; i<NumberOfParticle; i++) {
 
         Particle* ptcl = &particles[i];

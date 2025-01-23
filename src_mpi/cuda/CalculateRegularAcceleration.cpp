@@ -3,7 +3,6 @@
 #include <cmath>
 #include <cassert>
 #include <algorithm>
-#include <mpi.h>
 #include "../global.h"
 #include "../QueueScheduler.h"
 #include "cuda_functions.h"
@@ -166,8 +165,9 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #endif
 
 	// Adjust Regular Gravity
-	int i=0, task=REG_CUDA;
-	queue_scheduler.initialize(REG_CUDA);
+	int i=0;
+	TaskName task=RegCuda;
+	queue_scheduler.initialize(RegCuda);
 	queue_scheduler.takeQueueRegularList(RegularList);
 	do
 	{

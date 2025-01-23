@@ -2,9 +2,7 @@
 #include <vector>
 #include <errno.h>
 #include "global.h"
-#include "def.h"
-#include "particle.h"
-#include <vector>
+#include "Queue.h"
 
 void ComputeAcceleration(int ptcl_id, double next_time);
 void broadcastFromRoot(double &data);
@@ -22,7 +20,7 @@ void WorkerRoutines() {
 
 	//std::cout << "Processor " << MyRank << " is ready." << std::endl;
 
-	int task=-1;
+	TaskName task = Error;
 	MPI_Status status;
 	MPI_Request request;
 	int ptcl_id;
@@ -45,7 +43,7 @@ void WorkerRoutines() {
 		//std::cerr << "Processor " << MyRank << " received task " << task << std::endl;
 
 		switch (task) {
-			case IRR_FORCE: // Irregular Acceleration
+			case IrrForce: // Irregular Acceleration
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				//std::cout << "(IRR_FORCE) Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status); // (Query to myself) it seems like it's not needed.
@@ -67,7 +65,7 @@ void WorkerRoutines() {
 				//std::cout << "IrrCal done " << MyRank << std::endl;
 				break;
 
-			case REG_FORCE: // Regular Acceleration
+			case RegForce: // Regular Acceleration
 				//std::cout << "RegCal start " << MyRank << std::endl;
 				MPI_Recv(&ptcl_id,   1, MPI_INT,    ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
@@ -77,7 +75,7 @@ void WorkerRoutines() {
 				//std::cout << "RegCal end" << MyRank << std::endl;
 				break;
 
-			case IRR_UPDATE: // Irregular Update Particle
+			case IrrUpdate: // Irregular Update Particle
 				//std::cout << "IrrUp Processor " << MyRank << std::endl;
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
@@ -89,7 +87,7 @@ void WorkerRoutines() {
 				//std::cout << "IrrUp end " << MyRank << std::endl;
 				break;
 
-			case REG_UPDATE: // Regular Update Particle
+			case RegUpdate: // Regular Update Particle
 				//std::cout << "RegUp start " << MyRank << std::endl;
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				//std::cout << "ptcl " << ptcl_id << std::endl;
@@ -114,7 +112,7 @@ void WorkerRoutines() {
 				ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 				break;
 
-			case REG_CUDA: // Update Regular Particle CUDA
+			case RegCuda: // Update Regular Particle CUDA
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				//std::cout << "(REG_CUDA) Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
 				MPI_Recv(&NewNumberOfNeighbor, 1, MPI_INT, ROOT, 10, MPI_COMM_WORLD, &status);
@@ -124,7 +122,7 @@ void WorkerRoutines() {
 				particles[ptcl_id].updateRegularParticleCuda(NewNeighbors, NewNumberOfNeighbor, new_a, new_adot);
 				break;
 
-			case REG_CUDA_UPDATE: // Update Regular Particle CUDA II
+			case RegCudaUpdate: // Update Regular Particle CUDA II
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				ptcl = &particles[ptcl_id];
 
@@ -145,7 +143,7 @@ void WorkerRoutines() {
 				ptcl->NextBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of ptcl particle
 				break;
 
-			case INIT_ACC1: // Initialize Acceleration(01)
+			case InitAcc1: // Initialize Acceleration(01)
 				//std::cout << "Processor " << MyRank<< " initialization starts." << std::endl;
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				//std::cout << "Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
@@ -155,14 +153,14 @@ void WorkerRoutines() {
 				//std::cout << "Processor " << MyRank<< " done." << std::endl;
 				break;
 
-			case INIT_ACC2: // Initialize Acceleration(23)
+			case InitAcc2: // Initialize Acceleration(23)
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				//std::cout << "Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
 				ptcl = &particles[ptcl_id];
 				CalculateAcceleration23(ptcl);
 				break;
 
-			case INIT_TIME: // Initialize Time Step
+			case InitTime: // Initialize Time Step
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				//std::cout << "Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
 				ptcl = &particles[ptcl_id];
@@ -170,7 +168,7 @@ void WorkerRoutines() {
 					ptcl->initializeTimeStep();
 				break;
 
-			case TIME_SYNC: // Initialize Timestep variables
+			case TimeSync: // Initialize Timestep variables
 				broadcastFromRoot(time_block);
 				broadcastFromRoot(block_max);
 				broadcastFromRoot(time_step);
@@ -183,7 +181,7 @@ void WorkerRoutines() {
 
 
 #ifdef FEWBODY
-			case 20: // Primordial binary search
+			case SearchPrimordialGroup: // Primordial binary search
 				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
@@ -191,21 +189,8 @@ void WorkerRoutines() {
 				ptcl->checkNewGroup2();
 
 				break;
-/* // No more used by EW 2025.1.6
-			case 21: // CheckBreak
-				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				ptcl = &particles[ptcl_id];
 
-				if (ptcl->GroupOrder >= 0) {
-					if (!groups[ptcl->GroupOrder].isMerger)
-						groups[ptcl->GroupOrder].isTerminate = groups[ptcl->GroupOrder].CheckBreak();
-					else if (groups[ptcl->GroupOrder].isMerger && !groups[ptcl->GroupOrder].isTerminate)
-						groups[ptcl->GroupOrder].isMerger = false;
-				}
-
-				break;
-*/
-			case 22: // Few-body group search
+			case SearchGroup: // Few-body group search
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 				// std::cerr << "FB search of particle  " << ptcl_id << " is initiated on rank " << MyRank << "." <<std::endl;
@@ -217,14 +202,14 @@ void WorkerRoutines() {
 					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 				}
 				else {
-					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < tbin)
+					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < TSEARCH)
 						ptcl->checkNewGroup();
 				}
 				// std::cerr << "FB search of particle  " << ptcl_id << " is successfully finished on rank " << MyRank << "." <<std::endl;
 
 				break;
 
-			case 23: // Make a primordial group
+			case MakePrimordialGroup: // Make a primordial group
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
@@ -232,7 +217,7 @@ void WorkerRoutines() {
 
 				break;
 
-			case 24: // Make a group
+			case MakeGroup: // Make a group
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
@@ -241,13 +226,13 @@ void WorkerRoutines() {
 						  << " is successfully initialized on rank " << MyRank << "." <<std::endl;
 				break;
 
-			case 25: // Delete a Group struct
+			case DeleteGroup: // Delete a Group struct
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 				deleteGroup(ptcl);
 				break;
 
-			case 26: // SDAR for few body encounters
+			case ARIntegration: // SDAR for few body encounters
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
 				
@@ -270,13 +255,15 @@ void WorkerRoutines() {
 				if (!ptcl->GroupInfo->isMerger && !ptcl->GroupInfo->isTerminate)
 					ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
 
-				if (ptcl->GroupInfo->isTerminate)
+				if (ptcl->GroupInfo->isTerminate) {
 					FBdeleteGroup(ptcl->GroupInfo);
-
-				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
+					std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " deleted!" <<std::endl;
+				}
+				else
+					std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
 				break;
 			
-			case 27: // Merger insided many-body (>2) group
+			case MergeManyBody: // Merger insided many-body (>2) group
 
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				
@@ -297,17 +284,17 @@ void WorkerRoutines() {
 				break;
 #endif 
 
-			case 100: // Synchronize
+			case Synchronize: // Synchronize
 				MPI_Win_sync(win);  // Synchronize memory
 				MPI_Barrier(shared_comm);
 				break;
 
-			case -100: // Simualtion ends
+			case Ends: // Simualtion ends
 				std::cout << "Processor " << MyRank<< " returns." << std::endl;
 				//return;
 				break;
 
-			case -1:
+			case Error:
 				perror("Error task assignments");
 				exit(EXIT_FAILURE);
 				break;
@@ -317,7 +304,7 @@ void WorkerRoutines() {
 
 		// return that it's over
 		//task = -1;
-		if (task == 0 || task == 1 || task == 2 || task == 3)
+		if (task == IrrForce || task == RegForce || task == IrrUpdate || task == RegUpdate)
 			MPI_Isend(&ptcl_id, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD,&request);
 		else
 			MPI_Isend(&task, 1, MPI_INT, ROOT, TERMINATE_TAG, MPI_COMM_WORLD,&request);

@@ -6,7 +6,6 @@
 #include <ctime>
 #include <cstring>
 #include <vector>
-#include "def.h"
 #include "global.h"
 
 //class Node {

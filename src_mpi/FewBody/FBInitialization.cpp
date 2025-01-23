@@ -1,12 +1,6 @@
 #ifdef FEWBODY
 #include "../global.h"
 
-// REAL getNewTimeStepIrr(REAL f[3][4], REAL df[3][4]);
-// void getBlockTimeStep(REAL dt, int& TimeLevel, ULL &TimeBlock, REAL &TimeStep);
-// bool UpdateComputationChain(Particle* ptcl);
-// void UpdateNextRegTime(std::vector<Particle*> &particle);
-// bool CreateComputationList(Particle* ptcl);
-// bool CreateComputationChain(std::vector<Particle*> &particle);
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
 
@@ -100,7 +94,7 @@ void Group::initialIntegrator(int NumMembers) {
 	fprintf(binout, "\n");
 	fflush(binout);
 
-	sym_int.info.r_break_crit = rbin/position_unit; // distance criterion for checking stability
+	sym_int.info.r_break_crit = RSEARCH/position_unit; // distance criterion for checking stability
 	// more information in symplectic_integrator.h
 	// ar.cxx: 1e-3 pc
 	// check whether the system is stable for 10000 out period and the apo-center is below break criterion
@@ -124,13 +118,6 @@ void Group::initialIntegrator(int NumMembers) {
 	// sym_int.info.fix_step_option = AR::FixStepOption::later; // later: fix step after a few adjustment of initial steps due to energy error
 
 }
-
-	//        ///////////////////        //
-	//        ///////////////////        //
-	//        NEWFBINITIALIZATION        //
-	//        ///////////////////        //
-	//        ///////////////////        //
-
 
 
 // Initialize new Few body group
@@ -263,16 +250,6 @@ void NewFBInitialization(Particle* ptclCM) {
 
 	ptclGroup->CurrentTime	= ptclCM->CurrentTimeIrr;
 
-	// if (!(ptclGroup->sym_int.info.getBinaryTreeRoot().Velocity[0]*ptclGroup->sym_int.info.getBinaryTreeRoot().Velocity[0]<1e-10)) { 
-	// 	fprintf(stderr, "NewFBInitialization\n");
-	// 	fprintf(stderr, "pos: (%e, %e, %e)\n", ptclGroup->sym_int.info.getBinaryTreeRoot().Position[0], ptclGroup->sym_int.info.getBinaryTreeRoot().Position[1], ptclGroup->sym_int.info.getBinaryTreeRoot().Position[2]);
-	// 	fprintf(stderr, "vel: (%e, %e, %e)\n", ptclGroup->sym_int.info.getBinaryTreeRoot().Velocity[0], ptclGroup->sym_int.info.getBinaryTreeRoot().Velocity[1], ptclGroup->sym_int.info.getBinaryTreeRoot().Velocity[2]);
-	// 	for (Particle* members: ptclGroup->Members) {
-	// 		fprintf(stderr, "PID: %d\n", members->PID);
-	// 	}
-	// 	fflush(stderr);
-	// }
-
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[ptclCM->NewNeighbors[i]];
 
@@ -330,16 +307,6 @@ void NewFBInitialization(Particle* ptclCM) {
 		ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
 	}
 */
-
-/* // Eunwoo test
-	if (ptclGroup->sym_int.info.getBinaryTreeRoot().semi < 0) { // Only for hyperbolic case
-		while (ptclCM->TimeStepIrr*EnzoTimeStep > abs(ptclGroup->sym_int.info.getBinaryTreeRoot().t_peri)) {
-			ptclCM->TimeLevelIrr -= 1;
-			ptclCM->TimeStepIrr = static_cast<REAL>(pow(2, ptclCM->TimeLevelIrr));
-			ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
-		}
-	}
-*/ // Eunwoo test
 
 // /* // Eunwoo test
 	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();

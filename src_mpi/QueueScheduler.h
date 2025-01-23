@@ -5,14 +5,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <iomanip>
-#include "mpi.h"
-#include "def.h"
-#include "particle.h"
 #include "global.h"
-#include "Queue.h"
 #include "Worker.h"
-
-
 
 
 class QueueScheduler
@@ -26,14 +20,14 @@ public:
         WorkersToGo.reserve(NumberOfWorker);
     }
 
-    void initialize(int task, double next_time)
+    void initialize(TaskName task, double next_time)
     {
         _initialize();
         _task = task;
         _next_time = next_time;
     }
 
-    void initialize(int task)
+    void initialize(TaskName task)
     {
         _initialize();
         _task = task;
@@ -159,7 +153,7 @@ public:
 
     // this is only for a non-blocking wait.
     void callback(Worker* worker) {
-        if (worker->getCurrentQueue()->task == FB_SDAR) 
+        if (worker->getCurrentQueue()->task == ARIntegration) 
             _completed_cm_queues++;
         worker->callback();
         _completed_queues++;
@@ -244,7 +238,7 @@ public:
     //int fb_total_tasks;    // this is for the SDAR computations by YS 2025.01.06
     //int fb_assigned_tasks; // this is for the SDAR computations by YS 2025.01.06
 
-    void initializeIrr(int task, double next_time, std::vector<int> &queue_list)
+    void initializeIrr(TaskName task, double next_time, std::vector<int> &queue_list)
     {
         _initialize();
         int pid;
@@ -306,7 +300,8 @@ private:
     std::vector<int> _queue_list;
     std::unordered_set<int> _queue_list_;
     Queue _queue;
-    int _task, _rank, _flag;
+    TaskName _task;
+    int _rank, _flag;
     double _next_time;
     int _total_queues, _assigned_queues, _completed_queues;
     int _total_cm_queues, _completed_cm_queues;
@@ -330,7 +325,7 @@ private:
     }
 
 #ifdef unuse
-        void doSimpleTask(int task, std::vector<int> &list)
+        void doSimpleTask(Task task, std::vector<int> &list)
     {
         int return_value, i = 0;
         _task = task;
@@ -364,7 +359,7 @@ private:
     void doIrregularForce(std::vector<int> &ParticleList,
                           double &next_time)
     {
-        _task=0;
+        _task=IrrForce;
         _ParticleList = ParticleList;
         _total_tasks = _ParticleList.size();
         std::vector<int> SingleParticleList;
@@ -480,7 +475,7 @@ private:
     std::vector<int> _ParticleList;
     int _total_tasks, _completed_tasks, _assigned_tasks, _remaining_tasks;
     int  _pid;
-    int _task;
+    Task _task;
     std::vector<Worker*> _FreeWorkers;
     MPI_Request _request;  // Pointer to the request handle
     MPI_Status _status;    // Pointer to the status object
@@ -524,7 +519,7 @@ private:
     }
 
 
-    void _setTask(int task) {
+    void _setTask(Task task) {
         for (int i = 0; i < NumberOfWorker; i++) {
             workers[i].task = task;
         }

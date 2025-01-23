@@ -1,11 +1,6 @@
 #include <iostream>
 #include <stdio.h>
 #include "global.h"
-#include "def.h"
-#include "GlobalVariable.h"
-#include <mpi.h>
-
-
 
 Particle *particles_original;
 Particle *particles;
@@ -21,9 +16,6 @@ int MyRank;
 int NumberOfProcessor;
 int NumberOfWorker;
 int NumberOfCommunication;
-
-
-int LoadBalanceParticle;
 
 
 GlobalVariable *global_variable;
@@ -83,8 +75,6 @@ void DefaultGlobal() {
 
 	NumberOfCommunication = 0;
 
-	LoadBalanceParticle = 10;
-
 	/* Timesteps */
 	endTime = 1;
 	EnzoTimeStep   = endTime/1e10; // endTime should be Myr
@@ -97,5 +87,8 @@ void DefaultGlobal() {
 	inputTime = 0.0;
 	endTime = 0.0;
 	outputTimeStep = 0.;
+
+	global_time = 0.;
+	outputTime = 0.;
 
 }

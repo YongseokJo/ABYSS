@@ -27,8 +27,6 @@ extern GlobalVariable *global_variable_original;
 extern int *ActiveIndexToOriginalIndex_orginal;
 extern int *ActiveIndexToOriginalIndex;
 
-// the numer of particles for load balancing
-extern int LoadBalanceParticle; 
 extern int LastParticleIndex;
 extern int NumberOfParticle;
 extern int NewPID;

@@ -7,7 +7,6 @@
 #include <mpi.h>
 #include "global.h"
 #include "SkipList.h"
-#include "Queue.h"
 #include "Worker.h"
 #include "QueueScheduler.h"
 
@@ -44,13 +43,9 @@ void RootRoutines() {
 	Particle* ptcl;
 	int min_time_level=0;
 	//int worker_rank;
-	int task, task_recv, total_tasks;
+	TaskName task;
+	int total_tasks;
 	int remaining_tasks=0, completed_tasks=0, completed_rank;
-	int flag=0;
-	// std::map<int, int> CMPtcl_Worker_Map; // commented out by EW 2025.1.5
-	// std::map<int, int> Worker_CMPtcl_Map; // commented out by EW 2025.1.5
-	// std::vector<int> CMPtclList; // commented out by EW 2025.1.5
-	// std::vector<int> CMWorkerList; // commented out by EW 2025.1.5
 
 	std::unordered_map<int, int> CMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
 	std::unordered_map<int, int> PrevCMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
@@ -99,28 +94,18 @@ void RootRoutines() {
 		fflush(stdout);
 	}*/
 
-	std::vector<int> PIDs;
-	PIDs.reserve(LastParticleIndex+1);
-	PIDs.resize(LastParticleIndex+1);
-	for (int i = 0; i <= LastParticleIndex; i++)
-	{
-		PIDs[i] = i;
-	}
-
 	/* Initialization */
 	{
-		/*
 		std::vector<int> PIDs;
-		PIDs.reserve(LastParticleIndex+1);
-		PIDs.resize(LastParticleIndex+1);
+		PIDs.reserve(NumberOfParticle);
+		PIDs.resize(NumberOfParticle);
 		for (int i = 0; i <= LastParticleIndex; i++)
 		{
 			PIDs[i] = i;
 		}
-		*/
 
 		std::cout << "Initialization of particles starts." << std::endl;
-		queue_scheduler.initialize(INIT_ACC1);
+		queue_scheduler.initialize(InitAcc1);
 		queue_scheduler.takeQueue(PIDs);
 		do
 		{
@@ -134,7 +119,7 @@ void RootRoutines() {
 		} while(queue_scheduler.isComplete());
 
 		std::cout << "Init 01 done" << std::endl;
-		queue_scheduler.initialize(INIT_ACC2);
+		queue_scheduler.initialize(InitAcc2);
 		queue_scheduler.takeQueue(PIDs);
 		do
 		{
@@ -148,7 +133,7 @@ void RootRoutines() {
 #ifdef FEWBODY
 		// Primordial binary search
 
-		queue_scheduler.initialize(20);
+		queue_scheduler.initialize(SearchPrimordialGroup);
 		queue_scheduler.takeQueue(PIDs);
 		do
 		{
@@ -169,7 +154,7 @@ void RootRoutines() {
 		if (OriginalLastParticleIndex != LastParticleIndex) {
 			std::cout << "In total, " << LastParticleIndex - OriginalLastParticleIndex
 					  << " primordial binaries are created." << std::endl;
-			queue_scheduler.initialize(23);
+			queue_scheduler.initialize(MakePrimordialGroup);
 			for (int i=OriginalLastParticleIndex+1; i<=LastParticleIndex; i++) {
 				std::cout << "New Primordial Binary of PID="
 						  << i << " is created with being assigned to a worker of rank "
@@ -179,7 +164,7 @@ void RootRoutines() {
 				PIDs.push_back(ptcl->ParticleIndex);
 				rank = CMPtclWorker[ptcl->ParticleIndex];
 
-				queue.task = 23;
+				queue.task = MakePrimordialGroup;
 				queue.pid = ptcl->ParticleIndex;
 				workers[rank].addQueue(queue);
 				queue_scheduler.assignWorker(&workers[rank]);
@@ -200,7 +185,7 @@ void RootRoutines() {
 #endif
 
 		// Initialize Time Step
-		queue_scheduler.initialize(INIT_TIME);
+		queue_scheduler.initialize(InitTime);
 		queue_scheduler.takeQueue(PIDs);
 		do
 		{
@@ -310,7 +295,7 @@ void RootRoutines() {
 	/* timestep variable synchronization */
 	{
 		std::cout << "Time Step synchronization." << std::endl;
-		task=10;
+		task=TimeSync;
 		completed_tasks = 0; total_tasks = NumberOfWorker;
 		InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
 		//MPI_Waitall(NumberOfCommunication, requests, statuses);
@@ -443,6 +428,24 @@ void RootRoutines() {
 
 		//ParticleSynchronization();
 		while (1) {
+
+			// create output at appropriate time intervals
+			if (global_time >= outputTime) {
+				writeParticle(global_time, outNum++);
+				outputTime += outputTimeStep;
+			}
+
+			// end if the global time exceeds the end time
+			if (global_time >= 1) {
+				task=Ends;
+				InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
+				//MPI_Waitall(NumberOfCommunication, requests, statuses);
+				//NumberOfCommunication = 0;
+				std::cout << EnzoTimeStep << std::endl;
+				std::cout << "Simulation Done!" << std::endl;
+				return;
+			}
+
 			updateNextRegTime(RegularList);
 			/*
 			std::cout << "NextRegTimeBlock=" << NextRegTimeBlock << std::endl;
@@ -498,7 +501,7 @@ void RootRoutines() {
 #endif
 				int cm_pid;
 				Queue queue;
-				queue_scheduler.initializeIrr(IRR_FORCE, next_time, ThisLevelNode->ParticleList);
+				queue_scheduler.initializeIrr(IrrForce, next_time, ThisLevelNode->ParticleList);
 				auto iter = queue_scheduler.CMPtcls.begin();
 				do
 				{
@@ -526,7 +529,7 @@ void RootRoutines() {
 							//queue_scheduler.printFreeWorker();
 							//queue_scheduler.printWorkerToGo();
 							//std::cout << "before: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
-							queue.task = FB_SDAR;
+							queue.task = ARIntegration;
 							queue.pid = cm_pid;
 							queue.next_time = next_time;
 							workers[CMPtclWorker[cm_pid]].addQueue(queue);
@@ -549,7 +552,7 @@ void RootRoutines() {
 				 std::cout << "Irregular Force done" << std::endl;
 #endif
 #else
-				queue_scheduler.initialize(IRR_FORCE, next_time);
+				queue_scheduler.initialize(IrrForce, next_time);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
 				do
 				{
@@ -571,7 +574,7 @@ void RootRoutines() {
 					*/
 
 				// Irregular Update
-				queue_scheduler.initialize(IRR_UPDATE);
+				queue_scheduler.initialize(IrrUpdate);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
 				do
 				{
@@ -630,10 +633,10 @@ void RootRoutines() {
 
 								Merge(donor, accretor);
 
-								queue_scheduler.initialize(27);
+								queue_scheduler.initialize(MergeManyBody);
 								int total_queues = 1;
 								int rank = CMPtclWorker[ptcl->ParticleIndex];
-								queue.task = 27;
+								queue.task = MergeManyBody;
 								queue.pid = ptcl->ParticleIndex;
 								workers[rank].addQueue(queue);
 								queue_scheduler.WorkersToGo.insert(&workers[rank]);
@@ -691,9 +694,8 @@ void RootRoutines() {
 #endif
 				// std::cerr << "FB search starts" << std::endl;
 				// Few-body group search
-				queue_scheduler.initialize(22);
+				queue_scheduler.initialize(SearchGroup);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
-				// queue_scheduler.takeQueue(PIDs);
 				do
 				{
 					queue_scheduler.assignQueueAuto();
@@ -726,11 +728,6 @@ void RootRoutines() {
 						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
 						fflush(stdout);
 					}
-					//work_scheduler.doSimpleTask(24, newCMptcls); 
-					// This should be fixed by EW 2025.1.6
-					// First, delete CM particle inside NewNeighbors using void deleteGroup(Particle* ptclCM) // task 25?
-					// Should adjust CMPtclWorker & PrevCMPtclWorker
-					// Then, use task 24
 
 					// example code by EW 2025.1.7
 					Particle* ptclCM;
@@ -738,13 +735,13 @@ void RootRoutines() {
 					int total_queues = 0;
 					for (int i=0; i<newCMptcls.size(); i++) {
 						ptclCM = &particles[newCMptcls[i]]; // 2025.01.10 edited to newCMptcls[i] by YS
-						queue_scheduler.initialize(25);
+						queue_scheduler.initialize(DeleteGroup);
 						total_queues = 0;
 						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
 							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
 							if (mem_ptclCM->isCMptcl) {
 								rank_delete = CMPtclWorker[mem_ptclCM->ParticleIndex];
-								queue.task = 25;
+								queue.task = DeleteGroup;
 								queue.pid = mem_ptclCM->ParticleIndex;
 								workers[rank_delete].addQueue(queue);
 								queue_scheduler.WorkersToGo.insert(&workers[rank_delete]);
@@ -761,11 +758,11 @@ void RootRoutines() {
 							} while (queue_scheduler.isComplete());
 						}
 
-						queue_scheduler.initialize(24);
+						queue_scheduler.initialize(MakeGroup);
 						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
 						// fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
 						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->PID, rank_new);
-						queue.task = 24;
+						queue.task = MakeGroup;
 						queue.pid = ptclCM->ParticleIndex;
 						workers[rank_new].addQueue(queue);
 						workers[rank_new].runQueue();
@@ -959,7 +956,7 @@ void RootRoutines() {
 #endif
 
 				// Update Regular
-				queue_scheduler.initialize(REG_CUDA_UPDATE);
+				queue_scheduler.initialize(RegCudaUpdate);
 				queue_scheduler.takeQueueRegularList(RegularList);
 				do
 				{
@@ -969,91 +966,6 @@ void RootRoutines() {
 				} while (queue_scheduler.isComplete());
 #ifdef DEBUG
 				std::cout << "update regular ended" << std::endl;
-#endif
-
-				//fprintf(stdout, "Regular done\n");
-#ifdef unused
-
-				// Few-body group search
-				queue_scheduler.initialize(22);
-				queue_scheduler.takeQueue(RegularList);
-				// queue_scheduler.takeQueue(PIDs);
-				do
-				{
-					queue_scheduler.assignQueueAuto();
-					queue_scheduler.runQueueAuto();
-					queue_scheduler.waitQueue(0); // blocking wait
-				} while (queue_scheduler.isComplete());
-
-				int OriginalRegularListSize = RegularList.size();
-				int rank_delete, rank_new;
-				formBinaries(RegularList, newCMptcls, CMPtclWorker, PrevCMPtclWorker);
-				if (OriginalRegularListSize != RegularList.size()) {
-					for (int i=OriginalRegularListSize; i<RegularList.size(); i++) {
-						ptcl = &particles[RegularList[i]];
-						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
-						fflush(stdout);
-					}
-					//work_scheduler.doSimpleTask(24, newCMptcls); 
-					// This should be fixed by EW 2025.1.6
-					// First, delete CM particle inside NewNeighbors using void deleteGroup(Particle* ptclCM) // task 25?
-					// Should adjust CMPtclWorker & PrevCMPtclWorker
-					// Then, use task 24
-
-					// example code by EW 2025.1.7
-					Queue queue;
-					Particle* ptclCM;
-					Particle* mem_ptclCM;
-					int total_queues = 0;
-					for (int i=0; i<newCMptcls.size(); i++) {
-						ptclCM = &particles[newCMptcls[i]]; // 2025.01.10 edited to newCMptcls[i] by YS
-						queue_scheduler.initialize(25);
-						total_queues = 0;
-						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
-							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
-							if (mem_ptclCM->isCMptcl) {
-								rank_delete = CMPtclWorker[mem_ptclCM->ParticleIndex];
-								queue.task = 25;
-								queue.pid = mem_ptclCM->ParticleIndex;
-								workers[rank_delete].addQueue(queue);
-								queue_scheduler.WorkersToGo.insert(&workers[rank_delete]);
-								total_queues++;
-							}
-						}
-						if (total_queues > 0)
-						{
-							queue_scheduler.setTotalQueue(total_queues);
-							do
-							{
-								queue_scheduler.runQueueAuto();
-								queue_scheduler.waitQueue(0);
-							} while (queue_scheduler.isComplete());
-						}
-
-						queue_scheduler.initialize(24);
-						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
-						fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
-						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->ParticleIndex, rank_new);
-						queue.task = 24;
-						queue.pid = ptclCM->ParticleIndex;
-						workers[rank_new].addQueue(queue);
-						workers[rank_new].runQueue();
-						workers[rank_new].callback();
-					}
-					std::cout << "All new fewbody objects are initialized." << std::endl;
-
-					RegularList.erase(
-						std::remove_if(
-								RegularList.begin(), 
-								RegularList.end(),
-								[](int i) { return !particles[i].isActive; }
-						),
-						RegularList.end()
-					);
-				}
-				newCMptcls.clear();
-
-				// std::cout << "erase success" << std::endl;
 #endif
 			}
 				/*
@@ -1124,7 +1036,7 @@ void RootRoutines() {
 			// Regular
 			{
 				// Regular Gravity
-				task = 1;
+				task = RegForce;
 				completed_tasks = 0;
 				total_tasks = RegularList.size();
 				next_time = NextRegTimeBlock*time_step;
@@ -1180,7 +1092,7 @@ void RootRoutines() {
 
 				// Regular Update
 				//std::cout<< "Reg Acc Done." <<std::endl;
-				task = 3;
+				task = RegUpdate;
 				completed_tasks = 0;
 
 				InitialAssignmentOfTasks(task, total_tasks, TASK_TAG);
@@ -1283,23 +1195,6 @@ void RootRoutines() {
 			StellarEvolution(); // How about evolving particles inside RegularList only? by EW 2025.1.19
 								// Currently, evolving all the particles upto global_time
 #endif
-
-			// create output at appropriate time intervals
-			if (global_time >= outputTime) {
-				writeParticle(global_time, outNum++);
-				outputTime += outputTimeStep;
-			}
-
-			// end if the global time exceeds the end time
-			if (global_time >= 1) {
-				task=-100;
-				InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
-				//MPI_Waitall(NumberOfCommunication, requests, statuses);
-				//NumberOfCommunication = 0;
-				std::cout << EnzoTimeStep << std::endl;
-				std::cout << "Simulation Done!" << std::endl;
-				return;
-			}
 			//exit(SUCCESS);
 		} // While(1)
 	} // Actual Loop
