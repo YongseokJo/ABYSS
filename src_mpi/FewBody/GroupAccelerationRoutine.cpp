@@ -48,15 +48,16 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 	for (int i=0; i<ParticleList.size(); i++) {
 		ptcl = &particles[ParticleList[i]];
 		if (ptcl->NewNumberOfNeighbor > 0) {
-			fprintf(stdout, "GAR. Num: %d\n", ptcl->NewNumberOfNeighbor + 1);
-			fprintf(stdout, "GAR. PID: %d\n", ptcl->PID);
+			// fprintf(stdout, "GAR. Num: %d\n", ptcl->NewNumberOfNeighbor + 1); // for debugging by EW 2025.1.23
+			// fprintf(stdout, "GAR. PID: %d\n", ptcl->PID); // for debugging by EW 2025.1.23
 			NewCM = &particles[LastParticleIndex+1];
 			NewCM->clear();
 			NewCM->copyNewNeighbor(ptcl);
+			/* // for debugging by EW 2025.1.23
 			for (int j = 0; j < ptcl->NewNumberOfNeighbor; j++) {
 				fprintf(stdout, "GAR. PID: %d\n", particles[ptcl->NewNeighbors[j]].PID);
 			}
-			fflush(stdout);
+			*/
 			NewCM->NewNeighbors[ptcl->NewNumberOfNeighbor] = ptcl->ParticleIndex;
 			NewCM->NewNumberOfNeighbor++;
 
@@ -187,28 +188,28 @@ void deleteNeighbors(int newOrder) {
 		auto newEnd = std::remove_if(
 			ptcl->Neighbors, 
 			ptcl->Neighbors + ptcl->NumberOfNeighbor, 
-			// /* // for debuggin by EW 2025.1.22
+			/* // for debugging by EW 2025.1.22
 			[ptcl, &particles](int j) {
 				if (!particles[j].isActive) {
 					std::cout << "Inactive neighbor PID: " << particles[j].PID << " of particle PID: " << ptcl->PID << std::endl;
 					return true;
 				}
 				return false;
-			// */
-			/* // original code by EW 2025.1.22
+			*/
+			// /* // original code by EW 2025.1.22
 			[&particles](int j) {
 				return !particles[j].isActive;
-			*/
+			// */
 			}
 		);
 
 		if (newEnd != ptcl->Neighbors + ptcl->NumberOfNeighbor) {
-			std::cout << "Original NumberOfNeighbor: " << ptcl->NumberOfNeighbor << std::endl;
+			// std::cout << "Original NumberOfNeighbor: " << ptcl->NumberOfNeighbor << std::endl; // for debugging by EW 2025.1.22
 			ptcl->NumberOfNeighbor = newEnd - ptcl->Neighbors;
 			ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->ParticleIndex;
-			std::cout << "newly added CM ptcl PID: " << ptclCM->PID << std::endl;
+			// std::cout << "newly added CM ptcl PID: " << ptclCM->PID << std::endl; // for debugging by EW 2025.1.22
 			ptcl->NumberOfNeighbor++;
-			std::cout << "New NumberOfNeighbor: " <<ptcl->NumberOfNeighbor << std::endl;
+			// std::cout << "New NumberOfNeighbor: " <<ptcl->NumberOfNeighbor << std::endl; // for debugging by EW 2025.1.22
 		}
 	}
 }

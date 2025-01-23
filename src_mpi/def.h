@@ -1,4 +1,3 @@
- #define FEWBODY
 // #define CUDA
 
 #define LoadBalance

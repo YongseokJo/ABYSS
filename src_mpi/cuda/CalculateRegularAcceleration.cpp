@@ -305,7 +305,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 		ptcl = &particles[i];
 
 		if (!ptcl->isActive) {
-			fprintf(stdout, "Skipping inactive particle (%d)\n", ptcl->PID);
+			// fprintf(stdout, "Skipping inactive particle (%d)\n", ptcl->PID);
 			continue;
 		}
 
@@ -325,11 +325,11 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
 
 		ActiveIndexToOriginalIndex[size] = i;
-		std::cout << "(size , i) = "  << size << " " << i << std::endl;
+		// std::cout << "(size , i) = "  << size << " " << i << std::endl;
 		size++;
 	} 
 
-	fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d, TotalNumberOfParticle=%d\n", NumberOfParticle, size, LastParticleIndex+1);
+	// fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d, TotalNumberOfParticle=%d\n", NumberOfParticle, size, LastParticleIndex+1);
 
 	//fprintf(stdout, "Sending particles to GPU...\n");
 	//fflush(stdout);

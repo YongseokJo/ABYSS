@@ -579,7 +579,8 @@ void RootRoutines() {
 					queue_scheduler.runQueueAuto();
 					queue_scheduler.waitQueue(0); // blocking wait
 				} while (queue_scheduler.isComplete());
-
+				
+#ifdef DEBUG
 				for (int i: ThisLevelNode->ParticleList) {
 					ptcl = &particles[i];
 					if (ptcl->CurrentTimeIrr != next_time) {
@@ -587,7 +588,6 @@ void RootRoutines() {
 						assert(ptcl->CurrentTimeIrr == next_time);
 					}
 				}
-#ifdef DEBUG
 				 std::cout << "Irregular update done" << std::endl;
 #endif
 

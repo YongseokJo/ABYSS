@@ -310,10 +310,10 @@ void NewFBInitialization(Particle* ptclCM) {
 	ptclCM->TimeStepReg  = static_cast<double>(pow(2, ptclCM->TimeLevelReg));
 	ptclCM->TimeBlockReg = static_cast<ULL>(pow(2, ptclCM->TimeLevelReg-time_block));
 
-	ptclCM->calculateTimeStepIrr();
+	// ptclCM->calculateTimeStepIrr();
+	ptclCM->calculateTimeStepIrr2(); // by EW 2025.1.4
 	ptclCM->NewCurrentBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr;
 	ptclCM->NextBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr;
-	// ptclCM->calculateTimeStepIrr2(); // by EW 2025.1.4
 /*
 	while (ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr <= global_time_irr 
 			&& ptclCM->TimeLevelIrr <= ptcl->TimeLevelIrr) { //first condition guarantees that ptclcm is small than ptcl
