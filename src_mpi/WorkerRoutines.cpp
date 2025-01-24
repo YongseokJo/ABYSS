@@ -80,7 +80,8 @@ void WorkerRoutines() {
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 
-				ptcl->updateParticle();
+				if (ptcl->NumberOfNeighbor != 0) // IAR modified
+					ptcl->updateParticle();
 				ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
 				ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
 				//std::cout << "pid=" << ptcl_id << ", CurrentBlockIrr=" << particles[ptcl_id].CurrentBlockIrr << std::endl;

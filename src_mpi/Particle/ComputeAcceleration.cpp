@@ -13,7 +13,7 @@ void calculateSingleAcceleration(Particle *ptcl2, double *pos, double *vel, doub
 
 void Particle::computeAccelerationIrr() {
 
-	if (NumberOfNeighbor == 0) {
+	if (this->NumberOfNeighbor == 0) {
 		for (int dim=0; dim<Dim; dim++){
 			this->NewPosition[dim] = this->Position[dim];
 			this->NewVelocity[dim] = this->Velocity[dim];

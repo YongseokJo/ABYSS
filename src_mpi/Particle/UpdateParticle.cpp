@@ -70,11 +70,9 @@ void Particle::polynomialPrediction(double current_time) {
 
 void Particle::updateParticle() {
 	
-	if (this->NumberOfNeighbor != 0) { // If NumberOfNeighbor == 0, Pos == NewPos was already done in computeAccelerationIrr() by EW 2025.1.19
-		for (int dim=0; dim<Dim; dim++) {
-			this->Position[dim] = this->NewPosition[dim];
-			this->Velocity[dim] = this->NewVelocity[dim];
-		}
+	for (int dim=0; dim<Dim; dim++) {
+		this->Position[dim] = this->NewPosition[dim];
+		this->Velocity[dim] = this->NewVelocity[dim];
 	}
 	
 	//updateTimeStep();
