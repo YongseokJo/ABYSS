@@ -10,9 +10,19 @@
 #include <iomanip>
 #ifdef SEVN
 #include "star.h" // Eunwoo added for SEVN
-#endif SEVN
+#endif
 
-enum class BinaryInterruptState:int {none = 0, form = 1, exchange = 2, collision = 3}; // Eunwoo
+enum class BinaryInterruptState:int {
+	none = 0, 
+	form = 1, 
+	exchange = 2, 
+	collisioncandidate = 3,
+	collision = 4,
+	manybody = 5,	// many-body (>2) group terminated // added by EW 2025.1.19
+	kicked = 6,		// kicked or exploded as PISN during stellar evolution // added by EW 2025.1.19
+	terminated = 7,	// CM particle only; terminated // added by EW 2025.1.20
+	merger = 8		// CM particle only; merger inside // added by EW 2025.1.20
+};
 #define BINARY_STATE_ID_SHIFT 4 // Eunwoo
 #define BINARY_INTERRUPT_STATE_MASKER 0xF // Eunwoo
 
@@ -52,8 +62,8 @@ struct Particle {
 	// For SDAR
 	bool isActive;
 	bool isUpdateToDate;
-	double radius;
-	double dm; // Stellar mass which will be distributed to nearby gas cells
+	double radius; // used in SEVN too
+	double dm; // Stellar mass which will be distributed to nearby gas cells // used in SEVN too
 	double time_check; // time to check next interrupt
 	long long int binary_state; // contain two parts, low bits (first BINARY_STATE_ID_SHIFT bits) is binary interrupt state and high bits are pair ID
 	double a_spin[3]; // dimensionless spin parameter a
@@ -61,6 +71,12 @@ struct Particle {
 	bool isCMptcl; // do we need this? (Query) we can simply use if GroupInfo == nullptr right?
 	int CMPtclIndex; // added for write_out_group function by EW 2025.1.6
 
+#ifdef SEVN
+	// For SEVN
+	Star* StellarEvolution;
+	double FormationTime; // Myr // for restart
+	double WorldTime; // Myr // FormationTime + EvolutionTime
+#endif
 
 	Particle() {
 		Position[0] = Position[1] = Position[2] = 0.0;
@@ -100,12 +116,16 @@ struct Particle {
 		radius = 0.;
 		dm = 0.0;
 		time_check = NUMERIC_FLOAT_MAX;
-		binary_state = 0;
+		setBinaryInterruptState(BinaryInterruptState::none);
 		GroupInfo = nullptr;
 		isCMptcl = false; //(Query)
 		isUpdateToDate = true;
 		CMPtclIndex = -1;
-
+#ifdef SEVN
+		StellarEvolution = nullptr;
+		FormationTime = 0.0; // Myr
+		WorldTime = 0.0; // Myr
+#endif
 	}
 
 	/*
@@ -139,7 +159,7 @@ struct Particle {
 		this->ParticleIndex			= PID;
 		this->dm = 0.0;
 		this->time_check = NUMERIC_FLOAT_MAX;
-		this->binary_state = 0;
+		this->setBinaryInterruptState(BinaryInterruptState::none);
 		this->GroupInfo = nullptr;
 		this->isCMptcl = false;
 		this->a_spin[0] = 0.;
@@ -148,18 +168,20 @@ struct Particle {
 		this->CMPtclIndex = -1;
 		this->isUpdateToDate = true;
 
-#ifdef SEVN
+#ifndef SEVN
 		this->ParticleType = NormalStar+SingleStar;
-#else
+		this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // stellar radius in code unit
+		/*
 		if (this->Mass*1e9 > 8) {
 			this->ParticleType = Blackhole+SingleStar;
-			this->radius = 6*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // innermost stable circular orbit around a Schwartzshild BH = 3 * R_sch
+			this->radius = 2*this->Mass*1e9/mass_unit/pow(299752.458/(velocity_unit/yr*pc/1e5), 2); // Schwartzshild radius in code unit
 			// initialBHspin(this);
 		}
 		else {
 			this->ParticleType = NormalStar+SingleStar;
 			this->radius = 2.25461e-8/position_unit*pow(this->Mass*1e9, 1./3); // stellar radius in code unit
 		}
+		*/
 #endif
 	}
 
@@ -176,7 +198,7 @@ struct Particle {
 		GroupInfo = nullptr;
 		isCMptcl = false;
 		CMPtclIndex = -1;
-		binary_state = 0;
+		setBinaryInterruptState(BinaryInterruptState::none);
     }
 
 	void normalizeParticle() {

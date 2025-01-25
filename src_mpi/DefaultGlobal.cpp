@@ -1,16 +1,15 @@
 #include <iostream>
 #include <stdio.h>
 #include "global.h"
-#include "GlobalVariable.h"
-#include <mpi.h>
-
-
 
 Particle *particles_original;
 Particle *particles;
+int *ActiveIndexToOriginalIndex;
+int *ActiveIndexToOriginalIndex_orginal;
 
 MPI_Win win;
 MPI_Win win2;
+MPI_Win win3;
 
 MPI_Comm shared_comm;
 int MyRank;
@@ -19,12 +18,10 @@ int NumberOfWorker;
 int NumberOfCommunication;
 
 
-int LoadBalanceParticle;
-
-
 GlobalVariable *global_variable;
 GlobalVariable *global_variable_original;
-int NumberOfParticle;
+int LastParticleIndex; // The last index of particle array
+int NumberOfParticle; // The number of active particles
 int NewPID;
 
 // Task
@@ -62,6 +59,7 @@ int outNum;
 
 FILE* binout;
 FILE* mergerout;
+FILE* SEVNout;
 
 #ifdef PerformanceTrace
 Performance performance;
@@ -75,15 +73,7 @@ void DefaultGlobal() {
 		Task[i] = i;
 	}
 
-	// Eunwoo: I think these lines are redundant
-	/* Number of particles */
-	// NumberOfParticle = 1000;
-	// NumberOfSingle = 1000;
-	// Eunwoo: I think these lines are redundant
-
 	NumberOfCommunication = 0;
-
-	LoadBalanceParticle = 10;
 
 	/* Timesteps */
 	endTime = 1;
@@ -97,5 +87,8 @@ void DefaultGlobal() {
 	inputTime = 0.0;
 	endTime = 0.0;
 	outputTimeStep = 0.;
+
+	global_time = 0.;
+	outputTime = 0.;
 
 }

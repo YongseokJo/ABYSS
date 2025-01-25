@@ -24,10 +24,10 @@ extern int NumberOfCommunication;
 extern GlobalVariable *global_variable;
 extern GlobalVariable *global_variable_original;
 
+extern int *ActiveIndexToOriginalIndex_orginal;
+extern int *ActiveIndexToOriginalIndex;
 
-// the numer of particles for load balancing
-extern int LoadBalanceParticle; 
-
+extern int LastParticleIndex;
 extern int NumberOfParticle;
 extern int NewPID;
 
@@ -72,7 +72,9 @@ extern double outputTimeStep;
 
 extern FILE* binout;
 extern FILE* mergerout;
-
+#ifdef SEVN
+extern FILE* SEVNout;
+#endif
 
 #ifdef PerformanceTrace
 // Performance trace

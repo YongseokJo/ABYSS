@@ -1,7 +1,3 @@
-// #define FEWBODY
-// #define CUDA
-
-#define LoadBalance
 #define PerformanceTrace
 
 #define FAIL    -1
@@ -25,8 +21,9 @@
 
 
 // SDAR
-#define rbin 0.25e-3 // pc
-#define tbin 1e-6 // Myr
+#define RSEARCH 0.25e-3 // pc
+#define TSEARCH 1e-6 // Myr
+
 #define NormalStar 1
 #define Blackhole 32
 #define SingleStar 64 // what is a single particle?
@@ -89,16 +86,16 @@ typedef unsigned long long ULL;
 
 
 // TASK NAMES
-#define IRR_FORCE 0 
-#define REG_FORCE 1 
-#define IRR_UPDATE 2 
-#define REG_UPDATE 3 
-#define REG_CUDA 4 
-#define REG_CUDA_UPDATE 5 
-#define INIT_ACC1 7 
-#define INIT_ACC2 8 
-#define INIT_TIME 9 
-#define TIME_SYNC 10 
-#define PB_SEARCH 20
-#define FB_SEARCH 21 
-#define FB_SDAR 26
+// #define IRR_FORCE 0 
+// #define REG_FORCE 1 
+// #define IRR_UPDATE 2 
+// #define REG_UPDATE 3 
+// #define REG_CUDA 4 
+// #define REG_CUDA_UPDATE 5 
+// #define INIT_ACC1 7 
+// #define INIT_ACC2 8 
+// #define INIT_TIME 9 
+// #define TIME_SYNC 10 
+// #define PB_SEARCH 20
+// #define FB_SEARCH 21 
+// #define FB_SDAR 26

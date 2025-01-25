@@ -94,10 +94,12 @@ void Particle::polynomialPrediction(double current_time) {
 
 
 void Particle::updateParticle() {
+	
 	for (int dim=0; dim<Dim; dim++) {
 		this->Position[dim] = this->NewPosition[dim];
 		this->Velocity[dim] = this->NewVelocity[dim];
 	}
+	
 	//updateTimeStep();
 }
 

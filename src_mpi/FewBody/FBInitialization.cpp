@@ -1,21 +1,6 @@
 #ifdef FEWBODY
-#include <vector>
-#include <iostream>
-#include <cmath>
-#include <algorithm>
 #include "../global.h"
-#include "../def.h"
 
-#ifdef SEVN
-void UpdateEvolution(Particle* ptcl);
-#endif
-
-// REAL getNewTimeStepIrr(REAL f[3][4], REAL df[3][4]);
-// void getBlockTimeStep(REAL dt, int& TimeLevel, ULL &TimeBlock, REAL &TimeStep);
-// bool UpdateComputationChain(Particle* ptcl);
-// void UpdateNextRegTime(std::vector<Particle*> &particle);
-// bool CreateComputationList(Particle* ptcl);
-// bool CreateComputationChain(std::vector<Particle*> &particle);
 void CalculateAcceleration01(Particle* ptcl1);
 void CalculateAcceleration23(Particle* ptcl1);
 
@@ -109,7 +94,7 @@ void Group::initialIntegrator(int NumMembers) {
 	fprintf(binout, "\n");
 	fflush(binout);
 
-	sym_int.info.r_break_crit = rbin/position_unit; // distance criterion for checking stability
+	sym_int.info.r_break_crit = RSEARCH/position_unit; // distance criterion for checking stability
 	// more information in symplectic_integrator.h
 	// ar.cxx: 1e-3 pc
 	// check whether the system is stable for 10000 out period and the apo-center is below break criterion
@@ -133,13 +118,6 @@ void Group::initialIntegrator(int NumMembers) {
 	// sym_int.info.fix_step_option = AR::FixStepOption::later; // later: fix step after a few adjustment of initial steps due to energy error
 
 }
-
-	//        ///////////////////        //
-	//        ///////////////////        //
-	//        NEWFBINITIALIZATION        //
-	//        ///////////////////        //
-	//        ///////////////////        //
-
 
 
 // Initialize new Few body group
@@ -166,93 +144,6 @@ void NewFBInitialization(Particle* ptclCM) {
     }
 
 	fprintf(binout, "Starting time CurrentTimeIrr (Myr): %e\n", ptcl->CurrentTimeIrr*EnzoTimeStep*1e4);
-
-#ifdef SEVN
-	ptclGroup->useSEVN = false;
-	REAL dt_evolve_next = NUMERIC_FLOAT_MAX; // Myr
-	for (Particle* members : ptclGroup->Members) {
-		if (members->star == nullptr || members->star->amiremnant())
-			continue;
-		REAL dt_evolve = ptcl->CurrentTimeIrr*EnzoTimeStep*1e4 - members->EvolutionTime; // Myr
-		
-    	if (dt_evolve > 0) {
-			members->star->sync_with(dt_evolve);
-			members->EvolutionTime += members->star->getp(Timestep::ID);
-			// assert(members->EvolutionTime == ptcl->CurrentTimeIrr*EnzoTimeStep*1e4);
-			members->star->evolve();
-			// fprintf(SEVNout, "INI. After. PID: %d, ET: %e, WT: %e\n", members->PID, members->EvolutionTime, members->star->getp(Worldtime::ID));
-			// fflush(SEVNout);
-			// fprintf(SEVNout, "CurrentTimeIrr: %e, PID: %d, EvolutionTime: %e\n", ptcl->CurrentTimeIrr*EnzoTimeStep*1e4, members->PID, members->EvolutionTime);
-			UpdateEvolution(members);
-			if (members->star->vkick[3] > 0.0) {
-				for (Particle* members : group->Members)
-					members->isGroup = false;
-				delete ptclGroup;
-				ptclGroup = nullptr;
-				delete group;
-				group = nullptr;
-				return;
-			}
-			else if (members->star->amiempty()) {
-				for (Particle* members : group->Members)
-					members->isGroup = false;
-				delete ptclGroup;
-				ptclGroup = nullptr;
-				delete group;
-				group = nullptr;
-
-				members->isErase = true;
-
-				particle.erase(
-					std::remove_if(particle.begin(), particle.end(),
-						[](Particle* p) {
-						bool to_remove = p->isErase;
-						//if (to_remove) delete p;
-						return to_remove;
-						}),
-					particle.end());
-
-				RegularList.erase(
-					std::remove_if(RegularList.begin(), RegularList.end(),
-						[](Particle* p) {
-						bool to_remove = p->isErase;
-						//if (to_remove) delete p;
-						return to_remove;
-						}),
-					RegularList.end());
-
-				for (int i=0; i<particle.size(); i++) {
-					particle[i]->ParticleIndex = i;
-
-					// This might be not necessary because we're moving to the regular acceleration routine, and re-set neighbors.
-					// Should be checked again later.
-					particle[i]->ACList.erase(
-							std::remove_if(particle[i]->ACList.begin(), particle[i]->ACList.end(),
-								[](Particle* p) {
-								return p->isErase; }),
-							particle[i]->ACList.end());
-
-					particle[i]->NumberOfAC = particle[i]->ACList.size();
-				}
-				return;
-			}
-		}
-		if (!members->star->amiremnant()) {
-			ptclGroup->useSEVN = true;
-			if (members->star->getp(Timestep::ID) < dt_evolve_next)
-				dt_evolve_next = members->star->getp(Timestep::ID);
-		}
-		
-	}
-	if (ptclGroup->useSEVN) {
-		ptclGroup->EvolutionTime = ptcl->CurrentTimeIrr*EnzoTimeStep*1e4;
-		ptclGroup->EvolutionTimeStep = dt_evolve_next;
-		// fprintf(SEVNout, "INI. ETS: %e\n", ptclGroup->EvolutionTimeStep);
-		// fflush(SEVNout);
-		// fprintf(binout, "EvolutionTimeStep: %e Myr\n", ptclGroup->EvolutionTimeStep);
-		// fflush(binout);
-	}
-#endif
 
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[ptclCM->NewNeighbors[i]];
@@ -283,7 +174,6 @@ void NewFBInitialization(Particle* ptclCM) {
 
 	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
 
-	std::cout << "2" << std::endl;
 	ptclGroup->initialManager();
 	ptclGroup->initialIntegrator(NumberOfMembers); // Binary tree is made and CM particle is made automatically.
 
@@ -294,6 +184,8 @@ void NewFBInitialization(Particle* ptclCM) {
 	}
 
 	// Set ptcl information like time, PID, etc.
+
+	ptclCM->RadiusOfNeighbor = ptcl->RadiusOfNeighbor;
 
 	ptclCM->CurrentTimeIrr  = ptcl->CurrentTimeIrr;
 	ptclCM->CurrentTimeReg  = ptcl->CurrentTimeReg;
@@ -358,19 +250,6 @@ void NewFBInitialization(Particle* ptclCM) {
 
 	ptclGroup->CurrentTime	= ptclCM->CurrentTimeIrr;
 
-	// if (!(ptclGroup->sym_int.info.getBinaryTreeRoot().Velocity[0]*ptclGroup->sym_int.info.getBinaryTreeRoot().Velocity[0]<1e-10)) { 
-	// 	fprintf(stderr, "NewFBInitialization\n");
-	// 	fprintf(stderr, "pos: (%e, %e, %e)\n", ptclGroup->sym_int.info.getBinaryTreeRoot().Position[0], ptclGroup->sym_int.info.getBinaryTreeRoot().Position[1], ptclGroup->sym_int.info.getBinaryTreeRoot().Position[2]);
-	// 	fprintf(stderr, "vel: (%e, %e, %e)\n", ptclGroup->sym_int.info.getBinaryTreeRoot().Velocity[0], ptclGroup->sym_int.info.getBinaryTreeRoot().Velocity[1], ptclGroup->sym_int.info.getBinaryTreeRoot().Velocity[2]);
-	// 	for (Particle* members: ptclGroup->Members) {
-	// 		fprintf(stderr, "PID: %d\n", members->PID);
-	// 	}
-	// 	fflush(stderr);
-	// }
-
-	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
-    ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
-
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[ptclCM->NewNeighbors[i]];
 
@@ -381,6 +260,18 @@ void NewFBInitialization(Particle* ptclCM) {
 	// Find neighbors for CM particle and calculate the 0th, 1st, 2nd, 3rd derivative of accleration accurately 
 	CalculateAcceleration01(ptclCM);
 	CalculateAcceleration23(ptclCM);
+
+	for (int dim=0; dim<Dim; dim++) {
+        for (int j=0; j<HERMITE_ORDER; j++)
+            ptclGroup->sym_int.particles.cm.a_irr[dim][j] = ptclCM->a_irr[dim][j];
+    }
+    
+    ptclGroup->sym_int.particles.cm.NumberOfNeighbor = ptclCM->NumberOfNeighbor;
+    for (int i=0; i<ptclCM->NumberOfNeighbor; i++)
+    	ptclGroup->sym_int.particles.cm.Neighbors[i] = ptclCM->Neighbors[i];
+
+	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
+    ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
 
 	ptclCM->calculateTimeStepReg();
 	if (ptclCM->TimeLevelReg <= ptcl->TimeLevelReg-1 
@@ -396,8 +287,10 @@ void NewFBInitialization(Particle* ptclCM) {
 	ptclCM->TimeStepReg  = static_cast<double>(pow(2, ptclCM->TimeLevelReg));
 	ptclCM->TimeBlockReg = static_cast<ULL>(pow(2, ptclCM->TimeLevelReg-time_block));
 
-	ptclCM->calculateTimeStepIrr();
-	// ptclCM->calculateTimeStepIrr2(); // by EW 2025.1.4
+	// ptclCM->calculateTimeStepIrr();
+	ptclCM->calculateTimeStepIrr2(); // by EW 2025.1.4
+	ptclCM->NewCurrentBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr;
+	ptclCM->NextBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr;
 /*
 	while (ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr <= global_time_irr 
 			&& ptclCM->TimeLevelIrr <= ptcl->TimeLevelIrr) { //first condition guarantees that ptclcm is small than ptcl
@@ -414,16 +307,6 @@ void NewFBInitialization(Particle* ptclCM) {
 		ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
 	}
 */
-
-/* // Eunwoo test
-	if (ptclGroup->sym_int.info.getBinaryTreeRoot().semi < 0) { // Only for hyperbolic case
-		while (ptclCM->TimeStepIrr*EnzoTimeStep > abs(ptclGroup->sym_int.info.getBinaryTreeRoot().t_peri)) {
-			ptclCM->TimeLevelIrr -= 1;
-			ptclCM->TimeStepIrr = static_cast<REAL>(pow(2, ptclCM->TimeLevelIrr));
-			ptclCM->TimeBlockIrr = static_cast<ULL>(pow(2, ptclCM->TimeLevelIrr-time_block));
-		}
-	}
-*/ // Eunwoo test
 
 // /* // Eunwoo test
 	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();
@@ -491,11 +374,6 @@ void NewFBInitialization3(Group* group) {
 	ptclGroup->isTerminate = group->isTerminate;
 	ptclGroup->isMerger = group->isMerger;
 	ptclGroup->CurrentTime = group->CurrentTime;
-#ifdef SEVN
-	ptclGroup->useSEVN = group->useSEVN;
-	ptclGroup->EvolutionTime = group->EvolutionTime;
-	ptclGroup->EvolutionTimeStep = group->EvolutionTimeStep;
-#endif
 
 	ptclCM->NewNumberOfNeighbor = 0;
 	for (int i = 0; i < group->sym_int.particles.getSize(); i++) {
@@ -539,6 +417,15 @@ void NewFBInitialization3(Group* group) {
 		// fprintf(binout, "PID: %d. Time Blocks - irregular:%llu, regular:%llu \n", members->PID, members->TimeBlockIrr, members->TimeBlockReg);
 		// fprintf(binout, "PID: %d. Current Blocks - irregular: %llu, regular:%llu \n", members->PID, members->CurrentBlockIrr, members->CurrentBlockReg);
     }
+
+	for (int dim=0; dim<Dim; dim++) {
+        for (int j=0; j<HERMITE_ORDER; j++)
+            ptclGroup->sym_int.particles.cm.a_irr[dim][j] = ptclCM->a_irr[dim][j];
+    }
+    
+    ptclGroup->sym_int.particles.cm.NumberOfNeighbor = ptclCM->NumberOfNeighbor;
+    for (int i=0; i<ptclCM->NumberOfNeighbor; i++)
+    	ptclGroup->sym_int.particles.cm.Neighbors[i] = ptclCM->Neighbors[i];
 
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
