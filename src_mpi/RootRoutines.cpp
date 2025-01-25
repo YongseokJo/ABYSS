@@ -10,7 +10,12 @@
 #include "Worker.h"
 #include "QueueScheduler.h"
 
+#ifdef NSIGHT
+#include <nvToolsExt.h>
+#endif
+
 #define noDEBUG
+
 void InitialAssignmentOfTasks(std::vector<int>& data, double next_time, int NumTask, int TAG);
 void InitialAssignmentOfTasks(std::vector<int>& data, int NumTask, int TAG);
 void InitialAssignmentOfTasks(int data, int NumTask, int TAG);
@@ -942,14 +947,22 @@ void RootRoutines() {
 				next_time = NextRegTimeBlock*time_step;
 
 				//fprintf(stdout, "Regular starts\n");
+
 #ifdef DEBUG
 				std::cout << "calculateRegAccelerationOnGPU starts" << std::endl;
 				std::cout << "RegularList size: " << RegularList.size() << std::endl;
 #endif
+#ifdef NSIGHT
+				nvtxRangePushA("calculateRegAccelerationOnGPU");
+#endif
 				calculateRegAccelerationOnGPU(RegularList, queue_scheduler);
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
 #ifdef DEBUG
 				std::cout << "calculateRegAccelerationOnGPU ended" << std::endl;
 #endif
+
 
 #ifdef DEBUG
 				std::cout << "update regular starts" << std::endl;
