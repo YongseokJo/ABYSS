@@ -501,6 +501,9 @@ void RootRoutines() {
 
 				// Irregular Force
 #ifdef FEWBODY
+#ifdef NSIGHT
+				nvtxRangePushA("IrregularForce");
+#endif
 #ifdef DEBUG
 				std::cout << "Irr force starts" << std::endl;
 #endif
@@ -556,6 +559,9 @@ void RootRoutines() {
 #ifdef DEBUG
 				 std::cout << "Irregular Force done" << std::endl;
 #endif
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
 #else
 				queue_scheduler.initialize(IrrForce, next_time);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -577,7 +583,9 @@ void RootRoutines() {
 						update_idx++;
 					}				updateSkipList(skiplist, ptcl_id_return);
 					*/
-
+#ifdef NSIGHT
+				nvtxRangePushA("IrregularUpdate");
+#endif
 				// Irregular Update
 				queue_scheduler.initialize(IrrUpdate);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -598,9 +606,15 @@ void RootRoutines() {
 				}
 				 std::cout << "Irregular update done" << std::endl;
 #endif
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
 
-#ifdef FEWBODY		
+#ifdef FEWBODY	
 
+#ifdef NSIGHT
+				nvtxRangePushA("FewBodyTermination");
+#endif
 				int OriginalSize = ThisLevelNode->ParticleList.size();
 				for (int i=0; i<OriginalSize; i++ ){
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
@@ -694,6 +708,14 @@ void RootRoutines() {
 							  // this skips the rest of the loop and goes to the next time step.
 				}
 				*/
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+
+#ifdef NSIGHT
+				nvtxRangePushA("FewBodySearch");
+#endif
+
 #ifdef DEBUG
 				std::cout << "FB search starts" << std::endl;
 #endif
@@ -714,6 +736,13 @@ void RootRoutines() {
 				std::cout << "FB search ended" << std::endl;
 #endif
 
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+
+#ifdef NSIGHT
+				nvtxRangePushA("FormBinaries");
+#endif
 				int OriginalParticleListSize = ThisLevelNode->ParticleList.size();
 				int rank_delete, rank_new;
 #ifdef DEBUG
@@ -787,6 +816,10 @@ void RootRoutines() {
 				newCMptcls.clear();
 
 				// std::cout << "erase success" << std::endl;
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+
 #endif
 #ifdef DEBUG
 				std::cout << "updateSkipList starts" << std::endl;
@@ -947,22 +980,28 @@ void RootRoutines() {
 				next_time = NextRegTimeBlock*time_step;
 
 				//fprintf(stdout, "Regular starts\n");
+#ifdef NSIGHT
+				nvtxRangePushA("calculateRegAccelerationOnGPU");
+#endif
 
 #ifdef DEBUG
 				std::cout << "calculateRegAccelerationOnGPU starts" << std::endl;
 				std::cout << "RegularList size: " << RegularList.size() << std::endl;
 #endif
-#ifdef NSIGHT
-				nvtxRangePushA("calculateRegAccelerationOnGPU");
-#endif
+
 				calculateRegAccelerationOnGPU(RegularList, queue_scheduler);
-#ifdef NSIGHT
-				nvtxRangePop();
-#endif
+
 #ifdef DEBUG
 				std::cout << "calculateRegAccelerationOnGPU ended" << std::endl;
 #endif
 
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+
+#ifdef NSIGHT
+				nvtxRangePushA("UpdateRegular");
+#endif
 
 #ifdef DEBUG
 				std::cout << "update regular starts" << std::endl;
@@ -979,6 +1018,10 @@ void RootRoutines() {
 				} while (queue_scheduler.isComplete());
 #ifdef DEBUG
 				std::cout << "update regular ended" << std::endl;
+#endif
+
+#ifdef NSIGHT
+				nvtxRangePop();
 #endif
 			}
 				/*
