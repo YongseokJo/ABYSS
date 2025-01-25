@@ -26,7 +26,7 @@
 
 #define NormalStar 1
 #define Blackhole 32
-#define SingleStar 64 // what is a single particle?
+#define SingleStar 64
 
 
 #define MIN_LEVEL_BUFFER 30
@@ -76,26 +76,8 @@ typedef unsigned long long ULL;
 #define BatchSize 64 // 64. each thread calculates BatchSize particles with a single shared memory
 #define GridDimY 64 // 32 original //  each block calcuates NNB/GridDimY particles
 #define NNB_per_block 128 //256 original
-#define NSIGHT // for nsight debugging
+// #define NSIGHT // for nsight debugging
 #define MultiGPU // for multi-gpu
 //#define BatchSize 32 // each thread calculates BatchSize particles
 //#define GridDimY 16 // each block calcuates NNB/GridDimY particles
 //#define NNB_per_block 128
-
-
-
-
-// TASK NAMES
-// #define IRR_FORCE 0 
-// #define REG_FORCE 1 
-// #define IRR_UPDATE 2 
-// #define REG_UPDATE 3 
-// #define REG_CUDA 4 
-// #define REG_CUDA_UPDATE 5 
-// #define INIT_ACC1 7 
-// #define INIT_ACC2 8 
-// #define INIT_TIME 9 
-// #define TIME_SYNC 10 
-// #define PB_SEARCH 20
-// #define FB_SEARCH 21 
-// #define FB_SDAR 26

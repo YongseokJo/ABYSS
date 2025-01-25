@@ -319,39 +319,53 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 
 	
 
-	#ifdef CUDA_FLOAT
+#ifdef CUDA_FLOAT
 	// variables for saving variables to send to GPU
 	CUDA_REAL * Mass;
 	CUDA_REAL * Mdot;
 	CUDA_REAL * Radius2;
 	CUDA_REAL(*Position)[Dim];
 	CUDA_REAL(*Velocity)[Dim];
-	int size = NumberOfParticle;
+	//int size = NumberOfParticle;
+	int size=0, j=0;
 	
 	// allocate memory to the temporary variables
-	Mass     = new CUDA_REAL[size];
-	Mdot     = new CUDA_REAL[size];
-	Radius2  = new CUDA_REAL[size];
-	Position = new CUDA_REAL[size][Dim];
-	Velocity = new CUDA_REAL[size][Dim];
+	Mass     = new CUDA_REAL[NumberOfParticle];
+	Mdot     = new CUDA_REAL[NumberOfParticle];
+	Radius2  = new CUDA_REAL[NumberOfParticle];
+	Position = new CUDA_REAL[NumberOfParticle][Dim];
+	Velocity = new CUDA_REAL[NumberOfParticle][Dim];
 
 	Particle *ptcl;
 
 	// copy the data of particles to the arrays to be sent
-	for (int i=0; i<size; i++) {
+	for (int i=0; i<=LastParticleIndex; i++) {
 		ptcl       = &particles[i];
-		if (!ptcl->isActive) continue;
 
-		Mass[i]    = (CUDA_REAL)ptcl->Mass;
-		Mdot[i]    = 0; //particle[i]->Mass;
-		Radius2[i] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass wieght?
+		if (!ptcl->isActive) {
+			// fprintf(stdout, "Skipping inactive particle (%d)\n", ptcl->PID);
+			continue;
+		}
+
+		if (RegularList.find(i) != RegularList.end()) {
+			IndexList[j] = size;
+			j++;
+		}
+
+		Mass[size]    = (CUDA_REAL)ptcl->Mass;
+		Mdot[size]    = 0; //particle[i]->Mass;
+		Radius2[size] = (CUDA_REAL)ptcl->RadiusOfNeighbor; // mass weight?
 
 		if (ptcl->NumberOfNeighbor == 0)
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[i], Velocity[i]);
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[size], Velocity[size]);
 		else
-			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[i], Velocity[i]);
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, Position[size], Velocity[size]);
+
+		ActiveIndexToOriginalIndex[size] = i;
+		// std::cout << "(size , i) = "  << size << " " << i << std::endl;
+		size++;
 	}
-	#else
+#else
 	// variables for saving variables to send to GPU
 	double * Mass;
 	double * Mdot;
@@ -389,7 +403,7 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 
 		Mass[size]    = ptcl->Mass;
 		Mdot[size]    = 0; //particle[i]->Mass;
-		Radius2[size] = ptcl->RadiusOfNeighbor; // mass wieght?
+		Radius2[size] = ptcl->RadiusOfNeighbor; // mass weight?
 
 		if (ptcl->NumberOfNeighbor == 0)
 			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeReg, Position[size], Velocity[size]);
@@ -402,14 +416,14 @@ void sendAllParticlesToGPU(double new_time, std::unordered_set<int> RegularList,
 	} 
 #endif
 
+	assert(NumberOfParticle == size); // for debugging by EW 2025.1.25
+
 	// fprintf(stdout, "in sendAllParticlesToGPU, NumberOfParticle = %d, size=%d, TotalNumberOfParticle=%d\n", NumberOfParticle, size, LastParticleIndex+1);
 
 
 	//fprintf(stdout, "Sending particles to GPU...\n");
 	//fflush(stdout);
 	// send the arrays to GPU
-	#ifdef CUDA_FLOAT
-	#endif
 	SendToDevice(&size, Mass, Position, Velocity, Radius2, Mdot);
 
 	//fprintf(stdout, "Done.\n");

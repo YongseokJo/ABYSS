@@ -110,8 +110,9 @@ void GetAcceleration(
     // Also, each GPU has its own d_ptcl_array[i], d_diff_array[i], etc.
 	cudaGetDeviceCount(&deviceCount);
 	// cublasHandle_t cublasHandles[4];
-	
+#ifdef DEBUG
 	fprintf(stderr, "Number of GPUs (GetAcceleration): %d\n", deviceCount);
+#endif
 
 
 
@@ -126,7 +127,9 @@ void GetAcceleration(
         // How many targets remain in this chunk
         // int bigChunk = std::min(target_size, NumTargetTotal - TargetStart);
 		NumTarget = std::min(target_size, NumTargetTotal-TargetStart);
+#ifdef DEBUG
 		fprintf(stderr, "TargetStart = %d, NumTargetTotal = %d, NumTarget = %d\n", TargetStart, NumTargetTotal, NumTarget);
+#endif
 
         // 1) Launch a kernel on each GPU with an offset
         for (int i = 0; i < deviceCount; i++) {
@@ -139,7 +142,9 @@ void GetAcceleration(
 			int deviceNumJ   = std::min(chunkPerGpu, NNB - deviceJStart);
 
             if (deviceNumJ <= 0) break;  // No more work
+#ifdef DEBUG
 			fprintf(stderr, "%d, deviceJStart = %d, deviceNumJ = %d\n", i, deviceJStart, deviceNumJ);
+#endif
 
             // Copy the relevant portion of h_target_list to d_target_array[i],
             // e.g., if needed:
@@ -622,7 +627,9 @@ void _ReceiveFromHost(
 	//my_allocate(&h_background, &d_background_tmp, new_size(NNB));
 	//cudaMemcpyToSymbol(d_background, &d_background_tmp, new_size(NNB)*sizeof(BackgroundParticle));
 	cudaGetDeviceCount(&deviceCount);
+#ifdef DEBUG
 	fprintf(stderr, "Number of GPUs (_ReceiveFromHost): %d\n", deviceCount);
+#endif
 
 
 	if ((first) || (new_size(NNB) > variable_size )) {
@@ -723,18 +730,21 @@ void _ReceiveFromHost(
 	for (int i = 0; i < deviceCount; i++) {
 		cudaSetDevice(i);
 		cudaMemGetInfo(&freeMem, &totalMem);
-		// std::cout << i << " Free memory: " << freeMem << " bytes, Total memory: " << totalMem << " bytes" << std::endl;
+#ifdef DEBUG
 		std::cout << "Device " << i 
 				<< " Free memory: " << freeMem / (1024.0 * 1024.0) << " MB, "
 				<< "Total memory: " << totalMem / (1024.0 * 1024.0) << " MB" 
 				<< std::endl;
+#endif
 	}
 
 
 	//toDevice(h_background,d_background,variable_size);
 	
 	#ifdef MultiGPU
+#ifdef DEBUG
 	fprintf(stderr, "Allocate for MultiGPU\n");
+#endif
 	for (int j=0; j<NNB; j++) {
 		for (int dim=0; dim<Dim; dim++) {
 			h_ptcl[j + NNB * dim]   = x[j][dim];
