@@ -46,10 +46,10 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	double (*AccRegDotReceive)[Dim];
 	double (*AccIrr)[Dim];
 	double (*AccIrrDot)[Dim];
-	#ifdef CUDA_FLOAT
-		CUDA_REAL (*AccRegReceive_f)[Dim];
-		CUDA_REAL (*AccRegDotReceive_f)[Dim];
-	#endif 
+#ifdef CUDA_FLOAT
+	CUDA_REAL (*AccRegReceive_f)[Dim];
+	CUDA_REAL (*AccRegDotReceive_f)[Dim];
+#endif 
 	//int (*ACListReceive)[NumNeighborMax];
 
 	//double* PotSend;
@@ -81,10 +81,10 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	AccIrr           = new double[ListSize][Dim];
 	AccIrrDot        = new double[ListSize][Dim];
 
-	#ifdef CUDA_FLOAT
-		AccRegReceive_f    = new CUDA_REAL[ListSize][Dim];
-		AccRegDotReceive_f = new CUDA_REAL[ListSize][Dim];
-	#endif 
+#ifdef CUDA_FLOAT
+	AccRegReceive_f		= new CUDA_REAL[ListSize][Dim];
+	AccRegDotReceive_f	= new CUDA_REAL[ListSize][Dim];
+#endif 
 	NumNeighborReceive  = new int[ListSize];
 
 	// ACListReceive      = new int*[ListSize];
@@ -97,10 +97,10 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 			AccRegDotReceive[i][dim] = 0;
 			AccIrr[i][dim]           = 0;
 			AccIrrDot[i][dim]        = 0;
-			#ifdef CUDA_FLOAT
-				AccRegReceive_f[i][dim]    = 0;
-				AccRegDotReceive_f[i][dim]    = 0;
-			#endif 
+#ifdef CUDA_FLOAT
+			AccRegReceive_f[i][dim]		= 0;
+			AccRegDotReceive_f[i][dim]	= 0;
+#endif 
 		}
 	}
 #ifdef DEBUG
@@ -299,6 +299,11 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	delete[] AccRegDotReceive;
 	delete[] AccIrr;
 	delete[] AccIrrDot;
+
+#ifdef CUDA_FLOAT
+	delete[] AccRegReceive_f;
+	delete[] AccRegDotReceive_f;
+#endif 
 
 	delete[] NumNeighborReceive;
 	delete[] ACListReceive;

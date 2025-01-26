@@ -14,8 +14,8 @@ NVCC_FLAGS_DEBUG = -g -G --device-debug -lineinfo
 #NVCC_FLAGS_PROFILE = -g -lineinfo
 
 # Libraries
-LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas -lnvToolsExt -lm -lcuda -lmpi #node14
-# LDFLAGS = -L/usr/local/cuda/lib64/ -lcudart -lcublas -lnvToolsExt -lm -lcuda -lmpi #node15
+#LDFLAGS = -L/usr/local/cuda-11.8/lib64/ -lcudart -lcublas -lnvToolsExt -lm -lcuda -lmpi #node14
+LDFLAGS = -L/usr/local/cuda/lib64/ -lcudart -lcublas -lnvToolsExt -lm -lcuda -lmpi #node15
 #LDFLAGS = -lm 
 #add -lnvToolsExt for <nvToolsExt.h>
 #LDFLAGS = -L/mnt/sw/nix/store/zi2wc26znf75csf5hhz77p0d2bbz53ih-cuda-11.8.0/lib64/ -lcudart

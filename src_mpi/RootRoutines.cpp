@@ -760,10 +760,33 @@ void RootRoutines() {
 					for (int i=OriginalParticleListSize; i<ThisLevelNode->ParticleList.size(); i++) {
 						ptcl = &particles[ThisLevelNode->ParticleList[i]];
 						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
-						fflush(stdout);
+						// fflush(stdout);
 					}
 
-					// example code by EW 2025.1.7
+					// new code by EW 2025.1.26
+					Particle* ptclCM;
+					Particle* mem_ptclCM;
+					for (int i=0; i<newCMptcls.size(); i++) {
+						ptclCM = &particles[newCMptcls[i]]; // 2025.01.10 edited to newCMptcls[i] by YS
+
+						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
+							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
+							if (mem_ptclCM->isCMptcl) {
+								fprintf(stdout, "manybody group detected; PID %d should be deleted first\n", mem_ptclCM->PID);
+								queue_scheduler.initialize(DeleteGroup);
+								rank_delete = CMPtclWorker[mem_ptclCM->ParticleIndex];
+								fprintf(stdout, "Rank of CM ptcl %d: %d\n", mem_ptclCM->PID, rank_delete);
+								queue.task = DeleteGroup;
+								queue.pid = mem_ptclCM->ParticleIndex;
+								workers[rank_delete].addQueue(queue);
+								workers[rank_delete].runQueue();
+								workers[rank_delete].callback();
+
+								PrevCMPtclWorker.insert({mem_ptclCM->ParticleIndex, CMPtclWorker[mem_ptclCM->ParticleIndex]});
+								CMPtclWorker.erase(mem_ptclCM->ParticleIndex);
+							}
+						}
+/* // original code
 					Particle* ptclCM;
 					Particle* mem_ptclCM;
 					int total_queues = 0;
@@ -774,6 +797,7 @@ void RootRoutines() {
 						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
 							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
 							if (mem_ptclCM->isCMptcl) {
+								fprintf(stdout, "%d should be deleted first\n", mem_ptclCM->PID);
 								rank_delete = CMPtclWorker[mem_ptclCM->ParticleIndex];
 								queue.task = DeleteGroup;
 								queue.pid = mem_ptclCM->ParticleIndex;
@@ -791,7 +815,7 @@ void RootRoutines() {
 								queue_scheduler.waitQueue(0);
 							} while (queue_scheduler.isComplete());
 						}
-
+*/
 						queue_scheduler.initialize(MakeGroup);
 						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
 						// fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
