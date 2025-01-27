@@ -1,4 +1,4 @@
-# This is an ABYSS code simulating self-consistent gravity for stars and black holes.
+## This is an ABYSS code simulating self-consistent gravity for stars and black holes.
 # How to run this code
 
 > `nbodyplus.exe -f ic.dat -dtdump 1e6 -tend 1e9 -d output`  
