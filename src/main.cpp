@@ -23,7 +23,7 @@ FILE* binout;
 
 int main(int argc, char *argv[]) {
 	cout << "Staring Nbody+ ..." << endl;
-	binout = fopen("binary_output.txt", "w");                                                                          
+	binout = fopen("binary_output.txt", "w");
 	fprintf(binout, "Starting nbody - Binary OUTPUT\n"); 
 	std::vector<Particle*> particle{};
 	int irank=0;
