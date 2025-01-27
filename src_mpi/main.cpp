@@ -86,6 +86,13 @@ int main(int argc, char *argv[]) {
 
 		RootRoutines();
 	} else {
+		// /* // by EW 2025.1.27
+		std::string filename = "worker_output_" + std::to_string(MyRank) + ".txt";
+		workerout = fopen(filename.c_str(), "w");
+		fprintf(workerout, "Starting nbody - WORKER OUTPUT\n");
+		fflush(workerout);
+		// */
+		
 		WorkerRoutines();
 	}
 

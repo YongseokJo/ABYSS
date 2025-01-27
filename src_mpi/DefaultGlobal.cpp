@@ -59,7 +59,10 @@ int outNum;
 
 FILE* binout;
 FILE* mergerout;
+#ifdef SEVN
 FILE* SEVNout;
+#endif
+FILE* workerout;
 
 #ifdef PerformanceTrace
 Performance performance;

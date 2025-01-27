@@ -238,7 +238,7 @@ void WorkerRoutines() {
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status);
 				
 				ptcl = &particles[ptcl_id];
-				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << std::endl;
+				// std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << std::endl;
 
 				/* (Query) this will be done already. 
 				ptcl->computeAccelerationIrr();
@@ -281,7 +281,7 @@ void WorkerRoutines() {
 				ptcl->GroupInfo->isMerger = false;
 				ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 
-				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " done!" <<std::endl;
+				std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " NewFBInitialization3 done!" <<std::endl;
 				break;
 #endif 
 

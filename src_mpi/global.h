@@ -75,6 +75,7 @@ extern FILE* mergerout;
 #ifdef SEVN
 extern FILE* SEVNout;
 #endif
+extern FILE* workerout;
 
 #ifdef PerformanceTrace
 // Performance trace

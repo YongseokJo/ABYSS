@@ -218,7 +218,7 @@ int writeParticle(double current_time, int outputNum) {
 				write_out(outputFile, ptcl, pos, vel);
 				// write_neighbor(output_nn, ptcl);
 			}
-			else
+			else if (!ptcl->isActive && ptcl->CMPtclIndex >= 0)
 			{
 				Particle* ptclCM = &particles[ptcl->CMPtclIndex];
 				ptclCM->predictParticleSecondOrder(current_time - ptclCM->CurrentTimeIrr, pos, vel);

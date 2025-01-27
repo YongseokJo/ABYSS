@@ -674,7 +674,12 @@ void RootRoutines() {
 						bin_termination = true;
 						ptcl->isActive = false;
 
-						PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
+						if (ptcl->ParticleIndex == LastParticleIndex) {
+							LastParticleIndex--;
+							global_variable->LastParticleIndex == LastParticleIndex;
+						}
+						else
+							PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
 						CMPtclWorker.erase(ptcl->ParticleIndex);
 
 						for (int j=0; j < ptcl->NewNumberOfNeighbor; j++) {
@@ -697,17 +702,6 @@ void RootRoutines() {
 					),
 					ThisLevelNode->ParticleList.end()
 				);
-
-				/* by YS 2025.1.14 */
-				/*
-				if (ThisLevelNode->ParticleList.size() == 0) {
-					// current_time_irr = particles[].CurrentBlockIrr * time_step; 
-					//(Query) current_time_irr should be updated somewhere.
-					skiplist->deleteFirstNode();
-					continue; // this happened there was one CM ptcl and it terminated.
-							  // this skips the rest of the loop and goes to the next time step.
-				}
-				*/
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
@@ -786,36 +780,7 @@ void RootRoutines() {
 								CMPtclWorker.erase(mem_ptclCM->ParticleIndex);
 							}
 						}
-/* // original code
-					Particle* ptclCM;
-					Particle* mem_ptclCM;
-					int total_queues = 0;
-					for (int i=0; i<newCMptcls.size(); i++) {
-						ptclCM = &particles[newCMptcls[i]]; // 2025.01.10 edited to newCMptcls[i] by YS
-						queue_scheduler.initialize(DeleteGroup);
-						total_queues = 0;
-						for (int j=0; j<ptclCM->NewNumberOfNeighbor; j++) {
-							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
-							if (mem_ptclCM->isCMptcl) {
-								fprintf(stdout, "%d should be deleted first\n", mem_ptclCM->PID);
-								rank_delete = CMPtclWorker[mem_ptclCM->ParticleIndex];
-								queue.task = DeleteGroup;
-								queue.pid = mem_ptclCM->ParticleIndex;
-								workers[rank_delete].addQueue(queue);
-								queue_scheduler.WorkersToGo.insert(&workers[rank_delete]);
-								total_queues++;
-							}
-						}
-						if (total_queues > 0)
-						{
-							queue_scheduler.setTotalQueue(total_queues);
-							do
-							{
-								queue_scheduler.runQueueAuto();
-								queue_scheduler.waitQueue(0);
-							} while (queue_scheduler.isComplete());
-						}
-*/
+
 						queue_scheduler.initialize(MakeGroup);
 						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
 						// fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);

@@ -27,11 +27,8 @@ void Particle::checkNewGroup() {
     const Float kappa_org_crit = 1e-2;
 
     double pos1[Dim], vel1[Dim];
-    // this->NewNumberOfNeighbor = 0;
 
     Particle* ptcl2;
-
-    // REAL r_min = 1; // Eunwoo test;
 
     // check only active particles 
     // single case
@@ -54,27 +51,11 @@ void Particle::checkNewGroup() {
 
         const Float dr = dist(pos1, pos2);
 
-        // fprintf(stdout, "dr: %e pc, ind pair: (%d, %d)\n", dr*position_unit, this->ParticleIndex, ptcl2->ParticleIndex);
-        // fflush(stdout);
-        // ASSERT(dr>0.0);
-
-        // if (dr < r_min) // Eunwoo test
-        //     r_min = dr; // Eunwoo test
-
         // distance criterion
         Float r_crit = RSEARCH/position_unit;
         // Float r_crit_sq = r_crit*r_crit;
         
         if (dr < r_crit) {
-
-            // this increase AR total step too much
-            //bool add_flag=false;
-            //Float semi, ecc, dr, drdv;
-            //AR::BinaryTree<Tparticle>::particleToSemiEcc(semi,ecc,dr,drdv, pi, *pj, ar_manager->interaction.gravitational_constant); 
-            //else {
-            //    Float rp = drdv/dr*dt_limit_ + dr;
-            //    if (rp < r_crit) add_flag = true;
-            //}
 
             Float drdv = calcDrDv(pos1, pos2, vel1, vel2);
             // only inwards
@@ -102,34 +83,6 @@ void Particle::checkNewGroup() {
                 // if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
                 if(kappa_org<kappa_org_crit) continue;
 // */ // test_1e4_2
-
-#ifdef ADJUST_GROUP_DEBUG
-                if (j<index_offset_group_) {
-                    std::cerr<<"Find new group: time: "<<time_
-                                <<" index: "<<i<<" "<<j
-                                <<" dr: "<<sqrt(dr2)
-                                <<" kappa_org: "<<kappa_org<<"\n";
-                }
-                else {
-                    auto& bin_root = groups[j-index_offset_group_].info.getBinaryTreeRoot();
-                    std::cerr<<"Find new group: time: "<<time_
-                                <<" dr: "<<sqrt(dr2)
-                                <<" kappa_org: "<<kappa_org<<"\n"
-                                <<"       index         slowdown          apo \n"
-                                <<"i1 "
-                                <<std::setw(8)<<i
-                                <<std::setw(16)<<0
-                                <<std::setw(16)<<0;
-                    std::cerr<<"\ni2 "
-                                <<std::setw(8)<<j
-                                <<std::setw(16)<<bin_root.slowdown.getSlowDownFactorOrigin()
-                                <<std::setw(16)<<bin_root.semi*(1.0+bin_root.ecc);
-                    std::cerr<<std::endl;
-                }
-                fprintf(binout, "Find new group!\n\t");
-                fprintf(binout, " separation: %e pc\n\t", dr);
-                fprintf(binout, " kappa_org: %e \n\t", kappa_org);
-#endif
                 this->NewNeighbors[this->NewNumberOfNeighbor] = this->Neighbors[i];
                 this->NewNumberOfNeighbor++;
             }
@@ -145,7 +98,6 @@ void Particle::checkNewGroup2() {
     const Float kappa_org_crit = 1e-2;
 
     double pos1[Dim], vel1[Dim];
-    // this->NewNumberOfNeighbor = 0;
 
     Particle* ptcl2;
 
@@ -185,8 +137,6 @@ void Particle::checkNewGroup2() {
 // reference: checkBreak in hermite_integrator.h (SDAR)
 bool Group::CheckBreak() {
 
-    // fprintf(binout, "CheckBreak opened!\n");
-
     const Float kappa_org_crit = 1e-2;
     const int n_member = sym_int.particles.getSize();
 
@@ -201,17 +151,17 @@ bool Group::CheckBreak() {
     // if (bin_root.semi*(1-bin_root.ecc) > 2e-3/position_unit){ // test7
     if (bin_root.semi*(1-bin_root.ecc) > RSEARCH/position_unit && bin_root.r > 2 * RSEARCH/position_unit){ // test8 // fiducial
     // if (bin_root.semi*(1-bin_root.ecc) > 1.2e-3/position_unit){ // test12
-        fprintf(binout, "Break group: too far periapsis!\n\t");
-        fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
-        fprintf(binout, "N_member: %d\n\t", n_member);
-        fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit);
-        fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
-        fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
-        fprintf(binout, "ecca: %e\n\t", bin_root.ecca);
-        fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-        fprintf(binout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
-        fprintf(binout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
-        fflush(binout);
+        fprintf(workerout, "Break group: too far periapsis! (CM PID: %d)\n\t", groupCM->PID);
+        fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
+        fprintf(workerout, "N_member: %d\n\t", n_member);
+        fprintf(workerout, "separation: %e pc\n\t", bin_root.r*position_unit);
+        fprintf(workerout, "semi: %e pc\n\t", bin_root.semi*position_unit);
+        fprintf(workerout, "ecc: %e\n\t", bin_root.ecc);
+        fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
+        fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+        fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
+        fprintf(workerout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
+        fflush(workerout);
         return true;
     }
 
@@ -223,88 +173,54 @@ bool Group::CheckBreak() {
         // /*
         if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 2 * RSEARCH/position_unit) { // test8 // fiducial
         // if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 1.2e-3/position_unit) { // test12
-            fprintf(binout, "Break group: binary escape!\n\t");
-            fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
-            fprintf(binout, "N_member: %d\n\t", n_member);
-            fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit);
-            fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
-            fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
-            fprintf(binout, "ecca: %e\n\t", bin_root.ecca);
-            fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-            fprintf(binout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
-            fprintf(binout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
-            fflush(binout);
+            fprintf(workerout, "Break group: binary escape! (CM PID: %d)\n\t", groupCM->PID);
+            fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
+            fprintf(workerout, "N_member: %d\n\t", n_member);
+            fprintf(workerout, "separation: %e pc\n\t", bin_root.r*position_unit);
+            fprintf(workerout, "semi: %e pc\n\t", bin_root.semi*position_unit);
+            fprintf(workerout, "ecc: %e\n\t", bin_root.ecc);
+            fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
+            fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+            fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
+            fprintf(workerout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
+            fflush(workerout);
             return true;
         }
         // */
         /*
         if (n_member == 2) {
             if (bin_root.r > sym_int.info.r_break_crit && bin_root.r > 2e-3/position_unit) {
-                fprintf(binout, "Break group: binary escape!\n\t");
-                fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
-                fprintf(binout, "N_member: %d\n\t", n_member);
-                fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit);
-                fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
-                fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
-                fprintf(binout, "ecca: %e\n\t", bin_root.ecca);
-                fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-                fprintf(binout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
-                fprintf(binout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
-                fflush(binout);
+                fprintf(workerout, "Break group: binary escape!\n\t");
+                fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
+                fprintf(workerout, "N_member: %d\n\t", n_member);
+                fprintf(workerout, "separation: %e pc\n\t", bin_root.r*position_unit);
+                fprintf(workerout, "semi: %e pc\n\t", bin_root.semi*position_unit);
+                fprintf(workerout, "ecc: %e\n\t", bin_root.ecc);
+                fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
+                fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+                fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
+                fprintf(workerout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
+                fflush(workerout);
                 return true;
             }
         }
         else {
             if (bin_root.r > 2e-3/position_unit) {
-                fprintf(binout, "Break group: binary escape!\n\t");
-                fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
-                fprintf(binout, "N_member: %d\n\t", n_member);
-                fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit);
-                fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
-                fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
-                fprintf(binout, "ecca: %e\n\t", bin_root.ecca);
-                fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-                fprintf(binout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
-                fprintf(binout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
-                fflush(binout);
+                fprintf(workerout, "Break group: binary escape!\n\t");
+                fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
+                fprintf(workerout, "N_member: %d\n\t", n_member);
+                fprintf(workerout, "separation: %e pc\n\t", bin_root.r*position_unit);
+                fprintf(workerout, "semi: %e pc\n\t", bin_root.semi*position_unit);
+                fprintf(workerout, "ecc: %e\n\t", bin_root.ecc);
+                fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
+                fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+                fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
+                fprintf(workerout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
+                fflush(workerout);
                 return true;
             }
         }
         */
-/*
-        // in case apo is larger than distance criterion
-        Float apo = bin_root.semi * (1.0 + bin_root.ecc);
-        if (apo>sym_int.info.r_break_crit) {
-            Float dr2, drdv;
-
-            sym_int.info.getDrDv(dr2, drdv, *bin_root.getLeftMember(), *bin_root.getRightMember());
-            ASSERT(drdv>=0.0);
-
-            // check whether next step the separation is larger than distance criterion
-            // Not sure whether it can work correctly or not:
-            // rp = v_r * dt + r
-            Float dr = drdv/bin_root.r*sym_int.particles.cm.TimeStepIrr*EnzoTimeStep;
-            Float rp =  dr + bin_root.r;
-            if (rp >sym_int.info.r_break_crit) {
-                // in case r is too small, avoid too early quit of group
-                Float rph = 0.5*dr + bin_root.r;
-                if ( rph < sym_int.info.r_break_crit && bin_root.r <0.2*sym_int.info.r_break_crit) {
-                    // std::cerr<<"Binary will escape but dr is too small, reduce cm step by half, time: "<<CurrentTime<<" N_member: "<<n_member<<" ecca: "<<bin_root.ecca<<" separation : "<<bin_root.r<<" apo: "<<apo<<" r_pred: "<<rp<<" drdv: "<<drdv<<" dt: "<<sym_int.particles.cm.TimeStepIrr<<" r_crit: "<<sym_int.info.r_break_crit<<std::endl;
-                    sym_int.particles.cm.TimeLevelIrr--;
-                    sym_int.particles.cm.TimeStepIrr = static_cast<REAL>(pow(2, sym_int.particles.cm.TimeLevelIrr));
-                    sym_int.particles.cm.TimeBlockIrr = static_cast<ULL>(pow(2, sym_int.particles.cm.TimeLevelIrr-time_block));
-
-                }
-                else {
-                    // std::cerr<<"Break group: binary will escape, time: "<<CurrentTime<<" N_member: "<<n_member<<" ecca: "<<bin_root.ecca<<" separation : "<<bin_root.r<<" apo: "<<apo<<" r_pred: "<<rp<<" drdv: "<<drdv<<" dt: "<<sym_int.particles.cm.TimeStepIrr<<" r_crit: "<<sym_int.info.r_break_crit<<std::endl;
-                    fprintf(binout, "Break group: binary will escape!\n\t time: %e Myr\n\t N_member: %d\n\t ecca: %e\n\t separation: %e pc\n\t r_crit: %e pc\n", CurrentTime*EnzoTimeStep*1e4, n_member, bin_root.ecca, bin_root.r*position_unit, sym_int.info.r_break_crit*position_unit);
-                    fflush(binout);
-                    return true;
-                }
-                return false;
-            }
-        }
-*/
     }
 
     // check hyperbolic case
@@ -317,72 +233,49 @@ bool Group::CheckBreak() {
             // check distance criterion
             if (bin_root.r > 2 * RSEARCH/position_unit) { // test8 // seems good! // fiducial
             // if (bin_root.r > 1.2e-3/position_unit) { // test12
-                fprintf(binout, "Break group: hyperbolic escape!\n\t");
-                fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
-                fprintf(binout, "N_member: %d\n\t", n_member);
-                fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit); 
-                fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
-                fprintf(binout, "ecca: %e\n\t", bin_root.ecca);
-                fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-                fprintf(binout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
-                fflush(binout);
+                fprintf(workerout, "Break group: hyperbolic escape! (CM PID: %d)\n\t", groupCM->PID);
+                fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
+                fprintf(workerout, "N_member: %d\n\t", n_member);
+                fprintf(workerout, "separation: %e pc\n\t", bin_root.r*position_unit); 
+                fprintf(workerout, "ecc: %e\n\t", bin_root.ecc);
+                fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
+                fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+                fprintf(workerout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
+                fflush(workerout);
                 return true;
             }
             /*
             if (n_member == 2) {
                 if (bin_root.r > 1e-3/position_unit) { // original
                     // if (bin_root.r > 2e-3/position_unit) { // test
-                    fprintf(binout, "Break group: hyperbolic escape!\n\t");
-                    fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
-                    fprintf(binout, "N_member: %d\n\t", n_member);
-                    fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit); 
-                    fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
-                    fprintf(binout, "ecca: %e\n\t", bin_root.ecca);
-                    fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-                    fprintf(binout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
-                    fflush(binout);
+                    fprintf(workerout, "Break group: hyperbolic escape!\n\t");
+                    fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
+                    fprintf(workerout, "N_member: %d\n\t", n_member);
+                    fprintf(workerout, "separation: %e pc\n\t", bin_root.r*position_unit); 
+                    fprintf(workerout, "ecc: %e\n\t", bin_root.ecc);
+                    fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
+                    fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+                    fprintf(workerout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
+                    fflush(workerout);
                     return true;
                 }
             }
             else {
                 if (bin_root.r > 2e-3/position_unit) { // original
                     // if (bin_root.r > 2e-3/position_unit) { // test
-                    fprintf(binout, "Break group: hyperbolic escape!\n\t");
-                    fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
-                    fprintf(binout, "N_member: %d\n\t", n_member);
-                    fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit); 
-                    fprintf(binout, "ecc: %e\n\t", bin_root.ecc);
-                    fprintf(binout, "ecca: %e\n\t", bin_root.ecca);
-                    fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-                    fprintf(binout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
-                    fflush(binout);
+                    fprintf(workerout, "Break group: hyperbolic escape!\n\t");
+                    fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
+                    fprintf(workerout, "N_member: %d\n\t", n_member);
+                    fprintf(workerout, "separation: %e pc\n\t", bin_root.r*position_unit); 
+                    fprintf(workerout, "ecc: %e\n\t", bin_root.ecc);
+                    fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
+                    fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+                    fprintf(workerout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
+                    fflush(workerout);
                     return true;
                 }
             }
             */
-/*
-            // check for next step
-            Float dr = drdv/bin_root.r*sym_int.particles.cm.TimeStepIrr*EnzoTimeStep;
-            Float rp = dr  + bin_root.r;
-            if (rp > sym_int.info.r_break_crit) {
-                // in case r is too small, avoid too early quit of group
-                Float rph = 0.5*dr + bin_root.r;
-                if ( rph < sym_int.info.r_break_crit && bin_root.r <0.2*sym_int.info.r_break_crit) {
-                    // std::cerr<<"Hyperbolic will escape but dr is too small, reduce cm step by half first, time: "<<CurrentTime<<" N_member: "<<n_member<<" drdv: "<<drdv<<" separation : "<<bin_root.r<<" r_pred: "<<rp<<" drdv: "<<drdv<<" dt: "<<sym_int.particles.cm.TimeStepIrr<<" r_crit: "<<sym_int.info.r_break_crit<<std::endl;
-                    sym_int.particles.cm.TimeLevelIrr--;
-                    sym_int.particles.cm.TimeStepIrr = static_cast<REAL>(pow(2, sym_int.particles.cm.TimeLevelIrr));
-                    sym_int.particles.cm.TimeBlockIrr = static_cast<ULL>(pow(2, sym_int.particles.cm.TimeLevelIrr-time_block));
-                
-                }
-                else {
-                    // std::cerr<<"Break group: hyperbolic will escape, time: "<<CurrentTime<<" N_member: "<<n_member<<" drdv: "<<drdv<<" separation : "<<bin_root.r<<" r_pred: "<<rp<<" drdv: "<<drdv<<" dt: "<<sym_int.particles.cm.TimeStepIrr<<" r_crit: "<<sym_int.info.r_break_crit<<std::endl;
-                    fprintf(binout, "Break group: hyperbolic will escape!\n\t time: %e Myr\n\t N_member: %d\n\t separation: %e pc\n\t r_crit: %e pc\n", CurrentTime*EnzoTimeStep*1e4, n_member, bin_root.r*position_unit, sym_int.info.r_break_crit*position_unit);
-                    fflush(binout);
-                    return true;
-                }
-                return false;
-            }
-*/
         }
 
     }
@@ -418,20 +311,20 @@ bool Group::CheckBreak() {
             // if ((apo>sym_int.info.r_break_crit && bin_root.r > 1.2e-3/position_unit)||bin_root.semi<0.0) { // test12
                 auto& sd_root = sym_int.info.getBinaryTreeRoot().slowdown;
 
-                fprintf(binout, "Break group: strong perturbed!\n\t");
-                fprintf(binout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
-                fprintf(binout, "N_member: %d\n\t", n_member);
-                fprintf(binout, "pert_in: %e \n\t", sd_root.pert_in);
-                fprintf(binout, "pert_out: %e \n\t", sd_root.pert_out);
-                fprintf(binout, "kappa_org: %e \n\t", kappa_org);
-                fprintf(binout, "separation: %e pc\n\t", bin_root.r*position_unit);
-                fprintf(binout, "semi: %e pc\n\t", bin_root.semi*position_unit);
-                fprintf(binout, "ecc: %e \n\t", bin_root.ecc);
-                fprintf(binout, "ecca: %e \n\t", bin_root.ecca);
-                fprintf(binout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-                fprintf(binout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
-                fprintf(binout, "r_break: %e pc\n", sym_int.info.r_break_crit*position_unit);
-                fflush(binout);
+                fprintf(workerout, "Break group: strong perturbed! (CM PID: %d)\n\t", groupCM->PID);
+                fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
+                fprintf(workerout, "N_member: %d\n\t", n_member);
+                fprintf(workerout, "pert_in: %e \n\t", sd_root.pert_in);
+                fprintf(workerout, "pert_out: %e \n\t", sd_root.pert_out);
+                fprintf(workerout, "kappa_org: %e \n\t", kappa_org);
+                fprintf(workerout, "separation: %e pc\n\t", bin_root.r*position_unit);
+                fprintf(workerout, "semi: %e pc\n\t", bin_root.semi*position_unit);
+                fprintf(workerout, "ecc: %e \n\t", bin_root.ecc);
+                fprintf(workerout, "ecca: %e \n\t", bin_root.ecca);
+                fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
+                fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
+                fprintf(workerout, "r_break: %e pc\n", sym_int.info.r_break_crit*position_unit);
+                fflush(workerout);
                 return true;
             }
         }
