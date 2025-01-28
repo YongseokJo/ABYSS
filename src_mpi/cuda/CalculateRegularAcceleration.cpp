@@ -215,13 +215,20 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
             if ((*worker)->NumberOfQueues > 0) // original
             {
 				//std::cout << "(REG_CUDA) My Rank =" << (*worker)->MyRank << std::endl;
-				MPI_Send(&task, 1, MPI_INT, (*worker)->MyRank, TASK_TAG, MPI_COMM_WORLD);
-				MPI_Send(&ActiveIndexToOriginalIndex[IndexList[i]], 1, MPI_INT, (*worker)->MyRank, PTCL_TAG, MPI_COMM_WORLD);
-				MPI_Send(&NumNeighborReceive[i], 1, MPI_INT, (*worker)->MyRank, 10, MPI_COMM_WORLD);
-				MPI_Send(&ACListReceive[i * NumNeighborMax], NumNeighborReceive[i], MPI_INT, (*worker)->MyRank, 11, MPI_COMM_WORLD);
-				MPI_Send(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 12, MPI_COMM_WORLD);
-				MPI_Send(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 13, MPI_COMM_WORLD);
+				MPI_Isend(&task, 1, MPI_INT, (*worker)->MyRank, TASK_TAG, MPI_COMM_WORLD,
+				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
+				MPI_Isend(&ActiveIndexToOriginalIndex[IndexList[i]], 1, MPI_INT, (*worker)->MyRank, PTCL_TAG, MPI_COMM_WORLD,
+				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
+				MPI_Isend(&NumNeighborReceive[i], 1, MPI_INT, (*worker)->MyRank, 10, MPI_COMM_WORLD,
+				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
+				MPI_Isend(&ACListReceive[i * NumNeighborMax], NumNeighborReceive[i], MPI_INT, (*worker)->MyRank, 11, MPI_COMM_WORLD,
+				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
+				MPI_Isend(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 12, MPI_COMM_WORLD,
+				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
+				MPI_Isend(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 13, MPI_COMM_WORLD,
+				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
 				((*worker))->onDuty = true;
+
 				/*
 				(*worker)->CurrentQueue++;
 				(*worker)->CurrentQueue %= MAX_QUEUE;
