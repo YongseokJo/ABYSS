@@ -1,3 +1,4 @@
+#define FEWBODY
 #ifdef FEWBODY
 #include <map>
 #include <unordered_map>

@@ -21,6 +21,8 @@ enum TaskName {
     MergeManyBody = 27,
     Synchronize = 100,
     Ends = -100,
+    CommunicationSpeedBenchmark1 = -999,
+    CommunicationSpeedBenchmark2 = -998,
     Error = -1
 };
 

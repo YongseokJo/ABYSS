@@ -434,6 +434,8 @@ void RootRoutines() {
 		//ParticleSynchronization();
 		while (1) {
 
+			global_time = NextRegTimeBlock*time_step;
+
 			// create output at appropriate time intervals
 			if (global_time >= outputTime) {
 				writeParticle(global_time, outNum++);
@@ -609,6 +611,44 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
+
+#define COMM_SPEED_DEBUG
+#ifdef COMM_SPEED_DEBUG
+#ifdef NSIGHT
+				nvtxRangePushA("CommunicationSpeedBenchmark1");
+#endif
+				// Irregular Update
+				queue_scheduler.initialize(CommunicationSpeedBenchmark1);
+				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
+				do
+				{
+					queue_scheduler.assignQueueAuto();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
+				
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+
+#ifdef NSIGHT
+				nvtxRangePushA("CommunicationSpeedBenchmark2");
+#endif
+				// Irregular Update
+				queue_scheduler.initialize(CommunicationSpeedBenchmark2);
+				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
+				do
+				{
+					queue_scheduler.assignQueueAuto();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
+				
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+#endif
+
 
 #ifdef FEWBODY	
 
@@ -1234,7 +1274,6 @@ void RootRoutines() {
 				//current_time_irr = particles[ThisLevelNode->ParticleList[0]].CurrentBlockIrr;
 			} // Regular Done.
 #endif
-			global_time = NextRegTimeBlock*time_step;
 
 #ifdef SEVN
 			StellarEvolution(); // How about evolving particles inside RegularList only? by EW 2025.1.19

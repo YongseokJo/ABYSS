@@ -11,6 +11,7 @@
 
 
 #define MAX_QUEUE 1000
+#define MAX_COMMUNICATION 10
 
 struct Worker {
     int MyRank; 
@@ -20,7 +21,10 @@ struct Worker {
     Queue queues[MAX_QUEUE];
     short NumberOfQueues;
     short CurrentQueue;
+    short NumberOfCommunications;
 
+    MPI_Request _request[MAX_COMMUNICATION];  // Pointer to the request handle
+    MPI_Status _status[MAX_COMMUNICATION];    // Pointer to the status object
 
     Worker() {
         _initialize();
@@ -33,6 +37,7 @@ struct Worker {
         }
         NumberOfQueues = 0;
         CurrentQueue = 0;
+        NumberOfCommunications = 0;
     }
 
     void initialize(int _MyRank) {
@@ -42,6 +47,7 @@ struct Worker {
            isCMWorker = true; 
         }
         NumberOfQueues = 0;
+        NumberOfCommunications = 0;
     }
 
     void addQueue(Queue queue) {
@@ -75,8 +81,10 @@ struct Worker {
     }
 
     void callback() {
+        MPI_Waitall(NumberOfCommunications, _request, _status);
+        NumberOfCommunications = 0;
         int return_value;
-        MPI_Recv(&return_value, 1, MPI_INT, this->MyRank, TERMINATE_TAG, MPI_COMM_WORLD, &_status);
+        MPI_Recv(&return_value, 1, MPI_INT, this->MyRank, TERMINATE_TAG, MPI_COMM_WORLD, &_status[0]);
         if (!onDuty) {
             fprintf(stderr, "Something's worng! the worker %d was not on duty.\n", this->MyRank);
             fprintf(stdout, "Something's worng! the worker %d was not on duty.\n", this->MyRank);
@@ -102,16 +110,19 @@ struct Worker {
 
 
     void sendTask(Queue &_queue) {
-        if ((_queue.task == 0) || (_queue.task == 1) || (_queue.task == 26))
+        if ((_queue.task == IrrForce) || (_queue.task == RegForce) || (_queue.task == ARIntegration))
         {
-            MPI_Send(&_queue.task,      1, MPI_INT,    this->MyRank, TASK_TAG, MPI_COMM_WORLD);
-            MPI_Send(&_queue.pid,       1, MPI_INT,    this->MyRank, PTCL_TAG, MPI_COMM_WORLD);
-            MPI_Send(&_queue.next_time, 1, MPI_DOUBLE, this->MyRank, TIME_TAG, MPI_COMM_WORLD);
+            MPI_Isend(&_queue.task,      1, MPI_INT,    this->MyRank, TASK_TAG, MPI_COMM_WORLD, &_request[NumberOfCommunications++]);
+            MPI_Isend(&_queue.pid,       1, MPI_INT,    this->MyRank, PTCL_TAG, MPI_COMM_WORLD, &_request[NumberOfCommunications++]);
+            MPI_Isend(&_queue.next_time, 1, MPI_DOUBLE, this->MyRank, TIME_TAG, MPI_COMM_WORLD, &_request[NumberOfCommunications++]);
+        }
+        else if (_queue.task == CommunicationSpeedBenchmark1) {
+            MPI_Isend(&_queue.task, 1, MPI_INT, this->MyRank, TASK_TAG, MPI_COMM_WORLD, &_request[NumberOfCommunications++]);
         }
         else
         {
-            MPI_Send(&_queue.task, 1, MPI_INT, this->MyRank, TASK_TAG, MPI_COMM_WORLD);
-            MPI_Send(&_queue.pid,  1, MPI_INT, this->MyRank, PTCL_TAG, MPI_COMM_WORLD);
+            MPI_Isend(&_queue.task, 1, MPI_INT, this->MyRank, TASK_TAG, MPI_COMM_WORLD, &_request[NumberOfCommunications++]);
+            MPI_Isend(&_queue.pid,  1, MPI_INT, this->MyRank, PTCL_TAG, MPI_COMM_WORLD, &_request[NumberOfCommunications++] );
         }
         onDuty = true;
     }
@@ -120,8 +131,7 @@ struct Worker {
 
 private:
     //Queue current_queue;
-    MPI_Request _request;  // Pointer to the request handle
-    MPI_Status _status;    // Pointer to the status object
+
 
     void _initialize() {
         MyRank = -1;
@@ -130,6 +140,7 @@ private:
         isCMWorker = false;
         NumberOfQueues = 0;
         CurrentQueue   = 0;
+        NumberOfCommunications = 0;
         //queues.reserve(MAX_QUEUE);
     }
 };

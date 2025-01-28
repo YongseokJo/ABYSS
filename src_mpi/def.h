@@ -1,3 +1,4 @@
+#define FEWBODY
 #define PerformanceTrace
 
 #define FAIL    -1

@@ -299,6 +299,15 @@ void WorkerRoutines() {
 				perror("Error task assignments");
 				exit(EXIT_FAILURE);
 				break;
+
+
+			case CommunicationSpeedBenchmark1:
+				break;
+
+			case CommunicationSpeedBenchmark2:
+				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
+				break;
+
 			default:
 				break;
 		}
