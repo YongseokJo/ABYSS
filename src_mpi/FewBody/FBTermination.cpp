@@ -68,12 +68,12 @@ void FBTermination(Particle* ptclCM) {
 	for (int i=0; i<ptclCM->NewNumberOfNeighbor; i++) {
 		members = &particles[ptclCM->NewNeighbors[i]];
 
+		members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
+
 		if (members->Mass == 0.0)
 			continue;
 
 		NumberOfParticle++; // by EW 2025.1.20
-
-		members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
 
 		// For 3-body & 4-body termination case by EW 2025.1.19
 		if (ptclCM->NewNumberOfNeighbor > 2)
@@ -89,7 +89,7 @@ void FBTermination(Particle* ptclCM) {
 		members->CurrentTimeReg		= ptclCM->CurrentTimeReg;
 		members->NewCurrentBlockIrr	= ptclCM->NewCurrentBlockIrr;
 
-		members->TimeLevelIrr		= ptclCM->TimeLevelIrr;
+		members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // test by EW 2025.1.29
 		members->TimeLevelReg		= ptclCM->TimeLevelReg;
 
 		members->RadiusOfNeighbor = ACRadius*ACRadius; // added by EW 2025.1.16
