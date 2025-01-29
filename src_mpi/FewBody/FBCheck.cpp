@@ -160,7 +160,7 @@ bool Group::CheckBreak() {
         fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
         fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
         fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
-        fprintf(workerout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
+        fprintf(workerout, "r_crit: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
         fflush(workerout);
         return true;
     }
@@ -182,7 +182,7 @@ bool Group::CheckBreak() {
             fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
             fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
             fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
-            fprintf(workerout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
+            fprintf(workerout, "r_crit: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
             fflush(workerout);
             return true;
         }
@@ -240,7 +240,7 @@ bool Group::CheckBreak() {
                 fprintf(workerout, "ecc: %e\n\t", bin_root.ecc);
                 fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
                 fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
-                fprintf(workerout, "r_crit: %e pc\n", sym_int.info.r_break_crit*position_unit);
+                fprintf(workerout, "r_crit: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
                 fflush(workerout);
                 return true;
             }
@@ -323,7 +323,7 @@ bool Group::CheckBreak() {
                 fprintf(workerout, "ecca: %e \n\t", bin_root.ecca);
                 fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
                 fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
-                fprintf(workerout, "r_break: %e pc\n", sym_int.info.r_break_crit*position_unit);
+                fprintf(workerout, "r_break: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
                 fflush(workerout);
                 return true;
             }
