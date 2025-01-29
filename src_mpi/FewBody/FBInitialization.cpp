@@ -287,8 +287,8 @@ void NewFBInitialization(Particle* ptclCM) {
 	ptclCM->TimeStepReg  = static_cast<double>(pow(2, ptclCM->TimeLevelReg));
 	ptclCM->TimeBlockReg = static_cast<ULL>(pow(2, ptclCM->TimeLevelReg-time_block));
 
-	// ptclCM->calculateTimeStepIrr();
-	ptclCM->calculateTimeStepIrr2(); // by EW 2025.1.4
+	ptclCM->calculateTimeStepIrr();
+	// ptclCM->calculateTimeStepIrr2(); // by EW 2025.1.4
 	ptclCM->NewCurrentBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr;
 	ptclCM->NextBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr;
 /*

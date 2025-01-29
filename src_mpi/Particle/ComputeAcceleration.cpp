@@ -51,13 +51,13 @@ void Particle::computeAccelerationIrr() {
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
 
 		ptcl = &particles[this->Neighbors[i]];
-		/* // for debugging by EW 2025.1.17
+		// /* // for debugging by EW 2025.1.17
 		if (!ptcl->isActive) {
 			fprintf(stderr, "this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
+			assert(ptcl->isActive); // for debugging by EW 2025.1.17
 		}
-		assert(ptcl->isActive); // for debugging by EW 2025.1.17
-		*/
-		assert(ptcl->isActive); // for debugging by EW 2025.1.17
+		// */
+		// assert(ptcl->isActive); // for debugging by EW 2025.1.17
 
 		/*
 		if (ptcl->isCMptcl) {
@@ -463,14 +463,14 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 	for (int i=0; i<size; i++) {
 		if (i < NewNumberOfNeighborGPU) {
 			NewNeighborsGPU[i] = ActiveIndexToOriginalIndex[NewNeighborsGPU[i]];
-			assert(particles[NewNeighborsGPU[i]].isActive); // for debugging by EW 2025.1.23
-			/* // for debugging by EW 2025.1.23
+			// assert(particles[NewNeighborsGPU[i]].isActive); // for debugging by EW 2025.1.23
+			// /* // for debugging by EW 2025.1.23
 			if (!particles[NewNeighborsGPU[i]].isActive) {
 				fprintf(stderr, "In GPU, this PID: %d, inActive PID: %d\n", this->PID, particles[NewNeighborsGPU[i]].PID);
 				//fprintf(stderr, "ActiveIndexToPID[%d]=%d\n", this->PID, ActiveIndexToPID[this->PID]);
 				assert(particles[NewNeighborsGPU[i]].isActive); // for debugging by EW 2025.1.23
 			}
-			*/
+			// */
 			hashTableNew.insert({NewNeighborsGPU[i], i});
 		}
 		if (i < this->NumberOfNeighbor) {

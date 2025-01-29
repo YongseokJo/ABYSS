@@ -22,7 +22,7 @@
 
 
 // SDAR
-#define RSEARCH 0.25e-3 // pc
+#define RSEARCH 1e-4 // pc
 #define TSEARCH 1e-6 // Myr
 
 #define NormalStar 1
