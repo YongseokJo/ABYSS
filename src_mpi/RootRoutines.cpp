@@ -751,11 +751,6 @@ void RootRoutines() {
 					std::cout << "New Binary!" << std::endl;
 #endif
 					new_binaries = true;
-					for (int i=OriginalParticleListSize; i<ThisLevelNode->ParticleList.size(); i++) {
-						ptcl = &particles[ThisLevelNode->ParticleList[i]];
-						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
-						// fflush(stdout);
-					}
 
 					// new code by EW 2025.1.26
 					Particle* ptclCM;

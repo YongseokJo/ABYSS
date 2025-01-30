@@ -32,7 +32,16 @@ void formPrimordialBinaries(int OriginalLastParticleIndex) {
 					// ex) A & B are a group and B & C are a group --> Merge so that A & B & C become one group!
 	
 	for (int i=OriginalLastParticleIndex+1; i<=LastParticleIndex; i++) {
-		deleteNeighbors(i);
+		// deleteNeighbors(i);
+		NewCM = &particles[i];
+		NewCM->ParticleIndex = i;
+		NewCM->PID = NewPID;
+		NewPID++;
+		std::cout << "New Primordial CM ParticleIndex: " << i << std::endl;
+		std::cout << "New Primordial CM PID: " << NewCM->PID << std::endl;
+		NewCM->setBinaryInterruptState(BinaryInterruptState::none);
+
+		NumberOfParticle += 1 - NewCM->NewNumberOfNeighbor;
 	}
 	global_variable->LastParticleIndex = LastParticleIndex;
 }
@@ -97,7 +106,16 @@ void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls,
 	}
 
 	for (int i: newCMptcls) {
-		deleteNeighbors(i);
+		// deleteNeighbors(i);
+		NewCM = &particles[i];
+		NewCM->ParticleIndex = i;
+		NewCM->PID = NewPID;
+		NewPID++;
+		std::cout << "New CM ParticleIndex: " << i << std::endl;
+		std::cout << "New CM PID: " << NewCM->PID << std::endl;
+		NewCM->setBinaryInterruptState(BinaryInterruptState::none);
+
+		NumberOfParticle += 1 - NewCM->NewNumberOfNeighbor;
 	}
 	global_variable->LastParticleIndex = LastParticleIndex;
 
@@ -162,12 +180,10 @@ void deleteNeighbors(int newOrder) {
 
 	std::cout << "New particle index is " << newOrder << std::endl;
 	ptclCM = &particles[newOrder];
-	ptclCM->ParticleIndex = newOrder;
 	ptclCM->PID = NewPID;
 	NewPID++;
 	ptclCM->isActive = true;
 	ptclCM->isCMptcl = true;
-	ptclCM->RadiusOfNeighbor = ACRadius*ACRadius;
 	ptclCM->setBinaryInterruptState(BinaryInterruptState::none);
 
 	Particle* members;
@@ -216,11 +232,18 @@ void deleteNeighbors(int newOrder) {
 
 void makePrimordialGroup(Particle* ptclCM) {
 
+	ptclCM->isActive = true;
+	ptclCM->isCMptcl = true;
+
 	Group* ptclGroup = new Group();
 
+	ptclCM->GroupInfo = ptclGroup;
 	ptclGroup->groupCM = ptclCM;
 
-	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
+	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
+		Particle* members = &particles[ptclCM->NewNeighbors[i]];
+		members->isActive = false;
+    }
 
 	ptclGroup->initialManager();
 	ptclGroup->initialIntegrator(ptclCM->NewNumberOfNeighbor); // Binary tree is made and CM particle is made automatically.
@@ -232,6 +255,7 @@ void makePrimordialGroup(Particle* ptclCM) {
 		ptclCM->Mass = ptclGroup->sym_int.particles.cm.Mass;
 	}
 
+	ptclCM->RadiusOfNeighbor = ACRadius*ACRadius;
 
 	fprintf(workerout, "The ID of CM is %d.\n",ptclCM->PID);
 

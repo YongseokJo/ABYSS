@@ -6,7 +6,7 @@
 #include "../global.h"
 #include "../def.h"
 #include <unordered_map>
-
+#include <unordered_set>
 
 
 void calculateSingleAcceleration(Particle *ptcl2, double *pos, double *vel, double (&a)[3], double (&adot)[3], int sign);
@@ -41,7 +41,7 @@ void Particle::computeAccelerationIrr() {
 		adot_tmp[dim] = 0.0;
 	}
 
-
+	std::unordered_set<int> CMPtclsSet;
 
 	/*******************************************************
 	 * Irregular Acceleartion Calculation
@@ -51,13 +51,18 @@ void Particle::computeAccelerationIrr() {
 	for (int i=0; i<this->NumberOfNeighbor; i++) {
 
 		ptcl = &particles[this->Neighbors[i]];
-		// /* // for debugging by EW 2025.1.17
+
 		if (!ptcl->isActive) {
-			fprintf(stderr, "this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
-			assert(ptcl->isActive); // for debugging by EW 2025.1.17
+			if (ptcl->CMPtclIndex != -1) {
+				CMPtclsSet.insert(ptcl->CMPtclIndex);
+				continue;
+			}
+			else if (ptcl->Mass != 0) {
+				fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
+				assert(ptcl->Mass == 0);
+			}
 		}
-		// */
-		// assert(ptcl->isActive); // for debugging by EW 2025.1.17
+
 
 		/*
 		if (ptcl->isCMptcl) {
@@ -107,6 +112,44 @@ void Particle::computeAccelerationIrr() {
 			adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 		}
 	} // endfor ptcl
+
+	if (!CMPtclsSet.empty()) {
+		for (int i: CMPtclsSet) {
+			ptcl = &particles[i];
+			if (!ptcl->isActive) {
+				fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
+				assert(ptcl->isActive);
+			}
+
+			// reset temporary variables at the start of a new calculation
+			r2 = 0.0;
+			vx = 0.0;
+
+			ptcl->predictParticleSecondOrder(new_time-ptcl->CurrentTimeIrr, pos_neighbor, vel_neighbor);
+
+			for (int dim=0; dim<Dim; dim++) {
+				// calculate position and velocity differences for current time
+				x[dim] = pos_neighbor[dim] - pos[dim];
+				v[dim] = vel_neighbor[dim] - vel[dim];
+
+				// calculate the square of radius and inner product of r and v for each case
+				r2 += x[dim]*x[dim];
+				vx += v[dim]*x[dim];
+			}
+
+			//mdot = ptcl->evolveStarMass(CurrentTimeIrr,
+					//CurrentTimeIrr+TimeStepIrr*1.01)/TimeStepIrr*1e-2; // derivative can be improved
+																														//
+																														// add the contribution of jth particle to acceleration of current and predicted times
+
+			m_r3 = ptcl->Mass/(r2*sqrt(r2));
+
+			for (int dim=0; dim<Dim; dim++){
+				a_tmp[dim]    += m_r3*x[dim];
+				adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
+			}
+		}
+	}
 
 
 	double a2, a3, da_dt2, adot_dt, dt2, dt3, dt4, dt5;
@@ -400,7 +443,7 @@ void Particle::computeAccelerationReg() {
 
 
 
-
+// Modified by EW 2025.1.30
 
 void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNeighborGPU, double *new_a, double *new_adot) {
 /*
@@ -454,9 +497,11 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 	}
 
 
-	std::unordered_map<int, int> hashTableOld;
-	std::unordered_map<int, int> hashTableNew;
-
+	std::unordered_set<int> hashTableOld;
+	std::unordered_set<int> hashTableNew;
+	
+	int RealNeighbors[MaxNumberOfNeighbor]; // this->Neighbors is containing members, not CM ptcls, but this is containing CM ptcls, not members
+	int RealNumberOfNeighbor = 0;
 
 	int size = this->NumberOfNeighbor > NewNumberOfNeighborGPU ? this->NumberOfNeighbor : NewNumberOfNeighborGPU;
 
@@ -471,19 +516,30 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 				assert(particles[NewNeighborsGPU[i]].isActive); // for debugging by EW 2025.1.23
 			}
 			// */
-			hashTableNew.insert({NewNeighborsGPU[i], i});
+			hashTableNew.insert(NewNeighborsGPU[i]);
 		}
 		if (i < this->NumberOfNeighbor) {
-			/* // for debugging by EW 2025.1.23
-			if (!particles[this->Neighbors[i]].isActive) {
-				fprintf(stderr, "In Org, this PID: %d, inActive PID: %d\n", this->PID, particles[Neighbors[i]].PID);
-				assert(particles[this->Neighbors[i]].isActive); // for debugging by EW 2025.1.23
+			if (particles[this->Neighbors[i]].isActive) {
+				hashTableOld.insert(this->Neighbors[i]);
+				RealNeighbors[RealNumberOfNeighbor++] = this->Neighbors[i];
 			}
-			*/
-			hashTableOld.insert({this->Neighbors[i], i});
+			else {
+				if (particles[this->Neighbors[i]].CMPtclIndex != -1) {
+					if (hashTableOld.find(particles[this->Neighbors[i]].CMPtclIndex) == hashTableOld.end()) {
+						hashTableOld.insert(particles[this->Neighbors[i]].CMPtclIndex);
+						RealNeighbors[RealNumberOfNeighbor++] = particles[this->Neighbors[i]].CMPtclIndex;
+					}
+				}
+				else if (particles[this->Neighbors[i]].Mass != 0) {
+					fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", this->PID, particles[this->Neighbors[i]].PID);
+					assert(particles[this->Neighbors[i]].Mass == 0);
+				}
+			}
 		}
 	}
+	assert(RealNumberOfNeighbor == hashTableOld.size()); // for debugging by EW 2025.1.30
 
+	size = hashTableNew.size() > hashTableOld.size() ? hashTableNew.size() : hashTableOld.size();
 
 	Particle* ptcl;
 	double pos_neighbor[Dim], vel_neighbor[Dim];
@@ -495,13 +551,13 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 	// Aceeleration correction
 	for (int i=0; i<size; i++) {
-		if ( i < this->NumberOfNeighbor ) {
+		if ( i < RealNumberOfNeighbor ) {
 				
 			// neighbor in old but not in new
-		 	if ( hashTableNew.find(this->Neighbors[i]) == hashTableNew.end() ) {
+		 	if ( hashTableNew.find(RealNeighbors[i]) == hashTableNew.end() ) {
 				//fprintf(stderr, "in old, not in new = %d\n",this->Neighbors[i]);
 				//std::cerr <<  "in old, not in new =" <<  this->Neighbors[i] << std::endl;
-				ptcl = &particles[this->Neighbors[i]];
+				ptcl = &particles[RealNeighbors[i]];
 				/* // for debugging by EW 2025.1.23
 				if (!ptcl->isActive) {
 					fprintf(stderr, "this PID: %d, inActive PID: %d\n", this->PID, ptcl->PID);
@@ -637,13 +693,13 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 
 	int _NewNumberOfNeighbor = 0;
 	for (int i=0; i<NewNumberOfNeighborGPU; i++) {
-		/* // for debugging by EW 2025.1.23
-		if (!particles[NewNeighborsGPU[i]].isActive) {
-			fprintf(stderr, "In final, this PID: %d, inActive PID: %d\n", this->PID, particles[NewNeighborsGPU[i]].PID);
-			assert(particles[NewNeighborsGPU[i]].isActive); // for debugging by EW 2025.1.23
+		if (particles[NewNeighborsGPU[i]].isCMptcl) {
+			for (int j=0; j<particles[NewNeighborsGPU[i]].NumMember; j++) {
+				this->NewNeighbors[_NewNumberOfNeighbor++] = particles[NewNeighborsGPU[i]].Members[j];
+			}
 		}
-		*/
-		this->NewNeighbors[_NewNumberOfNeighbor++] = NewNeighborsGPU[i];
+		else
+			this->NewNeighbors[_NewNumberOfNeighbor++] = NewNeighborsGPU[i];
 	}
 	this->NewNumberOfNeighbor = _NewNumberOfNeighbor;
 

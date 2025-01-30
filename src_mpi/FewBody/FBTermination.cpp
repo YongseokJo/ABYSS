@@ -92,7 +92,8 @@ void FBTermination(Particle* ptclCM) {
 		members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // test by EW 2025.1.29
 		members->TimeLevelReg		= ptclCM->TimeLevelReg;
 
-		members->RadiusOfNeighbor = ACRadius*ACRadius; // added by EW 2025.1.16
+		// members->RadiusOfNeighbor = ACRadius*ACRadius; // added by EW 2025.1.16
+		members->RadiusOfNeighbor = ptclCM->RadiusOfNeighbor; // modified by EW 2025.1.30
 
 		CalculateAcceleration01(members);
 		CalculateAcceleration23(members);
@@ -152,7 +153,7 @@ void FBTermination(Particle* ptclCM) {
 		// fprintf(binout, "Time Blocks - irregular:%llu, regular:%llu \n", members->TimeBlockIrr, members->TimeBlockReg);
 		// fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", members->CurrentBlockIrr, members->CurrentBlockReg);
 	}
-	insertNeighbors(ptclCM);
+	// insertNeighbors(ptclCM);
 
 	fprintf(binout,"end of Few Body Termination\n");
 	fprintf(binout,"--------------------------------------\n");

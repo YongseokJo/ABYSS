@@ -68,7 +68,7 @@ void Group::initialManager() {
 
 void Group::initialIntegrator(int NumMembers) {
 
-	assert(groupCM->NumMember == 0); // for debugging by EW 2025.1.30
+	groupCM->NumMember = 0;
 
 	sym_int.manager = &manager;
 
@@ -98,7 +98,7 @@ void Group::initialIntegrator(int NumMembers) {
 	fprintf(workerout, "\n");
 	fflush(workerout);
 	
-	assert(groupCM->NumMember == NumMembers);
+	assert(groupCM->NumMember == NumMembers); // for debugging by EW 2025.1.30
 
 	sym_int.info.r_break_crit = RSEARCH/position_unit; // distance criterion for checking stability
 	// more information in symplectic_integrator.h
@@ -129,6 +129,9 @@ void Group::initialIntegrator(int NumMembers) {
 // Initialize new Few body group
 void NewFBInitialization(Particle* ptclCM) {
 
+	ptclCM->isActive = true;
+	ptclCM->isCMptcl = true;
+
 	Group* ptclGroup = new Group();
 
 	ptclCM->GroupInfo = ptclGroup;
@@ -140,6 +143,7 @@ void NewFBInitialization(Particle* ptclCM) {
 
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[ptclCM->NewNeighbors[i]];
+		members->isActive = false;
 		if (members->CurrentTimeIrr > ptcl->CurrentTimeIrr) {
         	ptcl = members;
     	}
