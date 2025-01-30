@@ -210,25 +210,22 @@ int writeParticle(double current_time, int outputNum) {
 		double pos[Dim], vel[Dim];
 		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
-			if (ptcl->isCMptcl) continue;
-#ifdef FEWBODY
-			if (ptcl->isActive)
-			{
-				ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
-				write_out(outputFile, ptcl, pos, vel);
-				// write_neighbor(output_nn, ptcl);
-			}
-			else if (!ptcl->isActive && ptcl->CMPtclIndex >= 0)
-			{
-				Particle* ptclCM = &particles[ptcl->CMPtclIndex];
-				ptclCM->predictParticleSecondOrder(current_time - ptclCM->CurrentTimeIrr, pos, vel);
-				write_out_group(outputFile, ptclCM, ptcl, pos, vel);
-			}
-#else
+
+			if (!ptcl->isActive) continue;
+
 			ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
-			write_out(outputFile, ptcl, pos, vel);
+
+			if (ptcl->isCMptcl) {
+				Particle* members;
+				for (int j; j < ptcl->NumMember; j++) {
+					members = &particles[ptcl->Members[j]];
+					write_out_group(outputFile, ptcl, members, pos, vel);
+				}
+			}
+			else
+				write_out(outputFile, ptcl, pos, vel);
+
 // write_neighbor(output_nn, ptcl);
-#endif
 		}
 
 		// Close the file

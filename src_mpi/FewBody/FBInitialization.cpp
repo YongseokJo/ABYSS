@@ -68,6 +68,8 @@ void Group::initialManager() {
 
 void Group::initialIntegrator(int NumMembers) {
 
+	assert(groupCM->NumMember == 0); // for debugging by EW 2025.1.30
+
 	sym_int.manager = &manager;
 
 	sym_int.particles.setMode(COMM::ListMode::copy);
@@ -81,6 +83,7 @@ void Group::initialIntegrator(int NumMembers) {
 			members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 			sym_int.particles.addMemberAndAddress(*members);
 			fprintf(workerout, " %d", sym_int.particles[i].PID);
+			groupCM->Members[groupCM->NumMember++] = members->ParticleIndex;
 		}
 		else {
 			for (int j=0; j < members->NewNumberOfNeighbor; j++) {
@@ -88,11 +91,14 @@ void Group::initialIntegrator(int NumMembers) {
 				members_members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 				sym_int.particles.addMemberAndAddress(*members_members);
 				fprintf(workerout, " %d", sym_int.particles[i].PID);
+				groupCM->Members[groupCM->NumMember++] = members_members->ParticleIndex;
 			}
 		}
     }
 	fprintf(workerout, "\n");
 	fflush(workerout);
+	
+	assert(groupCM->NumMember == NumMembers);
 
 	sym_int.info.r_break_crit = RSEARCH/position_unit; // distance criterion for checking stability
 	// more information in symplectic_integrator.h
