@@ -32,16 +32,17 @@ void WorkerRoutines() {
 	double new_adot[Dim];
 	Particle *ptcl;
 	Group *group;
+	int *MyQueue = &queues[MyRank * (MAX_QUEUE + 1)];
+	int *CurrentQueue = &MyQueue[MAX_QUEUE];
+
 #ifdef PerformanceTrace
 	std::chrono::high_resolution_clock::time_point start_point;
 	std::chrono::high_resolution_clock::time_point end_point;
 #endif
 
 	while (true) {
-		MPI_Recv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &status);
-		//MPI_Irecv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &request);
-		//MPI_Wait(&request, &status);
-		//if (status.MPI_TAG == TERMINATE_TAG) break;
+		MPI_Recv(NULL, 0, MPI_BYTE, ROOT, TASK_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		task = tasks[MyRank];
 		//std::cerr << "Processor " << MyRank << " received task " << task << std::endl;
 
 		switch (task) {
@@ -147,11 +148,10 @@ void WorkerRoutines() {
 				break;
 
 			case InitAcc1: // Initialize Acceleration(01)
-				//std::cout << "Processor " << MyRank<< " initialization starts." << std::endl;
-				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				//std::cout << "Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
+				std::cout << "Processor " << MyRank << " initialization starts." << std::endl;
+				ptcl_id = MyQueue[*CurrentQueue];
+				std::cout << "Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
 				ptcl = &particles[ptcl_id];
-				//std::cerr << ptcl_id+i << std::endl;
 				CalculateAcceleration01(ptcl);
 				//std::cout << "Processor " << MyRank<< " done." << std::endl;
 				break;
