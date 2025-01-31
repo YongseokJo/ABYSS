@@ -3,6 +3,7 @@
 #include <errno.h>
 #include "global.h"
 #include "Queue.h"
+#include "performance.h"
 
 void ComputeAcceleration(int ptcl_id, double next_time);
 void broadcastFromRoot(double &data);
@@ -35,10 +36,6 @@ void WorkerRoutines() {
 	int *MyQueue = &queues[MyRank * (MAX_QUEUE + 1)];
 	int *CurrentQueue = &MyQueue[MAX_QUEUE];
 
-#ifdef PerformanceTrace
-	std::chrono::high_resolution_clock::time_point start_point;
-	std::chrono::high_resolution_clock::time_point end_point;
-#endif
 
 	while (true) {
 		MPI_Recv(NULL, 0, MPI_BYTE, ROOT, TASK_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -52,11 +49,9 @@ void WorkerRoutines() {
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status); // (Query to myself) it seems like it's not needed.
 				ptcl = &particles[ptcl_id];
 #ifdef PerformanceTrace
-				start_point = std::chrono::high_resolution_clock::now();
+				performance.start(IrrForce_Worker);
 				ptcl->computeAccelerationIrr();
-				end_point = std::chrono::high_resolution_clock::now();
-				performance.IrregularForceWorker +=
-					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
+				performance.end(IrrForce_Worker);
 #else
 				ptcl->computeAccelerationIrr();
 #endif

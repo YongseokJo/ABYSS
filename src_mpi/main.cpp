@@ -11,6 +11,7 @@
 #include "particle.h"
 #include "GlobalVariable.h"
 #include "global.h"
+#include "performance.h"
 #include <mpi.h>
 #include <unistd.h>
 #include <cuda_runtime.h>
@@ -98,10 +99,12 @@ int main(int argc, char *argv[]) {
 
 #ifdef PerformanceTrace
 	//MPI_Reduce(&performance.IrregularForce, &IrrPerformance, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-	MPI_Allreduce(MPI_IN_PLACE, &performance.IrregularForceWorker, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(MPI_IN_PLACE, &performance.duration[IrrForce_Worker], 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
 	if (MyRank == ROOT) {
-		std::cerr << "Irr Time for Root (ns) = " << performance.IrregularForceRoot << std::endl;
-		std::cerr << "Irr Time for Worker (ns) = " << performance.IrregularForceWorker << std::endl;
+		std::cerr << "Init1 Time for Root (ns) = " << performance.get(InitAcc1_Root) << std::endl;
+		std::cerr << "Init1 Time for Running (ns) = " << performance.get(InitAcc1_Running) << std::endl;
+		std::cerr << "Irr Time for Root (ns) = " << performance.get(IrrForce_Root) << std::endl;
+		std::cerr << "Irr Time for Worker (ns) = " << performance.get(IrrForce_Worker) << std::endl;
 
 		// Open the file in append mode
 		std::ofstream outFile("performance", std::ios::app);
@@ -109,8 +112,10 @@ int main(int argc, char *argv[]) {
 		// Check if the file opened successfully
 		if (outFile.is_open()) {
 			// Write the variable to the file
-			outFile << "Irr Time for Root (ns) = "  << performance.IrregularForceRoot << std::endl;
-			outFile << "Irr Time for Worker (ns) = "  << performance.IrregularForceWorker << std::endl;
+			outFile << "Init1 Time for Root (ns) = "  << performance.get(InitAcc1_Root) << std::endl;
+			outFile << "Init1 Time for Running (ns) = "  << performance.get(InitAcc1_Running) << std::endl;
+			outFile << "Irr Time for Root (ns) = "  << performance.get(IrrForce_Root) << std::endl;
+			outFile << "Irr Time for Worker (ns) = "  << performance.get(IrrForce_Worker) << std::endl;
 
 			// Close the file
 			outFile.close();
