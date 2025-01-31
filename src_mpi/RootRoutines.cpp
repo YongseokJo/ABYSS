@@ -8,6 +8,7 @@
 #include "global.h"
 #include "SkipList.h"
 #include "Worker.h"
+#include "performance.h"
 #include "QueueScheduler.h"
 
 #ifdef NSIGHT
@@ -52,10 +53,6 @@ void RootRoutines() {
 	int total_tasks;
 	int remaining_tasks=0, completed_tasks=0, completed_rank;
 
-#ifdef PerformanceTrace
-	std::chrono::high_resolution_clock::time_point start_point;
-	std::chrono::high_resolution_clock::time_point end_point;
-#endif
 
 	std::unordered_map<int, int> CMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
 	std::unordered_map<int, int> PrevCMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
@@ -115,6 +112,9 @@ void RootRoutines() {
 		}
 
 		std::cout << "Initialization of particles starts." << std::endl;
+#ifdef PerformanceTrace
+		performance.start(InitAcc1_Root);
+#endif
 		queue_scheduler.initialize(InitAcc1);
 		queue_scheduler.takeQueue(PIDs);
 		do
@@ -125,7 +125,13 @@ void RootRoutines() {
 			//queue_scheduler.printFreeWorker();
 			//queue_scheduler.printWorkerToGo();
 			queue_scheduler.runQueueAuto();
-			queue_scheduler.waitQueue(0); //blocking wait
+#ifdef PerformanceTrace
+			performance.start(InitAcc1_Running);
+#endif
+			queue_scheduler.waitQueue(0); // blocking wait
+#ifdef PerformanceTrace
+			performance.end(InitAcc1_Running);
+#endif
 		} while(queue_scheduler.isComplete());
 
 		std::cout << "Init 01 done" << std::endl;
@@ -137,7 +143,9 @@ void RootRoutines() {
 			queue_scheduler.runQueueAuto();
 			queue_scheduler.waitQueue(0); //blocking wait
 		} while(queue_scheduler.isComplete());
-
+#ifdef PerformanceTrace
+		performance.end(InitAcc1_Root);
+#endif
 		std::cout << "Init 02 done" << std::endl;
 
 #ifdef FEWBODY
@@ -513,7 +521,7 @@ void RootRoutines() {
 #endif
 
 #ifdef PerformanceTrace
-				start_point = std::chrono::high_resolution_clock::now();
+				performance.start(IrrForce_Root);
 #endif
 #ifdef DEBUG
 				std::cout << "Irr force starts" << std::endl;
@@ -571,9 +579,7 @@ void RootRoutines() {
 				std::cout << "Irregular Force done" << std::endl;
 #endif
 #ifdef PerformanceTrace
-				end_point = std::chrono::high_resolution_clock::now();
-				performance.IrregularForceRoot +=
-					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
+				performance.end(IrrForce_Root);
 #endif
 #ifdef NSIGHT
 				nvtxRangePop();
