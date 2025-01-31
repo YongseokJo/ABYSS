@@ -52,6 +52,11 @@ void RootRoutines() {
 	int total_tasks;
 	int remaining_tasks=0, completed_tasks=0, completed_rank;
 
+#ifdef PerformanceTrace
+	std::chrono::high_resolution_clock::time_point start_point;
+	std::chrono::high_resolution_clock::time_point end_point;
+#endif
+
 	std::unordered_map<int, int> CMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
 	std::unordered_map<int, int> PrevCMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
 	std::vector<int> newCMptcls; // by EW 2025.1.6 // unordered_set? by EW 2025.1.11
@@ -506,6 +511,10 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePushA("IrregularForce");
 #endif
+
+#ifdef PerformanceTrace
+				start_point = std::chrono::high_resolution_clock::now();
+#endif
 #ifdef DEBUG
 				std::cout << "Irr force starts" << std::endl;
 #endif
@@ -559,7 +568,12 @@ void RootRoutines() {
 					//queue_scheduler.printStatus();
 				} while (queue_scheduler.isComplete());
 #ifdef DEBUG
-				 std::cout << "Irregular Force done" << std::endl;
+				std::cout << "Irregular Force done" << std::endl;
+#endif
+#ifdef PerformanceTrace
+				end_point = std::chrono::high_resolution_clock::now();
+				performance.IrregularForceRoot +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
 #endif
 #ifdef NSIGHT
 				nvtxRangePop();
