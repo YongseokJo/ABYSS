@@ -52,7 +52,6 @@ void WorkerRoutines() {
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status); // (Query to myself) it seems like it's not needed.
 				ptcl = &particles[ptcl_id];
 #ifdef PerformanceTraceOld
-				ptcl = &particles[ptcl_id];
 				start_point = std::chrono::high_resolution_clock::now();
 				ptcl->computeAccelerationIrr();
 				end_point = std::chrono::high_resolution_clock::now();

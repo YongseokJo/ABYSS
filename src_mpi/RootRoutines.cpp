@@ -513,7 +513,6 @@ void RootRoutines() {
 #endif
 #ifdef PerformanceTrace
 				start_point = std::chrono::high_resolution_clock::now();
-				ptcl->computeAccelerationIrr();
 #endif
 #ifdef DEBUG
 				std::cout << "Irr force starts" << std::endl;
@@ -637,17 +636,7 @@ void RootRoutines() {
 				for (int ptcl_id : ThisLevelNode->ParticleList)
 				{
 					ptcl = &particles[ptcl_id];
-
-#ifdef PerformanceTrace
-					start_point = std::chrono::high_resolution_clock::now();
 					ptcl->computeAccelerationIrr();
-					end_point = std::chrono::high_resolution_clock::now();
-					performance.IrregularForce +=
-						std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
-#else
-					ptcl->computeAccelerationIrr();
-#endif
-
 					ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
 					ptcl->calculateTimeStepIrr();
 					ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
@@ -820,7 +809,6 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
-/*
 #ifdef NSIGHT
 				nvtxRangePushA("FewBodySearch");
 #endif
@@ -848,9 +836,9 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
-*/
 
 
+/*
 #ifdef NSIGHT
 				nvtxRangePushA("Fewbody search on root");
 #endif
@@ -874,6 +862,7 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
+*/
 
 #ifdef NSIGHT
 				nvtxRangePushA("FormBinaries");
