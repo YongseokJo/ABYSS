@@ -59,9 +59,9 @@ void initializeMPI(int argc, char *argv[]) {
 								MPI_INFO_NULL, shared_comm, &global_variable_original, &win2);
 		MPI_Win_allocate_shared(sizeof(int) * MaxNumberOfParticle, sizeof(int),
 								MPI_INFO_NULL, shared_comm, &ActiveIndexToOriginalIndex_original, &win3);
-		MPI_Win_allocate_shared(sizeof(int) * NumberOfWorker, sizeof(int),
+		MPI_Win_allocate_shared(sizeof(int) * NumberOfProcessor, sizeof(int),
 								MPI_INFO_NULL, shared_comm, &tasks_original, &win4);
-		MPI_Win_allocate_shared(sizeof(int) * NumberOfWorker*MAX_QUEUE, sizeof(int),
+		MPI_Win_allocate_shared(sizeof(int) * NumberOfProcessor*(MAX_QUEUE+1), sizeof(int),
 								MPI_INFO_NULL, shared_comm, &queues_original, &win5);
 	} else {
 		MPI_Win_allocate_shared(0, sizeof(Particle), MPI_INFO_NULL, shared_comm, &particles_original, &win);

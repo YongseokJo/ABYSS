@@ -513,7 +513,6 @@ void RootRoutines() {
 #endif
 #ifdef PerformanceTrace
 				start_point = std::chrono::high_resolution_clock::now();
-				ptcl->computeAccelerationIrr();
 #endif
 #ifdef DEBUG
 				std::cout << "Irr force starts" << std::endl;
@@ -850,7 +849,7 @@ void RootRoutines() {
 #endif
 */
 
-
+/*
 #ifdef NSIGHT
 				nvtxRangePushA("Fewbody search on root");
 #endif
@@ -874,6 +873,7 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
+*/
 
 #ifdef NSIGHT
 				nvtxRangePushA("FormBinaries");

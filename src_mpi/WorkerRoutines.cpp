@@ -30,6 +30,8 @@ void WorkerRoutines() {
 	int size=0;
 	double new_a[Dim];
 	double new_adot[Dim];
+	int *MyQueue = &queues[MyRank*(MAX_QUEUE+1)];
+	int *CurrentQueue = &MyQueue[MAX_QUEUE];
 	Particle *ptcl;
 	Group *group;
 #ifdef NewQueueTest
@@ -39,11 +41,9 @@ void WorkerRoutines() {
 	std::chrono::high_resolution_clock::time_point end_point;
 
 	while (true) {
-		MPI_Recv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &status);
-		//MPI_Irecv(&task, 1, MPI_INT, ROOT, TASK_TAG, MPI_COMM_WORLD, &request);
-		//MPI_Wait(&request, &status);
-		//if (status.MPI_TAG == TERMINATE_TAG) break;
-		//std::cerr << "Processor " << MyRank << " received task " << task << std::endl;
+		MPI_Recv(NULL, 0, MPI_BYTE, ROOT, TASK_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		task = tasks[MyRank];
+		//std::cerr << "Processor " << MyRank << " received task signal" << task << std::endl;
 
 		switch (task) {
 			case IrrForce: // Irregular Acceleration
@@ -51,8 +51,7 @@ void WorkerRoutines() {
 				//std::cout << "(IRR_FORCE) Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status); // (Query to myself) it seems like it's not needed.
 				ptcl = &particles[ptcl_id];
-#ifdef PerformanceTraceOld
-				ptcl = &particles[ptcl_id];
+#ifdef PerformanceTraceWorker
 				start_point = std::chrono::high_resolution_clock::now();
 				ptcl->computeAccelerationIrr();
 				end_point = std::chrono::high_resolution_clock::now();
@@ -148,9 +147,9 @@ void WorkerRoutines() {
 				break;
 
 			case InitAcc1: // Initialize Acceleration(01)
-				//std::cout << "Processor " << MyRank<< " initialization starts." << std::endl;
-				MPI_Recv(&ptcl_id, 1, MPI_INT, ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
-				//std::cout << "Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
+				std::cout << "Processor " << MyRank<< " initialization starts." << std::endl;
+				ptcl_id = MyQueue[*CurrentQueue];
+				std::cout << "Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
 				ptcl = &particles[ptcl_id];
 				//std::cerr << ptcl_id+i << std::endl;
 				CalculateAcceleration01(ptcl);
