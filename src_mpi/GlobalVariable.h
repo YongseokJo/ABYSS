@@ -4,6 +4,9 @@
 struct GlobalVariable {
 	int LastParticleIndex;
 	// int NumberOfParticle;
+	int QueuePointer;
+	int QueueSize;
+	double next_time;
 };
 
 #endif

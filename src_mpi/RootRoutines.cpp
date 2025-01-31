@@ -52,6 +52,11 @@ void RootRoutines() {
 	int total_tasks;
 	int remaining_tasks=0, completed_tasks=0, completed_rank;
 
+#ifdef PerformanceTrace
+	std::chrono::high_resolution_clock::time_point start_point;
+	std::chrono::high_resolution_clock::time_point end_point;
+#endif
+
 	std::unordered_map<int, int> CMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
 	std::unordered_map<int, int> PrevCMPtclWorker; // by EW 2025.1.4 // unordered_map by EW 2025.1.11
 	std::vector<int> newCMptcls; // by EW 2025.1.6 // unordered_set? by EW 2025.1.11
@@ -506,6 +511,10 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePushA("IrregularForce");
 #endif
+#ifdef PerformanceTrace
+				start_point = std::chrono::high_resolution_clock::now();
+				ptcl->computeAccelerationIrr();
+#endif
 #ifdef DEBUG
 				std::cout << "Irr force starts" << std::endl;
 #endif
@@ -561,9 +570,15 @@ void RootRoutines() {
 #ifdef DEBUG
 				 std::cout << "Irregular Force done" << std::endl;
 #endif
+#ifdef PerformanceTrace
+				end_point = std::chrono::high_resolution_clock::now();
+				performance.IrregularForce +=
+					std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
+#endif
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
+
 #else
 				queue_scheduler.initialize(IrrForce, next_time);
 				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
@@ -614,25 +629,57 @@ void RootRoutines() {
 
 #define COMM_SPEED_DEBUG
 #ifdef COMM_SPEED_DEBUG
+
 #ifdef NSIGHT
-				nvtxRangePushA("CommunicationSpeedBenchmark1");
+				nvtxRangePushA("IrregularForce on root");
 #endif
 				// Irregular Update
-				queue_scheduler.initialize(CommunicationSpeedBenchmark1);
-				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
-				do
+				for (int ptcl_id : ThisLevelNode->ParticleList)
 				{
-					queue_scheduler.assignQueueAuto();
-					queue_scheduler.runQueueAuto();
-					queue_scheduler.waitQueue(0); // blocking wait
-				} while (queue_scheduler.isComplete());
-				
+					ptcl = &particles[ptcl_id];
+
+#ifdef PerformanceTrace
+					start_point = std::chrono::high_resolution_clock::now();
+					ptcl->computeAccelerationIrr();
+					end_point = std::chrono::high_resolution_clock::now();
+					performance.IrregularForce +=
+						std::chrono::duration_cast<std::chrono::nanoseconds>(end_point - start_point).count();
+#else
+					ptcl->computeAccelerationIrr();
+#endif
+
+					ptcl->NewCurrentBlockIrr = ptcl->CurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+					ptcl->calculateTimeStepIrr();
+					ptcl->NextBlockIrr = ptcl->NewCurrentBlockIrr + ptcl->TimeBlockIrr; // of this particle
+					ptcl->isUpdateToDate = true;
+				}
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
 
 #ifdef NSIGHT
-				nvtxRangePushA("CommunicationSpeedBenchmark2");
+				nvtxRangePushA("IrregularUpdate on root");
+#endif
+				// Irregular Update
+				for (int _id : ThisLevelNode->ParticleList)
+				{
+					ptcl = &particles[_id];
+
+					if (ptcl->NumberOfNeighbor != 0) // IAR modified
+						ptcl->updateParticle();
+					ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
+					ptcl->CurrentTimeIrr = ptcl->CurrentBlockIrr * time_step;
+				}
+
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+
+
+
+
+#ifdef NSIGHT
+				nvtxRangePushA("CommunicationSpeedBenchmark original");
 #endif
 				// Irregular Update
 				queue_scheduler.initialize(CommunicationSpeedBenchmark2);
@@ -646,6 +693,33 @@ void RootRoutines() {
 				
 #ifdef NSIGHT
 				nvtxRangePop();
+#endif
+
+
+#ifdef NewQueueTest
+				global_variable->QueueSize = ThisLevelNode->ParticleList.size();
+				global_variable->QueuePointer = NumberOfWorker;
+					for (int k = 0; k < ThisLevelNode->ParticleList.size(); k++)
+				{
+					queues[k] = ThisLevelNode->ParticleList[k];
+				}
+
+#ifdef NSIGHT
+				nvtxRangePushA("CommunicationSpeedBenchmark new");
+#endif
+				// Irregular Update
+				queue_scheduler.initialize(CommunicationSpeedBenchmark3);
+				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
+				do
+				{
+					queue_scheduler.assignQueueAuto();
+					queue_scheduler.runQueueAuto();
+					queue_scheduler.waitQueue(0); // blocking wait
+				} while (queue_scheduler.isComplete());
+				
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
 #endif
 #endif
 
@@ -746,6 +820,7 @@ void RootRoutines() {
 				nvtxRangePop();
 #endif
 
+/*
 #ifdef NSIGHT
 				nvtxRangePushA("FewBodySearch");
 #endif
@@ -770,6 +845,32 @@ void RootRoutines() {
 				std::cout << "FB search ended" << std::endl;
 #endif
 
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+*/
+
+
+#ifdef NSIGHT
+				nvtxRangePushA("Fewbody search on root");
+#endif
+				// Irregular Update
+				for (int ptcl_id : ThisLevelNode->ParticleList)
+				{
+					ptcl = &particles[ptcl_id];
+					ptcl->NewNumberOfNeighbor = 0;
+
+					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::manybody)
+					{
+						ptcl->checkNewGroup2();
+						ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+					}
+					else
+					{
+						if (ptcl->TimeStepIrr * EnzoTimeStep * 1e4 < TSEARCH)
+							ptcl->checkNewGroup();
+					}
+				}
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif

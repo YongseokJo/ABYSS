@@ -32,6 +32,9 @@ void WorkerRoutines() {
 	double new_adot[Dim];
 	Particle *ptcl;
 	Group *group;
+#ifdef NewQueueTest
+	int queue_index;
+#endif
 	std::chrono::high_resolution_clock::time_point start_point;
 	std::chrono::high_resolution_clock::time_point end_point;
 
@@ -47,7 +50,8 @@ void WorkerRoutines() {
 				MPI_Recv(&ptcl_id,   1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				//std::cout << "(IRR_FORCE) Processor " << MyRank<< ": PID= "<<ptcl_id << std::endl;
 				MPI_Recv(&next_time, 1, MPI_DOUBLE, ROOT, TIME_TAG, MPI_COMM_WORLD, &status); // (Query to myself) it seems like it's not needed.
-#ifdef PerformanceTrace
+				ptcl = &particles[ptcl_id];
+#ifdef PerformanceTraceOld
 				ptcl = &particles[ptcl_id];
 				start_point = std::chrono::high_resolution_clock::now();
 				ptcl->computeAccelerationIrr();
@@ -84,7 +88,6 @@ void WorkerRoutines() {
 					ptcl->updateParticle();
 				ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
 				ptcl->CurrentTimeIrr  = ptcl->CurrentBlockIrr*time_step;
-				//std::cout << "pid=" << ptcl_id << ", CurrentBlockIrr=" << particles[ptcl_id].CurrentBlockIrr << std::endl;
 				//std::cout << "IrrUp end " << MyRank << std::endl;
 				break;
 
@@ -307,6 +310,24 @@ void WorkerRoutines() {
 			case CommunicationSpeedBenchmark2:
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				break;
+#ifdef NewQueueTest
+			case CommunicationSpeedBenchmark3:
+				if (MyRank > global_variable->QueueSize)
+					break;
+				queue_index = MyRank - 1;
+
+				do
+				{
+					ptcl = &particles[ptcl_id];
+
+					if (ptcl->NumberOfNeighbor != 0) // IAR modified
+						ptcl->updateParticle();
+					ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
+					ptcl->CurrentTimeIrr = ptcl->CurrentBlockIrr * time_step;
+					queue_index += NumberOfWorker;
+				} while (queue_index < global_variable->QueueSize);
+				break;
+#endif
 
 			default:
 				break;

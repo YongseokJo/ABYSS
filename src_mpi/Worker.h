@@ -10,8 +10,6 @@
 
 
 
-#define MAX_QUEUE 1000
-#define MAX_COMMUNICATION 10
 
 struct Worker {
     int MyRank; 

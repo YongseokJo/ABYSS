@@ -177,7 +177,7 @@ void deleteNeighbors(int newOrder) {
 		members = &particles[ptclCM->NewNeighbors[i]];
 		members->isActive = false;
 	}
-	NumberOfParticle += 1 - ptclCM->NewNumberOfNeighbor;
+	NumberOfParticle += 1 - ptclCM->NewNumberOfNeighbor; // (Query) should it be placed at the end of the process?
 
 	// Erase members and put CM particle in neighbors
 	for (int i=0; i<=LastParticleIndex; i++) {

@@ -9,9 +9,8 @@
 #define MaxNumberOfParticle 1000000
 #define MaxNumberOfNeighbor 2000 // 10000 -> 2000 modified by EW 2025.1.11
 
-
-
-#define MaxNumberOfCommunication 10000
+#define MAX_QUEUE 100
+#define MAX_COMMUNICATION 10
 
 
 //#define FixNumNeighbor 20
