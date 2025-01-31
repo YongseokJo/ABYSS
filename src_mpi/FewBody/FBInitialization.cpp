@@ -97,8 +97,6 @@ void Group::initialIntegrator(int NumMembers) {
     }
 	fprintf(workerout, "\n");
 	fflush(workerout);
-	
-	assert(groupCM->NumMember == NumMembers); // for debugging by EW 2025.1.30
 
 	sym_int.info.r_break_crit = RSEARCH/position_unit; // distance criterion for checking stability
 	// more information in symplectic_integrator.h
@@ -111,11 +109,7 @@ void Group::initialIntegrator(int NumMembers) {
     sym_int.reserveIntegratorMem();
 	sym_int.info.generateBinaryTree(sym_int.particles,manager.interaction.gravitational_constant);
 
-
 	sym_int.particles.calcCenterOfMass();
-
-	// sym_int.initialIntegration(CurrentTime*EnzoTimeStep);
-    // sym_int.info.calcDsAndStepOption(manager.step.getOrder(), manager.interaction.gravitational_constant, manager.ds_scale);
 
 	//! Fix step options for integration with adjusted step (not for time sychronizatio phase)
 	// PeTar doesn't set this value explicitly!
@@ -153,7 +147,7 @@ void NewFBInitialization(Particle* ptclCM) {
 			NumberOfMembers += members->NewNumberOfNeighbor;
     }
 
-	fprintf(workerout, "Starting time CurrentTimeIrr (Myr): %e\n", ptcl->CurrentTimeIrr*EnzoTimeStep*1e4);
+	fprintf(workerout, "NewFBInitialization. CurrentTimeIrr (Myr): %e\n", ptcl->CurrentTimeIrr*EnzoTimeStep*1e4);
 
 	for (int i = 0; i < ptclCM->NewNumberOfNeighbor; ++i) {
 		Particle* members = &particles[ptclCM->NewNeighbors[i]];
@@ -161,12 +155,14 @@ void NewFBInitialization(Particle* ptclCM) {
 		double dt = ptcl->CurrentTimeIrr - members->CurrentTimeIrr;
 		double pos[Dim], vel[Dim];
 		members->predictParticleSecondOrder(dt, pos, vel);
+		members->CurrentTimeIrr = ptcl->CurrentTimeIrr;
 		
 		if (members->isCMptcl) {
 			Particle* members_members;
 
 			for (int j=0; j<members->NewNumberOfNeighbor; j++) {
 				members_members = &particles[members->NewNeighbors[j]];
+				members_members->CurrentTimeIrr = ptcl->CurrentTimeIrr;
 
 				for (int dim=0; dim<Dim; dim++) {
 					members_members->Position[dim] += pos[dim] - members->Position[dim];
@@ -182,8 +178,6 @@ void NewFBInitialization(Particle* ptclCM) {
 		}
 	}
 
-	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
-
 	ptclGroup->initialManager();
 	ptclGroup->initialIntegrator(NumberOfMembers); // Binary tree is made and CM particle is made automatically.
 
@@ -194,7 +188,6 @@ void NewFBInitialization(Particle* ptclCM) {
 	}
 
 	// Set ptcl information like time, PID, etc.
-
 	ptclCM->RadiusOfNeighbor = ptcl->RadiusOfNeighbor;
 
 	ptclCM->CurrentTimeIrr  = ptcl->CurrentTimeIrr;
@@ -318,7 +311,6 @@ void NewFBInitialization(Particle* ptclCM) {
 	}
 */
 
-// /* // Eunwoo test
 	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();
 	if (bin_root.semi>0.0) {
 		ptclGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, sqrt(ptclCM->RadiusOfNeighbor));
@@ -341,8 +333,6 @@ void NewFBInitialization(Particle* ptclCM) {
 		fprintf(workerout, "t_peri: %e Myr\n\t", abs(bin_root.t_peri*1e4));
 		fprintf(workerout, "r_break_crit: %e pc\n", ptclGroup->sym_int.info.r_break_crit*position_unit);
 	}
-// */ // Eunwoo test
-
 
 	fprintf(workerout, "\nFBInitialization.cpp: result of CM particle value calculation from function NewFBInitialization\n");
 
@@ -374,9 +364,7 @@ void NewFBInitialization3(Group* group) {
 
 	Group* ptclGroup = new Group();
 
-	std::cout <<"\n\n\nStarting Routine NewFBInitialization3" << std::endl;
-
-	// Set ptclGroup members first; this will be very useful
+	fprintf(workerout, "NewFBInitialization3. CurrentTimeIrr (Myr): %e\n", group->CurrentTime*EnzoTimeStep*1e4);
 
 	Particle* ptclCM = group->groupCM;
 
@@ -392,9 +380,7 @@ void NewFBInitialization3(Group* group) {
 			ptclCM->NewNumberOfNeighbor++;
 		}
 	}
-	// Let's link CM particle with the cm particles made in the binary tree (SDAR).
 
-	std::cout << "3" << std::endl;
 	ptclGroup->initialManager();
 	ptclGroup->initialIntegrator(ptclCM->NewNumberOfNeighbor); // Binary tree is made and CM particle is made automatically.
 
@@ -402,7 +388,6 @@ void NewFBInitialization3(Group* group) {
 	ptclCM->GroupInfo = ptclGroup;
 
 	fprintf(workerout, "The ID of CM is %d.\n", ptclCM->PID);
-
 
 	fprintf(workerout, "------------------NEW-GROUP-MEMBER-INFORMATION------------------\n");
 	for (int i=0; i < ptclGroup->sym_int.particles.getSize(); i++) {
@@ -440,7 +425,6 @@ void NewFBInitialization3(Group* group) {
 	ptclGroup->sym_int.initialIntegration(ptclGroup->CurrentTime*EnzoTimeStep);
     ptclGroup->sym_int.info.calcDsAndStepOption(ptclGroup->manager.step.getOrder(), ptclGroup->manager.interaction.gravitational_constant, ptclGroup->manager.ds_scale);
 
-// /* // Eunwoo test
 	auto& bin_root = ptclGroup->sym_int.info.getBinaryTreeRoot();
 	if (bin_root.semi>0.0) {
 		ptclGroup->sym_int.info.r_break_crit = fmin(2*bin_root.semi, sqrt(ptclCM->RadiusOfNeighbor));
@@ -463,7 +447,6 @@ void NewFBInitialization3(Group* group) {
 		fprintf(workerout, "t_peri: %e Myr\n\t", abs(bin_root.t_peri*1e4));
 		fprintf(workerout, "r_break_crit: %e pc\n", ptclGroup->sym_int.info.r_break_crit*position_unit);
 	}
-// */ // Eunwoo test
 
 	fprintf(workerout, "\nFBInitialization.cpp: result of CM particle value calculation from function NewFBInitialization3\n");
 

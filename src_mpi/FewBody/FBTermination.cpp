@@ -34,39 +34,18 @@ void insertNeighbors(Particle* ptclCM) {
 	}
 }
 
-void FBdeleteGroup(Group* group) {
-
-	Particle* ptclCM = group->groupCM;
-
-	if (ptclCM->getBinaryInterruptState() == BinaryInterruptState::none)
-		ptclCM->setBinaryInterruptState(BinaryInterruptState::terminated);
-	else 
-		assert(ptclCM->getBinaryInterruptState() == BinaryInterruptState::merger); // for debugging by EW 2025.1.20
-
-	ptclCM->NewNumberOfNeighbor = 0;
-	
-	for (int i=0; i<group->sym_int.particles.getSize(); i++) {
-		Particle* members = &particles[group->sym_int.particles[i].ParticleIndex];
-
-		ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = members->ParticleIndex;
-		ptclCM->NewNumberOfNeighbor++;
-	}
-
-	delete group;
-}
-
 void FBTermination(Particle* ptclCM) {
 
 	fprintf(binout,"--------------------------------------\n");
 	fprintf(binout,"In FBTermination.cpp... (CM PID: %d)\n\n", ptclCM->PID);
 	fprintf(binout, "CurrentTimeIrr of ptclCM (Myr): %e\n", ptclCM->CurrentTimeIrr*EnzoTimeStep*1e4);
-	fprintf(binout, "CurrentTimeIrr of the first member (Myr): %e\n", particles[ptclCM->NewNeighbors[0]].CurrentTimeIrr*EnzoTimeStep*1e4);
+	fprintf(binout, "CurrentTimeIrr of the first member (Myr): %e\n", particles[ptclCM->Members[0]].CurrentTimeIrr*EnzoTimeStep*1e4);
 
 	NumberOfParticle--; // CM particle should be inactive by EW 2025.1.20
 	
 	Particle* members;
-	for (int i=0; i<ptclCM->NewNumberOfNeighbor; i++) {
-		members = &particles[ptclCM->NewNeighbors[i]];
+	for (int i=0; i<ptclCM->NumMember; i++) {
+		members = &particles[ptclCM->Members[i]];
 
 		members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
 
@@ -76,7 +55,7 @@ void FBTermination(Particle* ptclCM) {
 		NumberOfParticle++; // by EW 2025.1.20
 
 		// For 3-body & 4-body termination case by EW 2025.1.19
-		if (ptclCM->NewNumberOfNeighbor > 2)
+		if (ptclCM->NumMember > 2)
 			members->setBinaryInterruptState(BinaryInterruptState::manybody);
 		else
 			members->setBinaryInterruptState(BinaryInterruptState::none);

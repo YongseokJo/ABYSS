@@ -33,7 +33,14 @@ void Particle::checkNewGroup() {
     // check only active particles 
     // single case
     for (int i=0; i < this->NumberOfNeighbor; i++) {
-		ptcl2 = &particles[this->Neighbors[i]];
+        ptcl2 = &particles[this->Neighbors[i]];
+        if (!ptcl2->isActive) {
+            if (ptcl2->CMPtclIndex != -1) {
+                ptcl2 = &particles[ptcl2->CMPtclIndex];
+            }
+            else 
+                continue;
+        }
 
         // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
         if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
@@ -104,7 +111,14 @@ void Particle::checkNewGroup2() {
     // check only active particles 
     // single case
     for (int i=0; i < this->NumberOfNeighbor; i++) {
-		ptcl2 = &particles[this->Neighbors[i]];
+        ptcl2 = &particles[this->Neighbors[i]];
+        if (!ptcl2->isActive) {
+            if (ptcl2->CMPtclIndex != -1) {
+                ptcl2 = &particles[ptcl2->CMPtclIndex];
+            }
+            else 
+                continue;
+        }
 
         double dt;
 

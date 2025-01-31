@@ -682,11 +682,11 @@ void RootRoutines() {
 							PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
 						CMPtclWorker.erase(ptcl->ParticleIndex);
 
-						for (int j=0; j < ptcl->NewNumberOfNeighbor; j++) {
-							if (particles[ptcl->NewNeighbors[j]].Mass == 0.0)
+						for (int j=0; j < ptcl->NumMember; j++) {
+							if (particles[ptcl->Members[j]].Mass == 0.0)
 								continue;
-							ThisLevelNode->ParticleList.push_back(ptcl->NewNeighbors[j]);
-							particles[ptcl->NewNeighbors[j]].isActive = true;
+							ThisLevelNode->ParticleList.push_back(ptcl->Members[j]);
+							particles[ptcl->Members[j]].isActive = true;
 						}
 
 						FBTermination(ptcl);

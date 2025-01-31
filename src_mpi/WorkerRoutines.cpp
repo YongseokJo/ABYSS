@@ -13,7 +13,6 @@ void CalculateAcceleration23(Particle* ptcl1);
 void makePrimordialGroup(Particle* ptclCM);
 void NewFBInitialization(Particle* ptclCM);
 void deleteGroup(Particle* ptclCM);
-void FBdeleteGroup(Group* group);
 void NewFBInitialization3(Group* group);
 
 void WorkerRoutines() {
@@ -31,7 +30,6 @@ void WorkerRoutines() {
 	double new_a[Dim];
 	double new_adot[Dim];
 	Particle *ptcl;
-	Group *group;
 	std::chrono::high_resolution_clock::time_point start_point;
 	std::chrono::high_resolution_clock::time_point end_point;
 
@@ -257,7 +255,11 @@ void WorkerRoutines() {
 					ptcl->GroupInfo->isTerminate = ptcl->GroupInfo->CheckBreak();
 
 				if (ptcl->GroupInfo->isTerminate) {
-					FBdeleteGroup(ptcl->GroupInfo);
+					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::none)
+						ptcl->setBinaryInterruptState(BinaryInterruptState::terminated);
+
+					delete ptcl->GroupInfo;
+
 					std::cout << "(SDAR) Processor " << MyRank<< ": PID= "<<ptcl->PID << " deleted!" <<std::endl;
 				}
 				else
