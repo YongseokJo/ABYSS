@@ -8,13 +8,23 @@
 #include <mpi.h>
 
 
+
 extern Particle *particles;
 extern Particle *particles_original;
+
+extern int *tasks;
+extern int *tasks_original;
+
+extern int *queues;
+extern int *queues_original;
 
 /* Communicators */
 extern MPI_Win win;
 extern MPI_Win win2;
 extern MPI_Win win3;
+extern MPI_Win win4;
+extern MPI_Win win5;
+
 extern MPI_Comm shared_comm;
 extern int MyRank;
 extern int NumberOfProcessor;

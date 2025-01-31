@@ -4,12 +4,21 @@
 
 Particle *particles_original;
 Particle *particles;
+
+int *queues_original;
+int *queues;
+
+int *tasks_original;
+int *tasks;
+
 int *ActiveIndexToOriginalIndex;
-int *ActiveIndexToOriginalIndex_orginal;
+int *ActiveIndexToOriginalIndex_original;
 
 MPI_Win win;
 MPI_Win win2;
 MPI_Win win3;
+MPI_Win win4;
+MPI_Win win5;
 
 MPI_Comm shared_comm;
 int MyRank;
