@@ -1,5 +1,6 @@
 #ifdef FEWBODY
 #include "../global.h"
+#include <unordered_set>
 
 // calculate dr dv of a pair
 Float calcDrDv(const double *pos1, const double *pos2, const double *vel1, const double *vel2) {
@@ -23,12 +24,14 @@ Float calcDrDv(const double *pos1, const double *pos2, const double *vel1, const
 */
 void Particle::checkNewGroup() {
 
-    // kappa_org criterion for new group kappa_org>kappa_org_crit
-    const Float kappa_org_crit = 1e-2;
+    const Float kappa_org_crit = 1e-2; // kappa_org criterion for new group kappa_org>kappa_org_crit
+    const double r_crit = RSEARCH/position_unit; // distance criterion
 
     double pos1[Dim], vel1[Dim];
 
     Particle* ptcl2;
+
+    std::unordered_set<int> CMPtclsSet;
 
     // check only active particles 
     // single case
@@ -36,20 +39,24 @@ void Particle::checkNewGroup() {
         ptcl2 = &particles[this->Neighbors[i]];
         if (!ptcl2->isActive) {
             if (ptcl2->CMPtclIndex != -1) {
-                ptcl2 = &particles[ptcl2->CMPtclIndex];
+                CMPtclsSet.insert(ptcl2->CMPtclIndex);
+				continue;
             }
-            else 
-                continue;
+            else {
+                if (ptcl2->Mass == 0) continue;
+                else {
+                    fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
+                    assert(ptcl2->Mass == 0);
+                }
+            }
         }
 
         // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
         if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
             continue;
 
-        double dt;
-
-        dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
-									 this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
+                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
 
         double pos2[Dim], vel2[Dim];
         
@@ -57,17 +64,12 @@ void Particle::checkNewGroup() {
 		ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
         const Float dr = dist(pos1, pos2);
-
-        // distance criterion
-        Float r_crit = RSEARCH/position_unit;
-        // Float r_crit_sq = r_crit*r_crit;
         
         if (dr < r_crit) {
 
             Float drdv = calcDrDv(pos1, pos2, vel1, vel2);
             // only inwards
             if(drdv<0.0) {
-
 // /* // test_1e4_2
                 Float fcm[3] = {this->Mass*this->a_irr[0][0] + ptcl2->Mass*ptcl2->a_irr[0][0], 
                                 this->Mass*this->a_irr[1][0] + ptcl2->Mass*ptcl2->a_irr[1][0], 
@@ -95,18 +97,75 @@ void Particle::checkNewGroup() {
             }
         }
     }
+    if (!CMPtclsSet.empty()) {
+        for (int i: CMPtclsSet) {
+			ptcl2 = &particles[i];
+			if (!ptcl2->isActive) {
+				fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
+				assert(ptcl2->isActive);
+			}
+
+            // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
+            if (ptcl2->TimeStepIrr*EnzoTimeStep*1e4 > TSEARCH) // fiducial: 1e-5 but for RSEARCH = 0.00025 pc, 1e-6 Myr seems good
+                continue;
+
+            double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
+                            this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+
+            double pos2[Dim], vel2[Dim];
+            
+            this->predictParticleSecondOrder(dt, pos1, vel1);
+            ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
+
+            const Float dr = dist(pos1, pos2);
+            
+            if (dr < r_crit) {
+
+                Float drdv = calcDrDv(pos1, pos2, vel1, vel2);
+                // only inwards
+                if(drdv<0.0) {
+// /* // test_1e4_2
+                    Float fcm[3] = {this->Mass*this->a_irr[0][0] + ptcl2->Mass*ptcl2->a_irr[0][0], 
+                                    this->Mass*this->a_irr[1][0] + ptcl2->Mass*ptcl2->a_irr[1][0], 
+                                    this->Mass*this->a_irr[2][0] + ptcl2->Mass*ptcl2->a_irr[2][0]};
+
+                    AR::SlowDown sd;
+                    Interaction interaction;
+                    Float mcm = this->Mass + ptcl2->Mass;
+
+                    // sd.initialSlowDownReference(ar_manager->slowdown_pert_ratio_ref, ar_manager->slowdown_timescale_max);
+                    sd.initialSlowDownReference(1e-6, NUMERIC_FLOAT_MAX);
+
+                    sd.pert_in = interaction.calcPertFromMR(dr, this->Mass, ptcl2->Mass);
+                    sd.pert_out = interaction.calcPertFromForce(fcm, mcm, mcm);
+
+                    sd.calcSlowDownFactor();
+                    Float kappa_org = sd.getSlowDownFactorOrigin();
+
+                    // avoid strong perturbed case, estimate perturbation
+                    // if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
+                    if(kappa_org<kappa_org_crit) continue;
+// */ // test_1e4_2
+                    this->NewNeighbors[this->NewNumberOfNeighbor] = this->Neighbors[i];
+                    this->NewNumberOfNeighbor++;
+                }
+            }
+        }
+    }
 }
 
 // Use when many-body (>3) group broke
 // Or primordial binary search
 void Particle::checkNewGroup2() {
-
-    // kappa_org criterion for new group kappa_org>kappa_org_crit
-    const Float kappa_org_crit = 1e-2;
+    
+    const Float kappa_org_crit = 1e-2; // kappa_org criterion for new group kappa_org>kappa_org_crit
+    const double r_crit = RSEARCH/position_unit; // distance criterion
 
     double pos1[Dim], vel1[Dim];
 
     Particle* ptcl2;
+
+    std::unordered_set<int> CMPtclsSet;
 
     // check only active particles 
     // single case
@@ -114,16 +173,20 @@ void Particle::checkNewGroup2() {
         ptcl2 = &particles[this->Neighbors[i]];
         if (!ptcl2->isActive) {
             if (ptcl2->CMPtclIndex != -1) {
-                ptcl2 = &particles[ptcl2->CMPtclIndex];
+                CMPtclsSet.insert(ptcl2->CMPtclIndex);
+				continue;
             }
-            else 
-                continue;
+            else {
+                if (ptcl2->Mass == 0) continue;
+                else {
+                    fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
+                    assert(ptcl2->Mass == 0);
+                }
+            }
         }
 
-        double dt;
-
-        dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
-									 this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+        double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
+                        this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
 
         double pos2[Dim], vel2[Dim];
         
@@ -131,18 +194,40 @@ void Particle::checkNewGroup2() {
 		ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
 
         const Float dr = dist(pos1, pos2);
-        // ASSERT(dr>0.0);
 
         double v2 = std::pow(dist(vel1, vel2), 2);
-        // determine they are bound or not
-        double energy = v2/2 - (this->Mass + ptcl2->Mass)/dr;
-
-        // distance criterion
-        Float r_crit = RSEARCH/position_unit;
+        double energy = v2/2 - (this->Mass + ptcl2->Mass)/dr; // determine they are bound or not
         
         if (dr < r_crit && energy < 0) {
             this->NewNeighbors[this->NewNumberOfNeighbor] = this->Neighbors[i];
             this->NewNumberOfNeighbor++;
+        }
+    }
+    if (!CMPtclsSet.empty()) {
+        for (int i: CMPtclsSet) {
+			ptcl2 = &particles[i];
+			if (!ptcl2->isActive) {
+				fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
+				assert(ptcl2->isActive);
+			}
+
+            double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \
+                            this->CurrentTimeIrr - ptcl2->CurrentTimeIrr : ptcl2->CurrentTimeIrr - this->CurrentTimeIrr;
+
+            double pos2[Dim], vel2[Dim];
+            
+            this->predictParticleSecondOrder(dt, pos1, vel1);
+            ptcl2->predictParticleSecondOrder(dt, pos2, vel2);
+
+            const Float dr = dist(pos1, pos2);
+
+            double v2 = std::pow(dist(vel1, vel2), 2);
+            double energy = v2/2 - (this->Mass + ptcl2->Mass)/dr; // determine they are bound or not
+            
+            if (dr < r_crit && energy < 0) {
+                this->NewNeighbors[this->NewNumberOfNeighbor] = this->Neighbors[i];
+                this->NewNumberOfNeighbor++;
+            }
         }
     }
 }

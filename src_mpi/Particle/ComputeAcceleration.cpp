@@ -5,7 +5,6 @@
 #include <cassert>
 #include "../global.h"
 #include "../def.h"
-#include <unordered_map>
 #include <unordered_set>
 
 
@@ -57,9 +56,12 @@ void Particle::computeAccelerationIrr() {
 				CMPtclsSet.insert(ptcl->CMPtclIndex);
 				continue;
 			}
-			else if (ptcl->Mass != 0) {
-				fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
-				assert(ptcl->Mass == 0);
+			else {
+				if (ptcl->Mass == 0) continue;
+				else {
+					fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
+					assert(ptcl->Mass == 0);
+				}
 			}
 		}
 
