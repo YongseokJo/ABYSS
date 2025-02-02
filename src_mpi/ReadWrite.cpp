@@ -211,7 +211,7 @@ int writeParticle(double current_time, int outputNum) {
 		for (int i=0; i<=LastParticleIndex; i++) {
 			ptcl = &particles[i];
 
-			if (ptcl->isActive) continue;
+			if (!ptcl->isActive) continue;
 
 			ptcl->predictParticleSecondOrder(current_time - ptcl->CurrentTimeIrr, pos, vel);
 			
