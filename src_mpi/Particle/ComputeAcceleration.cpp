@@ -696,7 +696,7 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 	int _NewNumberOfNeighbor = 0;
 	for (int i=0; i<NewNumberOfNeighborGPU; i++) {
 		if (particles[NewNeighborsGPU[i]].isCMptcl) {
-			for (int j=0; j<particles[NewNeighborsGPU[i]].NumMember; j++) {
+			for (int j=0; j<particles[NewNeighborsGPU[i]].NumberOfMember; j++) {
 				this->NewNeighbors[_NewNumberOfNeighbor++] = particles[NewNeighborsGPU[i]].Members[j];
 			}
 		}

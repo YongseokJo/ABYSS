@@ -473,6 +473,14 @@ void RootRoutines() {
 			while ( skiplist->getFirstNode() != nullptr) {
 				// update_idx=0; // commented out by EW 2025.1.6
 				ThisLevelNode = skiplist->getFirstNode();
+				ThisLevelNode->ParticleList.erase(
+					std::remove_if(ThisLevelNode->ParticleList.begin(), ThisLevelNode->ParticleList.end(),
+						[](int i) {
+						return !particles[i].isActive;
+						}
+					),
+					ThisLevelNode->ParticleList.end()
+				);
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
 			
@@ -624,24 +632,24 @@ void RootRoutines() {
 						assert(ptcl->isCMptcl); // for debugging by EW 2025.1.20
 					
 						if (ptcl->getBinaryInterruptState() == BinaryInterruptState::merger) {
-							if (ptcl->NewNumberOfNeighbor == 2) { // binary merger
+							if (ptcl->NumberOfMember == 2) { // binary merger
 
-								Particle* donor = &particles[ptcl->NewNeighbors[0]];
-								Particle* accretor = &particles[ptcl->NewNeighbors[1]];
+								Particle* donor = &particles[ptcl->Members[0]];
+								Particle* accretor = &particles[ptcl->Members[1]];
 
 								Merge(donor, accretor);
 								
 							}
 							else { // from NewFBInitialization3
 
-								assert(ptcl->NewNumberOfNeighbor > 2); // for debugging by EW 2025.1.20
+								assert(ptcl->NumberOfMember > 2); // for debugging by EW 2025.1.20
 
 								Particle* donor;
 								Particle* accretor;
 
-								for (int j=0; j<ptcl->NewNumberOfNeighbor; j++) {
-									if (particles[ptcl->NewNeighbors[j]].getBinaryInterruptState() == BinaryInterruptState::collision) {
-										donor = &particles[ptcl->NewNeighbors[j]];
+								for (int j=0; j<ptcl->NumberOfMember; j++) {
+									if (particles[ptcl->Members[j]].getBinaryInterruptState() == BinaryInterruptState::collision) {
+										donor = &particles[ptcl->Members[j]];
 										accretor = &particles[donor->getBinaryPairID()];
 
 										assert(accretor->getBinaryInterruptState() == BinaryInterruptState::collision);
@@ -682,7 +690,7 @@ void RootRoutines() {
 							PrevCMPtclWorker.insert({ptcl->ParticleIndex, CMPtclWorker[ptcl->ParticleIndex]});
 						CMPtclWorker.erase(ptcl->ParticleIndex);
 
-						for (int j=0; j < ptcl->NumMember; j++) {
+						for (int j=0; j < ptcl->NumberOfMember; j++) {
 							if (particles[ptcl->Members[j]].Mass == 0.0)
 								continue;
 							ThisLevelNode->ParticleList.push_back(ptcl->Members[j]);

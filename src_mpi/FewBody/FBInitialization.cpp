@@ -68,7 +68,7 @@ void Group::initialManager() {
 
 void Group::initialIntegrator(int NumMembers) {
 
-	groupCM->NumMember = 0;
+	groupCM->NumberOfMember = 0;
 
 	sym_int.manager = &manager;
 
@@ -83,7 +83,7 @@ void Group::initialIntegrator(int NumMembers) {
 			members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 			sym_int.particles.addMemberAndAddress(*members);
 			fprintf(workerout, " %d", sym_int.particles[i].PID);
-			groupCM->Members[groupCM->NumMember++] = members->ParticleIndex;
+			groupCM->Members[groupCM->NumberOfMember++] = members->ParticleIndex;
 		}
 		else {
 			for (int j=0; j < members->NewNumberOfNeighbor; j++) {
@@ -91,7 +91,7 @@ void Group::initialIntegrator(int NumMembers) {
 				members_members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 				sym_int.particles.addMemberAndAddress(*members_members);
 				fprintf(workerout, " %d", sym_int.particles[i].PID);
-				groupCM->Members[groupCM->NumMember++] = members_members->ParticleIndex;
+				groupCM->Members[groupCM->NumberOfMember++] = members_members->ParticleIndex;
 			}
 		}
     }

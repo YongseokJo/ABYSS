@@ -44,7 +44,7 @@ void FBTermination(Particle* ptclCM) {
 	NumberOfParticle--; // CM particle should be inactive by EW 2025.1.20
 	
 	Particle* members;
-	for (int i=0; i<ptclCM->NumMember; i++) {
+	for (int i=0; i<ptclCM->NumberOfMember; i++) {
 		members = &particles[ptclCM->Members[i]];
 
 		members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
@@ -55,7 +55,7 @@ void FBTermination(Particle* ptclCM) {
 		NumberOfParticle++; // by EW 2025.1.20
 
 		// For 3-body & 4-body termination case by EW 2025.1.19
-		if (ptclCM->NumMember > 2)
+		if (ptclCM->NumberOfMember > 2)
 			members->setBinaryInterruptState(BinaryInterruptState::manybody);
 		else
 			members->setBinaryInterruptState(BinaryInterruptState::none);
