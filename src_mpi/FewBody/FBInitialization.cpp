@@ -87,7 +87,7 @@ void Group::initialIntegrator(int NumMembers) {
 				Particle* members_members = &particles[members->NewNeighbors[j]];
 				members_members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 				sym_int.particles.addMemberAndAddress(*members_members);
-				fprintf(workerout, " %d", sym_int.particles[i].PID);
+				fprintf(workerout, " %d", sym_int.particles[j].PID);
 			}
 		}
     }
