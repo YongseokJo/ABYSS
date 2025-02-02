@@ -70,6 +70,8 @@ struct Particle {
 	Group* GroupInfo;
 	bool isCMptcl; // do we need this? (Query) we can simply use if GroupInfo == nullptr right?
 	int CMPtclIndex; // added for write_out_group function by EW 2025.1.6
+	int Members[10];
+	int NumberOfMember;
 
 #ifdef SEVN
 	// For SEVN
@@ -121,6 +123,7 @@ struct Particle {
 		isCMptcl = false; //(Query)
 		isUpdateToDate = true;
 		CMPtclIndex = -1;
+		NumberOfMember = 0;
 #ifdef SEVN
 		StellarEvolution = nullptr;
 		FormationTime = 0.0; // Myr
@@ -166,6 +169,7 @@ struct Particle {
 		this->a_spin[1] = 0.;
 		this->a_spin[2] = 0.;
 		this->CMPtclIndex = -1;
+		this->NumberOfMember = 0;
 		this->isUpdateToDate = true;
 
 #ifndef SEVN
@@ -198,6 +202,7 @@ struct Particle {
 		GroupInfo = nullptr;
 		isCMptcl = false;
 		CMPtclIndex = -1;
+		NumberOfMember = 0;
 		setBinaryInterruptState(BinaryInterruptState::none);
     }
 

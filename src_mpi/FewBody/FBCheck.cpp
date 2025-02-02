@@ -60,8 +60,7 @@ void Particle::checkNewGroup() {
             Float drdv = calcDrDv(pos1, pos2, vel1, vel2);
             // only inwards
             if(drdv<0.0) {
-
-// /* // test_1e4_2
+/* // test_1e4_2
                 Float fcm[3] = {this->Mass*this->a_irr[0][0] + ptcl2->Mass*ptcl2->a_irr[0][0], 
                                 this->Mass*this->a_irr[1][0] + ptcl2->Mass*ptcl2->a_irr[1][0], 
                                 this->Mass*this->a_irr[2][0] + ptcl2->Mass*ptcl2->a_irr[2][0]};
@@ -82,7 +81,7 @@ void Particle::checkNewGroup() {
                 // avoid strong perturbed case, estimate perturbation
                 // if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
                 if(kappa_org<kappa_org_crit) continue;
-// */ // test_1e4_2
+*/ // test_1e4_2
                 this->NewNeighbors[this->NewNumberOfNeighbor] = this->Neighbors[i];
                 this->NewNumberOfNeighbor++;
             }

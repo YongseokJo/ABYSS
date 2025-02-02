@@ -68,6 +68,8 @@ void Group::initialManager() {
 
 void Group::initialIntegrator(int NumMembers) {
 
+	groupCM->NumberOfMember = 0;
+
 	sym_int.manager = &manager;
 
 	sym_int.particles.setMode(COMM::ListMode::copy);
@@ -81,6 +83,7 @@ void Group::initialIntegrator(int NumMembers) {
 			members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 			sym_int.particles.addMemberAndAddress(*members);
 			fprintf(workerout, " %d", sym_int.particles[i].PID);
+			groupCM->Members[groupCM->NumberOfMember++] = members->ParticleIndex;
 		}
 		else {
 			for (int j=0; j < members->NewNumberOfNeighbor; j++) {
@@ -88,9 +91,11 @@ void Group::initialIntegrator(int NumMembers) {
 				members_members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 				sym_int.particles.addMemberAndAddress(*members_members);
 				fprintf(workerout, " %d", sym_int.particles[j].PID);
+				groupCM->Members[groupCM->NumberOfMember++] = members_members->ParticleIndex;
 			}
 		}
     }
+	assert(groupCM->NumberOfMember == sym_int.particles.getSize()); // for debugging by EW 2025.2.2
 	fprintf(workerout, "\n");
 	fflush(workerout);
 
