@@ -100,6 +100,11 @@ void Particle::checkNewGroup() {
     if (!CMPtclsSet.empty()) {
         for (int i: CMPtclsSet) {
 			ptcl2 = &particles[i];
+
+            if (this->PID == ptcl2->PID) {
+				continue;
+			}
+
 			if (!ptcl2->isActive) {
 				fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
 				assert(ptcl2->isActive);
@@ -206,6 +211,11 @@ void Particle::checkNewGroup2() {
     if (!CMPtclsSet.empty()) {
         for (int i: CMPtclsSet) {
 			ptcl2 = &particles[i];
+
+            if (this->PID == ptcl2->PID) {
+				continue;
+			}
+
 			if (!ptcl2->isActive) {
 				fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
 				assert(ptcl2->isActive);

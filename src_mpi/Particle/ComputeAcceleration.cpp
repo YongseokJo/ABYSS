@@ -118,6 +118,11 @@ void Particle::computeAccelerationIrr() {
 	if (!CMPtclsSet.empty()) {
 		for (int i: CMPtclsSet) {
 			ptcl = &particles[i];
+
+			if (this->PID == ptcl->PID) {
+				continue;
+			}
+			
 			if (!ptcl->isActive) {
 				fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
 				assert(ptcl->isActive);
