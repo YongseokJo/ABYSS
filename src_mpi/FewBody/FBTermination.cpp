@@ -20,12 +20,11 @@ void insertNeighbors(Particle* ptclCM) {
 				ptcl->Neighbors[j] = ptcl->Neighbors[ptcl->NumberOfNeighbor - 1];
 				ptcl->NumberOfNeighbor--;
 
-				for (int k=0; k<ptclCM->NewNumberOfNeighbor; k++) {
-					if (particles[ptclCM->NewNeighbors[k]].Mass == 0.0)
+				for (int k=0; k<ptclCM->NumberOfMember; k++) {
+					if (particles[ptclCM->Members[k]].Mass == 0.0)
 						continue;
-					ptcl->Neighbors[ptcl->NumberOfNeighbor] = ptclCM->NewNeighbors[k];
+					ptcl->Neighbors[ptcl->NumberOfNeighbor++] = ptclCM->Members[k];
 					// std::cout << "Newly added neighbor PID: " << particles[ptclCM->NewNeighbors[k]].PID << std::endl; // for debugging by EW 2025.1.22
-					ptcl->NumberOfNeighbor++;
 				}
 				// std::cout << "After NumberOfNeighbor: " << ptcl->NumberOfNeighbor << std::endl; // for debugging by EW 2025.1.22
 				break;
@@ -146,6 +145,7 @@ void FBTermination(Particle* ptclCM) {
 		// fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", members->CurrentBlockIrr, members->CurrentBlockReg);
 	}
 	insertNeighbors(ptclCM);
+	ptclCM->clear();
 
 	fprintf(binout,"end of Few Body Termination\n");
 	fprintf(binout,"--------------------------------------\n");
