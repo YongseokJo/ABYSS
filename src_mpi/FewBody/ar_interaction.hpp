@@ -584,6 +584,7 @@ public:
                         Float t_peri = mean_anomaly/mean_motion;
                         if (drdv<0 && t_peri<_bin_interrupt.time_end-_bin_interrupt.time_now) {
                             fprintf(mergerout, "Merger1. peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
+                            fflush(mergerout);
 
                             p1->setBinaryInterruptState(BinaryInterruptState::collision);
                             p2->setBinaryInterruptState(BinaryInterruptState::collision);
@@ -604,6 +605,7 @@ public:
                             p2->time_check = std::min(p1->time_check, p2->time_check);
                             fprintf(mergerout, "Merger2. PID: %d and %d might merge soon!\n", p1->PID, p2->PID);
                             fprintf(mergerout, "peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
+                            fflush(mergerout);
                         }
                     }
                 }

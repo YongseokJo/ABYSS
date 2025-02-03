@@ -53,15 +53,8 @@ void CalculateAcceleration01(Particle* ptcl1) {
 		if (!ptcl2->isActive) {
 			if (ptcl2->CMPtclIndex != -1) {
 				CMPtclsSet.insert(ptcl2->CMPtclIndex);
-				continue;
 			}
-			else {
-				if (ptcl2->Mass == 0) continue;
-				else {
-					fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", ptcl1->PID, ptcl2->PID);
-					assert(ptcl2->Mass == 0);
-				}
-			}
+			continue;
 		}
 
 		r2 = 0;
@@ -141,7 +134,7 @@ void CalculateAcceleration01(Particle* ptcl1) {
 					ptcl1->a_irr[dim][0] += m_r3*x[dim];
 					ptcl1->a_irr[dim][1] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 				}
-				for (int j; j < ptcl2->NumberOfMember; j++) {
+				for (int j=0; j < ptcl2->NumberOfMember; j++) {
 					ptcl1->Neighbors[ptcl1->NumberOfNeighbor]=ptcl2->Members[j]; // Eunwoo: PID -> ParticleIndex
 					ptcl1->NumberOfNeighbor++;
 				}
@@ -195,15 +188,8 @@ void CalculateAcceleration23(Particle* ptcl1) {
 		if (!ptcl2->isActive) {
 			if (ptcl2->CMPtclIndex != -1) {
 				CMPtclsSet.insert(ptcl2->CMPtclIndex);
-				continue;
 			}
-			else {
-				if (ptcl2->Mass == 0) continue;
-				else {
-					fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", ptcl1->PID, ptcl2->PID);
-					assert(ptcl2->Mass == 0);
-				}
-			}
+			continue;
 		}
 		
 		r2 = 0;
@@ -267,7 +253,7 @@ void CalculateAcceleration23(Particle* ptcl1) {
 			if (ptcl1->PID == ptcl2->PID) {
 				continue;
 			}
-			
+
 			if (!ptcl2->isActive) {
 				fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", ptcl1->PID, ptcl2->PID);
 				assert(ptcl2->isActive);

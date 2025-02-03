@@ -40,15 +40,8 @@ void Particle::checkNewGroup() {
         if (!ptcl2->isActive) {
             if (ptcl2->CMPtclIndex != -1) {
                 CMPtclsSet.insert(ptcl2->CMPtclIndex);
-				continue;
             }
-            else {
-                if (ptcl2->Mass == 0) continue;
-                else {
-                    fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
-                    assert(ptcl2->Mass == 0);
-                }
-            }
+            continue;
         }
 
         // if (ptcl2->TimeStepIrr > this->TimeStepIrr) // test_1e5_4 & 5: this must make the same result!
@@ -179,15 +172,8 @@ void Particle::checkNewGroup2() {
         if (!ptcl2->isActive) {
             if (ptcl2->CMPtclIndex != -1) {
                 CMPtclsSet.insert(ptcl2->CMPtclIndex);
-				continue;
             }
-            else {
-                if (ptcl2->Mass == 0) continue;
-                else {
-                    fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", this->PID, ptcl2->PID);
-                    assert(ptcl2->Mass == 0);
-                }
-            }
+            continue;
         }
 
         double dt = this->CurrentTimeIrr > ptcl2->CurrentTimeIrr ? \

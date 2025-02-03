@@ -54,15 +54,8 @@ void Particle::computeAccelerationIrr() {
 		if (!ptcl->isActive) {
 			if (ptcl->CMPtclIndex != -1) {
 				CMPtclsSet.insert(ptcl->CMPtclIndex);
-				continue;
 			}
-			else {
-				if (ptcl->Mass == 0) continue;
-				else {
-					fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
-					assert(ptcl->Mass == 0);
-				}
-			}
+			continue;
 		}
 
 
@@ -122,7 +115,7 @@ void Particle::computeAccelerationIrr() {
 			if (this->PID == ptcl->PID) {
 				continue;
 			}
-			
+
 			if (!ptcl->isActive) {
 				fprintf(stderr, "Why inactive CM ptcl? this PID: %d, neighbor PID: %d\n", this->PID, ptcl->PID);
 				assert(ptcl->isActive);
@@ -536,10 +529,6 @@ void Particle::updateRegularParticleCuda(int *NewNeighborsGPU, int NewNumberOfNe
 						hashTableOld.insert(particles[this->Neighbors[i]].CMPtclIndex);
 						RealNeighbors[RealNumberOfNeighbor++] = particles[this->Neighbors[i]].CMPtclIndex;
 					}
-				}
-				else if (particles[this->Neighbors[i]].Mass != 0) {
-					fprintf(stderr, "Why not zero mass? this PID: %d, neighbor PID: %d\n", this->PID, particles[this->Neighbors[i]].PID);
-					assert(particles[this->Neighbors[i]].Mass == 0);
 				}
 			}
 		}

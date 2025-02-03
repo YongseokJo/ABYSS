@@ -47,8 +47,6 @@ void FBTermination(Particle* ptclCM) {
 	for (int i=0; i<ptclCM->NumberOfMember; i++) {
 		members = &particles[ptclCM->Members[i]];
 
-		members->CMPtclIndex = -1; // added for write_out_group function by EW 2025.1.6
-
 		if (members->Mass == 0.0)
 			continue;
 
@@ -133,6 +131,7 @@ void FBTermination(Particle* ptclCM) {
 		// fprintf(binout, "Current Blocks - irregular: %llu, regular:%llu \n", members->CurrentBlockIrr, members->CurrentBlockReg);
 	}
 	// insertNeighbors(ptclCM);
+	ptclCM->clear();
 
 	fprintf(binout,"end of Few Body Termination\n");
 	fprintf(binout,"--------------------------------------\n");
