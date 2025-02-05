@@ -4,7 +4,7 @@
 //#pragma once
 
 extern double EnzoTimeStep;
-extern FILE* mergerout;
+extern FILE* workerout;
 extern Particle *particles;
 
 #include "ar_perturber.hpp"
@@ -583,8 +583,9 @@ public:
                         Float mean_motion  = sqrt(gravitational_constant*_bin.Mass/(fabs(_bin.semi*_bin.semi*_bin.semi))); 
                         Float t_peri = mean_anomaly/mean_motion;
                         if (drdv<0 && t_peri<_bin_interrupt.time_end-_bin_interrupt.time_now) {
-                            fprintf(mergerout, "Merger1. peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
-                            fflush(mergerout);
+                            fprintf(workerout, "Merger1. peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
+                            fprintf(workerout, "PID: %d and %d\n", p1->PID, p2->PID);
+                            fflush(workerout);
 
                             p1->setBinaryInterruptState(BinaryInterruptState::collision);
                             p2->setBinaryInterruptState(BinaryInterruptState::collision);
@@ -603,9 +604,9 @@ public:
                             p2->setBinaryInterruptState(BinaryInterruptState::collisioncandidate);
                             p1->time_check = std::min(p1->time_check, _bin_interrupt.time_now + (drdv<0 ? t_peri : (_bin.period - t_peri)));
                             p2->time_check = std::min(p1->time_check, p2->time_check);
-                            fprintf(mergerout, "Merger2. PID: %d and %d might merge soon!\n", p1->PID, p2->PID);
-                            fprintf(mergerout, "peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
-                            fflush(mergerout);
+                            fprintf(workerout, "Merger2. peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
+                            fprintf(workerout, "PID: %d and %d might merge soon!\n", p1->PID, p2->PID);
+                            fflush(workerout);
                         }
                     }
                 }
@@ -642,7 +643,7 @@ public:
             Float period = 2*M_PI/mean_motion;
 
             if (peri < radius && _dt > t_peri) {
-                fprintf(mergerout, "peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
+                fprintf(workerout, "peri: %e pc, radius: %e pc\n", peri*position_unit, radius*position_unit);
 
                 p1->setBinaryInterruptState(BinaryInterruptState::collision);
                 p2->setBinaryInterruptState(BinaryInterruptState::collision);

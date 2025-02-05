@@ -993,7 +993,7 @@ void RootRoutines() {
 #endif
 
 #ifdef NSIGHT
-				nvtxRangePushA("UpdateRegular");
+				nvtxRangePushA("RegCudaUpdate");
 #endif
 
 #ifdef DEBUG

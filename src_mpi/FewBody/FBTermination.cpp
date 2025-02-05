@@ -57,8 +57,6 @@ void FBTermination(Particle* ptclCM) {
 			members->setBinaryInterruptState(BinaryInterruptState::manybody);
 		else
 			members->setBinaryInterruptState(BinaryInterruptState::none);
-		
-		members->RadiusOfNeighbor	= ptclCM->RadiusOfNeighbor;
 
 		members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr;
 		members->CurrentBlockReg	= ptclCM->CurrentBlockReg;
@@ -69,8 +67,8 @@ void FBTermination(Particle* ptclCM) {
 		members->TimeLevelIrr		= ptclCM->TimeLevelIrr; // test by EW 2025.1.29
 		members->TimeLevelReg		= ptclCM->TimeLevelReg;
 
-		// members->RadiusOfNeighbor = ACRadius*ACRadius; // added by EW 2025.1.16
-		members->RadiusOfNeighbor = ptclCM->RadiusOfNeighbor; // modified by EW 2025.1.30
+		members->RadiusOfNeighbor = ACRadius*ACRadius; // added by EW 2025.1.16
+		// members->RadiusOfNeighbor = ptclCM->RadiusOfNeighbor; // modified by EW 2025.1.30
 
 		CalculateAcceleration01(members);
 		CalculateAcceleration23(members);

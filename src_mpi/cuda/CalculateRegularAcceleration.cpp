@@ -106,7 +106,15 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 #ifdef DEBUG
 	std::cout << "sendAllParticlesToGPU starts" << std::endl;
 #endif
+
+#ifdef NSIGHT
+	nvtxRangePushA("sendAllParticlesToGPU");
+#endif
 	sendAllParticlesToGPU(new_time, RegularList, IndexList);  // needs to be updated
+#ifdef NSIGHT
+	nvtxRangePop();
+#endif
+
 #ifdef DEBUG
 	std::cout << "sendAllParticlesToGPU ended" << std::endl;
 #endif
@@ -201,6 +209,10 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	std::cout << "Adjust Regular Gravity starts" << std::endl;
 #endif
 
+#ifdef NSIGHT
+	nvtxRangePushA("RegCuda");
+#endif
+
 	// Adjust Regular Gravity
 	int i=0;
 	TaskName task=RegCuda;
@@ -249,6 +261,10 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 		std::cout << "queue_scheduler.waitQueue(0) ended" << std::endl;
 #endif
 	} while (queue_scheduler.isComplete());
+
+#ifdef NSIGHT
+	nvtxRangePop();
+#endif
 
 #ifdef DEBUG
 	std::cout << "Adjust Regular Gravity ended" << std::endl;

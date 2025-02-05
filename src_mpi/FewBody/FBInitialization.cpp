@@ -82,7 +82,7 @@ void Group::initialIntegrator(int NumMembers) {
 		if (!members->isCMptcl) {
 			members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 			sym_int.particles.addMemberAndAddress(*members);
-			fprintf(workerout, " %d", sym_int.particles[i].PID);
+			fprintf(workerout, " %d", sym_int.particles[groupCM->NumberOfMember].PID);
 			groupCM->Members[groupCM->NumberOfMember++] = members->ParticleIndex;
 		}
 		else {
@@ -90,7 +90,7 @@ void Group::initialIntegrator(int NumMembers) {
 				Particle* members_members = &particles[members->NewNeighbors[j]];
 				members_members->CMPtclIndex = groupCM->ParticleIndex; // added for write_out_group function by EW 2025.1.6
 				sym_int.particles.addMemberAndAddress(*members_members);
-				fprintf(workerout, " %d", sym_int.particles[i].PID);
+				fprintf(workerout, " %d", sym_int.particles[groupCM->NumberOfMember].PID);
 				groupCM->Members[groupCM->NumberOfMember++] = members_members->ParticleIndex;
 			}
 		}
@@ -188,7 +188,8 @@ void NewFBInitialization(Particle* ptclCM) {
 	}
 
 	// Set ptcl information like time, PID, etc.
-	ptclCM->RadiusOfNeighbor = ptcl->RadiusOfNeighbor;
+	// ptclCM->RadiusOfNeighbor = ptcl->RadiusOfNeighbor; // original by EW 2025.2.4
+	ptclCM->RadiusOfNeighbor = ACRadius*ACRadius;
 
 	ptclCM->CurrentTimeIrr  = ptcl->CurrentTimeIrr;
 	ptclCM->CurrentTimeReg  = ptcl->CurrentTimeReg;
@@ -290,8 +291,8 @@ void NewFBInitialization(Particle* ptclCM) {
 	ptclCM->TimeStepReg  = static_cast<double>(pow(2, ptclCM->TimeLevelReg));
 	ptclCM->TimeBlockReg = static_cast<ULL>(pow(2, ptclCM->TimeLevelReg-time_block));
 
-	ptclCM->calculateTimeStepIrr();
-	// ptclCM->calculateTimeStepIrr2(); // by EW 2025.1.4
+	// ptclCM->calculateTimeStepIrr();
+	ptclCM->calculateTimeStepIrr2(); // by EW 2025.1.4
 	ptclCM->NewCurrentBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr;
 	ptclCM->NextBlockIrr = ptclCM->CurrentBlockIrr + ptclCM->TimeBlockIrr;
 /*
@@ -374,9 +375,10 @@ void NewFBInitialization3(Group* group) {
 	ptclGroup->CurrentTime = group->CurrentTime;
 
 	ptclCM->NewNumberOfNeighbor = 0;
-	for (int i = 0; i < group->sym_int.particles.getSize(); i++) {
-		if (group->sym_int.particles[i].Mass != 0) {
-			ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = group->sym_int.particles[i].ParticleIndex;
+	for (int i = 0; i < ptclCM->NumberOfMember; i++) {
+		Particle* members = &particles[ptclCM->Members[i]];
+		if (members->Mass != 0) {
+			ptclCM->NewNeighbors[ptclCM->NewNumberOfNeighbor] = ptclCM->Members[i];
 			ptclCM->NewNumberOfNeighbor++;
 		}
 	}

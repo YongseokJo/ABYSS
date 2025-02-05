@@ -21,8 +21,8 @@
 
 
 // SDAR
-#define RSEARCH 1e-4 // pc
-#define TSEARCH 1e-6 // Myr
+#define RSEARCH 2.5e-4 // 1e-4 // pc
+#define TSEARCH 1e-6 // 1e-6 // Myr
 
 #define NormalStar 1
 #define Blackhole 32
