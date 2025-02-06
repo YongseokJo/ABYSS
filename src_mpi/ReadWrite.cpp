@@ -217,7 +217,7 @@ int writeParticle(double current_time, int outputNum) {
 
 			if (ptcl->isCMptcl) {
 				Particle* members;
-				for (int j; j < ptcl->NumberOfMember; j++) {
+				for (int j=0; j < ptcl->NumberOfMember; j++) {
 					members = &particles[ptcl->Members[j]];
 					write_out_group(outputFile, ptcl, members, pos, vel);
 				}

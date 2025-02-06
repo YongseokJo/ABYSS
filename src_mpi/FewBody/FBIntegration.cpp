@@ -142,7 +142,7 @@ void Group::ARIntegration(double next_time){
                 <<"  pert_out= "<<bin_root.slowdown.pert_out;
     std::cerr<<std::endl;
 */
-/* PN corrections
+// /* PN corrections
     if (bin_interrupt.status == AR::InterruptStatus::none) { // Every bound orbit
         
         auto& bin_root = sym_int.info.getBinaryTreeRoot();
@@ -152,7 +152,7 @@ void Group::ARIntegration(double next_time){
         if (bin_interrupt.status == AR::InterruptStatus::none)
             sym_int.initialIntegration(next_time*EnzoTimeStep); // Eunwoo: this should be fixed later // Eunwoo: I don't think so!
     }    
-*/
+// */
 
     if (bin_interrupt.status != AR::InterruptStatus::none) {
 

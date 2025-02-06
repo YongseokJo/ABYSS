@@ -40,6 +40,7 @@ void FBTermination(Particle* ptclCM) {
 	fprintf(binout,"In FBTermination.cpp... (CM PID: %d)\n\n", ptclCM->PID);
 	fprintf(binout, "CurrentTimeIrr of ptclCM (Myr): %e\n", ptclCM->CurrentTimeIrr*EnzoTimeStep*1e4);
 	fprintf(binout, "CurrentTimeIrr of the first member (Myr): %e\n", particles[ptclCM->Members[0]].CurrentTimeIrr*EnzoTimeStep*1e4);
+	fprintf(binout, "N_member: %d\n", ptclCM->NumberOfMember);
 
 	NumberOfParticle--; // CM particle should be inactive by EW 2025.1.20
 	
@@ -103,6 +104,13 @@ void FBTermination(Particle* ptclCM) {
 
 		// members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
 		members->calculateTimeStepIrr();
+		if (ptclCM->NumberOfMember > 2) {
+			// members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
+			members->TimeLevelIrr--;
+			// members->TimeLevelIrr = members->TimeLevelIrr - 2;
+			// members->TimeStepIrr = static_cast<double>(pow(2, members->TimeLevelIrr));
+			// members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+		}
 		members->NewCurrentBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
 		members->NextBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
 
