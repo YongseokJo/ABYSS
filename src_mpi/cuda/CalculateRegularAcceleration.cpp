@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "../global.h"
 #include "../QueueScheduler.h"
+#include "../QueueManager.h"
 #include "cuda_functions.h"
 
 #ifdef NSIGHT
@@ -24,7 +25,7 @@ void CalculateAccelerationOnDevice(int *NumTargetTotal, int *h_target_list, doub
  *  Date    : 2024.01.18  by Seoyoung Kim
  *
  */
-void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler){
+void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueManager &qmanager){
 
 
 
@@ -201,61 +202,26 @@ void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueSch
 	std::cout << "Adjust Regular Gravity starts" << std::endl;
 #endif
 
+
+	for (int i=0; i<ListSize; i++) {
+		ptcl = &particles[ActiveIndexToOriginalIndex[IndexList[i]]];
+		//ptcl->dummy = ActiveIndexToOriginalIndex[IndexList[i]];
+		ptcl->NewNumberOfNeighbor = NumNeighborReceive[i];
+		for (int j=0; j<NumNeighborReceive[i]; j++) {
+			ptcl->NewNeighbors[j] = ACListReceive[i*NumNeighborMax + j];
+		} 
+		for (int j=0; j<Dim; j++) {
+			ptcl->a_tot[j][0] = AccRegReceive[i][j];
+			ptcl->a_tot[j][1] = AccRegDotReceive[i][j];
+		}
+	}
+
+
 	// Adjust Regular Gravity
-	int i=0;
-	TaskName task=RegCuda;
-	queue_scheduler.initialize(RegCuda);
-	queue_scheduler.takeQueueRegularList(RegularList);
-	do
-	{
-		queue_scheduler.assignQueueRegularList();
+	qmanager.initialize(RegularList, RegCuda);
+	qmanager.signalWorkers();
+	qmanager.reportProgress();
 
-        for (auto worker = queue_scheduler.WorkersToGo.begin(); worker != queue_scheduler.WorkersToGo.end();)
-        {
-            if ((*worker)->NumberOfQueues > 0) // original
-            {
-				//std::cout << "(REG_CUDA) My Rank =" << (*worker)->MyRank << std::endl;
-				MPI_Isend(&task, 1, MPI_INT, (*worker)->MyRank, TASK_TAG, MPI_COMM_WORLD,
-				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
-				MPI_Isend(&ActiveIndexToOriginalIndex[IndexList[i]], 1, MPI_INT, (*worker)->MyRank, PTCL_TAG, MPI_COMM_WORLD,
-				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
-				MPI_Isend(&NumNeighborReceive[i], 1, MPI_INT, (*worker)->MyRank, 10, MPI_COMM_WORLD,
-				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
-				MPI_Isend(&ACListReceive[i * NumNeighborMax], NumNeighborReceive[i], MPI_INT, (*worker)->MyRank, 11, MPI_COMM_WORLD,
-				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
-				MPI_Isend(&AccRegReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 12, MPI_COMM_WORLD,
-				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
-				MPI_Isend(&AccRegDotReceive[i][0], 3, MPI_DOUBLE, (*worker)->MyRank, 13, MPI_COMM_WORLD,
-				 &(*worker)->_request[(*worker)->NumberOfCommunications++]);
-				((*worker))->onDuty = true;
-
-				/*
-				(*worker)->CurrentQueue++;
-				(*worker)->CurrentQueue %= MAX_QUEUE;
-				(*worker)->NumberOfQueues--;
-				*/
-                worker = queue_scheduler.WorkersToGo.erase(worker);
-				i++;
-#ifdef DEBUG
-				std::cout << "i: " << i << std::endl;
-#endif
-            }
-			else
-			{
-                ++worker;
-#ifdef DEBUG
-				std::cout << "worker MyRank: " << (*worker)->MyRank << std::endl;
-#endif
-			}
-        }
-#ifdef DEBUG
-		std::cout << "queue_scheduler.waitQueue(0) starts" << std::endl;
-#endif
-		queue_scheduler.waitQueue(0); // blocking wait
-#ifdef DEBUG
-		std::cout << "queue_scheduler.waitQueue(0) ended" << std::endl;
-#endif
-	} while (queue_scheduler.isComplete());
 
 #ifdef DEBUG
 	std::cout << "Adjust Regular Gravity ended" << std::endl;

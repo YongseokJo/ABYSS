@@ -5,11 +5,14 @@
 #include <unordered_map>
 #include <cassert>
 #include <mpi.h>
+#include <cuda_runtime.h>
+
 #include "global.h"
 #include "SkipList.h"
 #include "Worker.h"
 #include "performance.h"
-#include "QueueScheduler.h"
+//#include "QueueScheduler.h"
+#include "QueueManager.h"
 
 #ifdef NSIGHT
 #include <nvToolsExt.h>
@@ -29,7 +32,7 @@ void updateNextRegTime(std::unordered_set<int>& RegularList);
 bool createSkipList(SkipList *skiplist);
 bool updateSkipList(SkipList *skiplist, int ptcl_id);
 int writeParticle(double current_time, int outputNum);
-void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueScheduler &queue_scheduler);
+void calculateRegAccelerationOnGPU(std::unordered_set<int> RegularList, QueueManager &qmanager);
 
 void formPrimordialBinaries(int beforeLastParticleIndex);
 void formBinaries(std::vector<int>& ParticleList, std::vector<int>& newCMptcls, std::unordered_map<int, int>& existing, std::unordered_map<int, int>& terminated);
@@ -80,7 +83,7 @@ void RootRoutines() {
 		workers[i].initialize(i);
 	}
 
-	QueueScheduler queue_scheduler;
+	QueueManager qmanager;
 
 	/* Particle loading Check */
 	/*
@@ -115,50 +118,28 @@ void RootRoutines() {
 #ifdef PerformanceTrace
 		performance.start(InitAcc1_Root);
 #endif
-		queue_scheduler.initialize(InitAcc1);
-		queue_scheduler.takeQueue(PIDs);
-		do
-		{
-			//queue_scheduler.printFreeWorker();
-			//queue_scheduler.printWorkerToGo();
-			queue_scheduler.assignQueueAuto();
-			//queue_scheduler.printFreeWorker();
-			//queue_scheduler.printWorkerToGo();
-			queue_scheduler.runQueueAuto();
-#ifdef PerformanceTrace
-			performance.start(InitAcc1_Running);
-#endif
-			queue_scheduler.waitQueue(0); // blocking wait
-#ifdef PerformanceTrace
-			performance.end(InitAcc1_Running);
-#endif
-		} while(queue_scheduler.isComplete());
-
-		std::cout << "Init 01 done" << std::endl;
-		queue_scheduler.initialize(InitAcc2);
-		queue_scheduler.takeQueue(PIDs);
-		do
-		{
-			queue_scheduler.assignQueueAuto();
-			queue_scheduler.runQueueAuto();
-			queue_scheduler.waitQueue(0); //blocking wait
-		} while(queue_scheduler.isComplete());
+		qmanager.initialize(PIDs, InitAcc1);
+		qmanager.signalWorkers();
+		qmanager.reportProgress();
 #ifdef PerformanceTrace
 		performance.end(InitAcc1_Root);
 #endif
-		std::cout << "Init 02 done" << std::endl;
 
-#ifdef FEWBODY
+		std::cout << "InitAcc1 done" << std::endl;
+		std::cerr << "Init1 Time for Root (ns) = " << performance.get(InitAcc1_Root) << std::endl;
+
+		qmanager.initialize(PIDs, InitAcc2);
+		qmanager.signalWorkers();
+		qmanager.reportProgress();
+
+		std::cout << "InitAcc2 done" << std::endl;
+
+#ifdef _FEWBODY
 		// Primordial binary search
 
-		queue_scheduler.initialize(SearchPrimordialGroup);
-		queue_scheduler.takeQueue(PIDs);
-		do
-		{
-			queue_scheduler.assignQueueAuto();
-			queue_scheduler.runQueueAuto();
-			queue_scheduler.waitQueue(0); //blocking wait
-		} while(queue_scheduler.isComplete());
+		qmanager.initialize(PIDs, SearchPrimordialGroup);
+		qmanager.signalWorkers();
+		qmanager.reportProgress();
 
 		std::cout << "Primordial binary search done" << std::endl;
 
@@ -203,44 +184,12 @@ void RootRoutines() {
 #endif
 
 		// Initialize Time Step
-		queue_scheduler.initialize(InitTime);
-		queue_scheduler.takeQueue(PIDs);
-		do
-		{
-			queue_scheduler.assignQueueAuto();
-			queue_scheduler.runQueueAuto();
-			queue_scheduler.waitQueue(0); //blocking wait
-		} while(queue_scheduler.isComplete());
 
-		/*
-		for (int i=0; i<=LastParticleIndex; i++) {
-			ptcl = &particles[i];
-			if (ptcl->isActive)
-				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
-								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
-								"NumNeighbor= %d\n",
-						ptcl->PID,
-						ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->CurrentBlockIrr,
-						ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->CurrentBlockReg,
-						// NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
-						// NextRegTimeBlock,
-						ptcl->TimeStepIrr * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->TimeStepReg * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->TimeBlockIrr,
-						ptcl->TimeLevelIrr,
-						ptcl->TimeBlockReg,
-						ptcl->TimeLevelReg,
-						ptcl->NumberOfNeighbor);
-		}
-		*/
+		qmanager.initialize(PIDs, InitTime);
+		qmanager.signalWorkers();
+		qmanager.reportProgress();
+		std::cout << "InitTime done" << std::endl;
 	}
-
-
-
-	/* synchronization */
-	//ParticleSynchronization();
 
 	/* timestep correction */
 	{
@@ -286,48 +235,19 @@ void RootRoutines() {
 		std::cout << "Time Step done." << std::endl;
 	}
 
-	/*
-		for (int i=0; i<=LastParticleIndex; i++) {
-			ptcl = &particles[i];
-			if (ptcl->isActive)
-				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
-								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
-								"NumNeighbor= %d\n",
-						ptcl->PID,
-						ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->CurrentBlockIrr,
-						ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->CurrentBlockReg,
-						// NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
-						// NextRegTimeBlock,
-						ptcl->TimeStepIrr * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->TimeStepReg * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->TimeBlockIrr,
-						ptcl->TimeLevelIrr,
-						ptcl->TimeBlockReg,
-						ptcl->TimeLevelReg,
-						ptcl->NumberOfNeighbor);
-		}
-		*/
-
 	/* timestep variable synchronization */
 	{
 		std::cout << "Time Step synchronization." << std::endl;
-		task=TimeSync;
-		completed_tasks = 0; total_tasks = NumberOfWorker;
-		InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
-		//MPI_Waitall(NumberOfCommunication, requests, statuses);
-		//NumberOfCommunication = 0;
+		tasks[0] = TimeSync;
+		global_variable->QueueSize = NumberOfWorker;
+		qmanager.completed_queues = 0;
+		qmanager.signalWorkers();
 		broadcastFromRoot(time_block);
 		broadcastFromRoot(block_max);
 		broadcastFromRoot(time_step);
-		//MPI_Win_sync(win);  // Synchronize memory
-		//MPI_Barrier(shared_comm);
-		while (completed_tasks < total_tasks) {
-			MPI_Irecv(&task, 1, MPI_INT, MPI_ANY_SOURCE, TERMINATE_TAG, MPI_COMM_WORLD, &request);
-			MPI_Wait(&request, &status);
-			completed_tasks++;
-		}
+		//MPI_Barrier(MPI_COMM_WORLD);
+		//qmanager.reportProgress();
+        MPI_Win_fence(0, win);
 		fprintf(stderr, "nbody+:time_block = %d, EnzoTimeStep=%e\n", time_block, EnzoTimeStep);
 		fflush(stderr);
 	}
@@ -336,100 +256,73 @@ void RootRoutines() {
 	/*
 	{
 		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<=LastParticleIndex; i++) {
+		for (int i = 0; i <= LastParticleIndex; i++)
+		{
 			ptcl = &particles[i];
-			fprintf(stdout, "%d(%d)=",ptcl->PID,ptcl->NumberOfNeighbor);
-			for (int j=0;j<ptcl->NumberOfNeighbor;j++) {
-				fprintf(stdout, "%d, ",ptcl->Neighbors[j]);
+			fprintf(stdout, "%d(%d)=", ptcl->PID, ptcl->NumberOfNeighbor);
+			for (int j = 0; j < ptcl->NumberOfNeighbor; j++)
+			{
+				fprintf(stdout, "%d, ", ptcl->Neighbors[j]);
 			}
 			fprintf(stdout, "\n");
 		}
 	}
-		for (int i=0; i<=LastParticleIndex; i++) {
-			ptcl = &particles[i];
-			fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"\
-					"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"\
-					"NumNeighbor= %d\n",
-					ptcl->PID,
-					ptcl->CurrentTimeIrr*EnzoTimeStep*1e10/1e6,
-					ptcl->CurrentBlockIrr,
-					ptcl->CurrentTimeReg*EnzoTimeStep*1e10/1e6,
-					ptcl->CurrentBlockReg,
-					//NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
-					//NextRegTimeBlock,
-					ptcl->TimeStepIrr*EnzoTimeStep*1e10/1e6,
-					ptcl->TimeStepReg*EnzoTimeStep*1e10/1e6,
-					ptcl->TimeBlockIrr,
-					ptcl->TimeLevelIrr,
-					ptcl->TimeBlockReg,
-					ptcl->TimeLevelReg,
-					ptcl->NumberOfNeighbor
-					);
 
-			fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
-					a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
-					a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n", 
-					ptcl->a_tot[0][0],
-					ptcl->a_tot[1][0],
-					ptcl->a_tot[2][0],
-					ptcl->a_reg[0][0],
-					ptcl->a_reg[1][0],
-					ptcl->a_reg[2][0],
-					ptcl->a_irr[0][0],
-					ptcl->a_irr[1][0],
-					ptcl->a_irr[2][0],
-					ptcl->NumberOfNeighbor,
-					ptcl->RadiusOfNeighbor,
-					ptcl->a_reg[0][1],
-					ptcl->a_reg[1][1],
-					ptcl->a_reg[2][1],
-					ptcl->a_reg[0][2],
-					ptcl->a_reg[1][2],
-					ptcl->a_reg[2][2],
-					ptcl->a_reg[0][3],
-					ptcl->a_reg[1][3],
-					ptcl->a_reg[2][3],
-					ptcl->a_irr[0][1],
-					ptcl->a_irr[1][1],
-					ptcl->a_irr[2][1],
-					ptcl->a_irr[0][2],
-					ptcl->a_irr[1][2],
-					ptcl->a_irr[2][2],
-					ptcl->a_irr[0][3],
-					ptcl->a_irr[1][3],
-					ptcl->a_irr[2][3]
-						);
-
-		}
-		fflush(stdout);
-	}
-	*/
-	/* Particle Initialization Check */
-	/*
+	for (int i = 0; i <= LastParticleIndex; i++)
 	{
-		//, NextRegTime= %.3e Myr(%llu),
-		for (int i=0; i<=LastParticleIndex; i++) {
-			ptcl = &particles[i];
-			if (ptcl->isActive)
-				fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
-								"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
-								"NumNeighbor= %d\n",
-						ptcl->PID,
-						ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->CurrentBlockIrr,
-						ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->CurrentBlockReg,
-						// NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
-						// NextRegTimeBlock,
-						ptcl->TimeStepIrr * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->TimeStepReg * EnzoTimeStep * 1e10 / 1e6,
-						ptcl->TimeBlockIrr,
-						ptcl->TimeLevelIrr,
-						ptcl->TimeBlockReg,
-						ptcl->TimeLevelReg,
-						ptcl->NumberOfNeighbor);
-		}
+		ptcl = &particles[i];
+		fprintf(stdout, "PID=%d, CurrentTime (Irr, Reg) = (%.3e(%llu), %.3e(%llu)) Myr\n"
+						"dtIrr = %.4e Myr, dtReg = %.4e Myr, blockIrr=%llu (%d), blockReg=%llu (%d)\n"
+						"NumNeighbor= %d\n",
+				ptcl->PID,
+				ptcl->CurrentTimeIrr * EnzoTimeStep * 1e10 / 1e6,
+				ptcl->CurrentBlockIrr,
+				ptcl->CurrentTimeReg * EnzoTimeStep * 1e10 / 1e6,
+				ptcl->CurrentBlockReg,
+				// NextRegTimeBlock*time_step*EnzoTimeStep*1e10/1e6,
+				// NextRegTimeBlock,
+				ptcl->TimeStepIrr * EnzoTimeStep * 1e10 / 1e6,
+				ptcl->TimeStepReg * EnzoTimeStep * 1e10 / 1e6,
+				ptcl->TimeBlockIrr,
+				ptcl->TimeLevelIrr,
+				ptcl->TimeBlockReg,
+				ptcl->TimeLevelReg,
+				ptcl->NumberOfNeighbor);
+
+		fprintf(stdout, " a_tot = (%.4e,%.4e,%.4e), a_reg = (%.4e,%.4e,%.4e), a_irr = (%.4e,%.4e,%.4e), n_n=%d, R=%.3e\n\
+					a1_reg = (%.4e,%.4e,%.4e), a2_reg = (%.4e,%.4e,%.4e), a3_reg = (%.4e,%.4e,%.4e)\n\
+					a1_irr = (%.4e,%.4e,%.4e), a2_irr = (%.4e,%.4e,%.4e), a3_irr = (%.4e,%.4e,%.4e)\n",
+				ptcl->a_tot[0][0],
+				ptcl->a_tot[1][0],
+				ptcl->a_tot[2][0],
+				ptcl->a_reg[0][0],
+				ptcl->a_reg[1][0],
+				ptcl->a_reg[2][0],
+				ptcl->a_irr[0][0],
+				ptcl->a_irr[1][0],
+				ptcl->a_irr[2][0],
+				ptcl->NumberOfNeighbor,
+				ptcl->RadiusOfNeighbor,
+				ptcl->a_reg[0][1],
+				ptcl->a_reg[1][1],
+				ptcl->a_reg[2][1],
+				ptcl->a_reg[0][2],
+				ptcl->a_reg[1][2],
+				ptcl->a_reg[2][2],
+				ptcl->a_reg[0][3],
+				ptcl->a_reg[1][3],
+				ptcl->a_reg[2][3],
+				ptcl->a_irr[0][1],
+				ptcl->a_irr[1][1],
+				ptcl->a_irr[2][1],
+				ptcl->a_irr[0][2],
+				ptcl->a_irr[1][2],
+				ptcl->a_irr[2][2],
+				ptcl->a_irr[0][3],
+				ptcl->a_irr[1][3],
+				ptcl->a_irr[2][3]);
 	}
+	fflush(stdout);
 	*/
 
 
@@ -442,6 +335,8 @@ void RootRoutines() {
 		double current_time_irr=0;
 		double next_time=0;
 		Worker* worker;
+		Queue queue;
+		std::unordered_set<int> CMPtclsForComputation;
 
 
 		//ParticleSynchronization();
@@ -457,7 +352,7 @@ void RootRoutines() {
 
 			// end if the global time exceeds the end time
 			if (global_time >= 1) {
-				task=Ends;
+				tasks[0] = Ends;
 				InitialAssignmentOfTasks(task, NumberOfWorker, TASK_TAG);
 				//MPI_Waitall(NumberOfCommunication, requests, statuses);
 				//NumberOfCommunication = 0;
@@ -490,7 +385,7 @@ void RootRoutines() {
 				ThisLevelNode = skiplist->getFirstNode();
 				next_time     = particles[ThisLevelNode->ParticleList[0]].CurrentTimeIrr\
 									 	    + particles[ThisLevelNode->ParticleList[0]].TimeStepIrr;
-			
+				global_variable->next_time = next_time;
 #ifdef DEBUG
 				// print out particlelist
 				fprintf(stdout, "(IRR_FORCE) next_time: %e Myr\n", next_time*EnzoTimeStep*1e4);
@@ -515,7 +410,7 @@ void RootRoutines() {
 #endif
 
 				// Irregular Force
-#ifdef FEWBODY
+#ifdef _FEWBODY
 #ifdef NSIGHT
 				nvtxRangePushA("IrregularForce");
 #endif
@@ -526,77 +421,90 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "Irr force starts" << std::endl;
 #endif
-				int cm_pid;
-				Queue queue;
-				queue_scheduler.initializeIrr(IrrForce, next_time, ThisLevelNode->ParticleList);
-				auto iter = queue_scheduler.CMPtcls.begin();
-				do
+
+#ifdef IRR_CM_SEPARATE
+
+				CMPtclsForComputation.clear();
+				global_variable->QueueSize = ThisLevelNode->ParticleList.size();
+
+				std::cout << "Queues = ";
+				for (int i = 0; i < ThisLevelNode->ParticleList.size(); i++)
 				{
-					queue_scheduler.assignQueueAuto();
-					queue_scheduler.runQueueAuto();
-					// queue_scheduler.printStatus();
-					do { 
-						worker = queue_scheduler.waitQueue(1); // non-blocking wait
-						// if there's any CMPtcl
-						if (queue_scheduler.CMPtcls.size() > 0)
+					if (!particles[ThisLevelNode->ParticleList[i]].isActive)
+					{
+						std::cout << "PID "<< ThisLevelNode->ParticleList[i] <<" is inactive." << std::endl;
+						assert(particles[ThisLevelNode->ParticleList[i]].isActive);
+					}
+					if (particles[ThisLevelNode->ParticleList[i]].isCMptcl)
+					{
+						CMPtclsForComputation.insert(ThisLevelNode->ParticleList[i]);
+					}
+					queues[i] = ThisLevelNode->ParticleList[i];
+					std::cout << queues[i] << ", ";
+				}
+				std::cout << std::endl;
+				tasks[0] = IrrForce;
+				qmanager.completed_queues = 0;
+				qmanager.NumberOfCommunication = 0;
+				MPI_Win_sync(win4);
+				MPI_Win_sync(win5);
+				MPI_Win_flush_all(win4);
+				MPI_Win_flush_all(win5);
+				//qmanager.initialize(ThisLevelNode->ParticleList, IrrForce);
+				qmanager.signalWorkers();
+				qmanager.reportProgress();
+
+				if (CMPtclsForComputation.size() > 0)
+				{
+					{
+						int i = 0;
+						for (int cm_pid : CMPtclsForComputation)
 						{
-							/* check if there's any CM ptcl ready to go for SDAR*/
-							if (iter == queue_scheduler.CMPtcls.end())
-								iter = queue_scheduler.CMPtcls.begin();
-							cm_pid = *(iter);
-							ptcl = &particles[cm_pid];
-							for (int j = 0; j < ptcl->NumberOfNeighbor; j++)
-							{
-								if (particles[ptcl->Neighbors[j]].isUpdateToDate == false)
-								{
-									iter++;
-									goto skip_to_next;
-								}
-							}
-							//queue_scheduler.printFreeWorker();
-							//queue_scheduler.printWorkerToGo();
-							//std::cout << "before: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
-							queue.task = ARIntegration;
-							queue.pid = cm_pid;
-							queue.next_time = next_time;
-							workers[CMPtclWorker[cm_pid]].addQueue(queue);
-							queue_scheduler.assignWorker(&workers[CMPtclWorker[cm_pid]]);
-							iter = queue_scheduler.CMPtcls.erase(iter);
-							//std::cout << "after: The number of CM ptcl is " << queue_scheduler.CMPtcls.size() << std::endl;
-							//queue_scheduler.printFreeWorker();
-							//queue_scheduler.printWorkerToGo();
-						skip_to_next:;
+							queues[i] = cm_pid;
+							std::cout << "cm_pid = " << cm_pid << std::endl;
 						}
-						if (worker != nullptr) 
-						{
-							//fprintf(stdout, "Worker rank: %d\n", worker->MyRank);
-						}
-					} while (worker == nullptr);
-					queue_scheduler.callback(worker);
-					//queue_scheduler.printStatus();
-				} while (queue_scheduler.isComplete());
+					}
+					global_variable->QueueSize = CMPtclsForComputation.size();
+					tasks[0] = ARIntegration;
+					qmanager.completed_queues = 0;
+					qmanager.NumberOfCommunication = 0;
+					qmanager.signalWorkers();
+					qmanager.reportProgress();
+				}
+
+#else // IRR_CM_SEPARATE
+ 
+#endif // IRR_CM_SEPARATE
+
+
 #ifdef DEBUG
 				std::cout << "Irregular Force done" << std::endl;
 #endif
 #ifdef PerformanceTrace
 				performance.end(IrrForce_Root);
 #endif
+
+		//std::cerr << "IrrForce Time for Root (ns) = " << performance.get(IrrForce_Root) << std::endl;
 #ifdef NSIGHT
 				nvtxRangePop();
+#endif 
+#else // FEWBODY
+#ifdef NSIGHT
+				nvtxRangePushA("IrregularForce");
 #endif
-#else
-				queue_scheduler.initialize(IrrForce, next_time);
-				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
-				do
-				{
-					queue_scheduler.assignQueueAuto();
-					queue_scheduler.runQueueAuto();
-					queue_scheduler.waitQueue(0); // blocking wait
-				} while (queue_scheduler.isComplete());
+#ifdef PerformanceTrace
+				performance.start(IrrForce_Root);
 #endif
-
-				//ParticleSynchronization();
-
+				qmanager.initialize(ThisLevelNode->ParticleList, IrrForce);
+				qmanager.signalWorkers();
+				qmanager.reportProgress();
+#ifdef PerformanceTrace
+				performance.end(IrrForce_Root);
+#endif
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif 
+#endif // FEWBODY
 
 				// if remaining, further sorting
 				/*
@@ -605,72 +513,74 @@ void RootRoutines() {
 						update_idx++;
 					}				updateSkipList(skiplist, ptcl_id_return);
 					*/
+
 #ifdef NSIGHT
 				nvtxRangePushA("IrregularUpdate");
 #endif
+#ifdef PerformanceTrace
+				performance.start(IrrUpdate1);
+#endif
 				// Irregular Update
-				queue_scheduler.initialize(IrrUpdate);
-				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
-				do
+				qmanager.initialize(ThisLevelNode->ParticleList, IrrUpdate);
+				/*
+				std::cout << "Queues = ";
+				for (int i=0; i<global_variable->QueueSize;i++)
+					std::cout << queues[i] << " ";
+				std::cout << std::endl; 
+				*/
+				qmanager.signalWorkers();
+				qmanager.reportProgress();
+#ifdef PerformanceTrace
+				performance.end(IrrUpdate1);
+#endif
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
+
+#ifdef NSIGHT
+				nvtxRangePushA("Irregular update on root");
+#endif
+
+#ifdef PerformanceTrace
+				performance.start(IrrUpdate2);
+#endif
+				for (int ptcl_id : ThisLevelNode->ParticleList)
 				{
-					queue_scheduler.assignQueueAuto();
-					queue_scheduler.runQueueAuto();
-					queue_scheduler.waitQueue(0); // blocking wait
-				} while (queue_scheduler.isComplete());
-				
+					ptcl = &particles[ptcl_id];
+					if (ptcl->NumberOfNeighbor != 0) // IAR modified
+						ptcl->updateParticle();
+					ptcl->CurrentBlockIrr = ptcl->NewCurrentBlockIrr;
+					ptcl->CurrentTimeIrr = ptcl->CurrentBlockIrr * time_step;
+				}
+
+#ifdef PerformanceTrace
+				performance.end(IrrUpdate2);
+#endif
+#ifdef NSIGHT
+				nvtxRangePop();
+#endif
 #ifdef DEBUG
-				for (int i: ThisLevelNode->ParticleList) {
+				std::cerr <<  "ParticleList Size=" << ThisLevelNode->ParticleList.size() << std::endl;
+				for (int i : ThisLevelNode->ParticleList)
+				{
+					std::cerr << i << " ";
 					ptcl = &particles[i];
-					if (ptcl->CurrentTimeIrr != next_time) {
-						fprintf(stdout, "Error! PID: %d, CurrentTimeIrr: %e Myr, next_time: %e Myr\n", ptcl->PID, ptcl->CurrentTimeIrr*EnzoTimeStep*1e4, next_time*EnzoTimeStep*1e4);
+					if (ptcl->CurrentTimeIrr != next_time)
+					{
+						fprintf(stdout, "Error! PID: %d, CurrentTimeIrr: %e Myr, next_time: %e Myr\n", ptcl->PID, ptcl->CurrentTimeIrr * EnzoTimeStep * 1e4, next_time * EnzoTimeStep * 1e4);
 						assert(ptcl->CurrentTimeIrr == next_time);
 					}
 				}
-				 std::cout << "Irregular update done" << std::endl;
-#endif
-#ifdef NSIGHT
-				nvtxRangePop();
-#endif
-
-#define COMM_SPEED_DEBUG
-#ifdef COMM_SPEED_DEBUG
-#ifdef NSIGHT
-				nvtxRangePushA("CommunicationSpeedBenchmark1");
-#endif
-				// Irregular Update
-				queue_scheduler.initialize(CommunicationSpeedBenchmark1);
-				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
-				do
-				{
-					queue_scheduler.assignQueueAuto();
-					queue_scheduler.runQueueAuto();
-					queue_scheduler.waitQueue(0); // blocking wait
-				} while (queue_scheduler.isComplete());
-				
-#ifdef NSIGHT
-				nvtxRangePop();
-#endif
-
-#ifdef NSIGHT
-				nvtxRangePushA("CommunicationSpeedBenchmark2");
-#endif
-				// Irregular Update
-				queue_scheduler.initialize(CommunicationSpeedBenchmark2);
-				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
-				do
-				{
-					queue_scheduler.assignQueueAuto();
-					queue_scheduler.runQueueAuto();
-					queue_scheduler.waitQueue(0); // blocking wait
-				} while (queue_scheduler.isComplete());
-				
-#ifdef NSIGHT
-				nvtxRangePop();
-#endif
+				std::cerr << std::endl;
+				std::cout << "Irregular update done" << std::endl;
 #endif
 
 
-#ifdef FEWBODY	
+				//std::cerr << "IrrUpdate1 (ns) = " << performance.get(IrrUpdate1) << std::endl;
+				//std::cerr << "IrrUpdate2 (ns) = " << performance.get(IrrUpdate2) << std::endl;
+				//exit(1);
+
+#ifdef _FEWBODY	
 
 #ifdef NSIGHT
 				nvtxRangePushA("FewBodyTermination");
@@ -712,21 +622,15 @@ void RootRoutines() {
 
 								Merge(donor, accretor);
 
-								queue_scheduler.initialize(MergeManyBody);
-								int total_queues = 1;
+								// (Query to myself) this can be parallelized 
 								int rank = CMPtclWorker[ptcl->ParticleIndex];
-								queue.task = MergeManyBody;
-								queue.pid = ptcl->ParticleIndex;
-								workers[rank].addQueue(queue);
-								queue_scheduler.WorkersToGo.insert(&workers[rank]);
+								qmanager.completed_queues = 0;
+								tasks[0] = MergeManyBody;
+								global_variable->QueueSize = 1;
+								queues[rank-1] = ptcl->ParticleIndex;
+								qmanager.signalWorker(rank);
+								qmanager.reportProgress();
 
-								queue_scheduler.setTotalQueue(total_queues);
-								do
-								{
-									queue_scheduler.runQueueAuto();
-									queue_scheduler.waitQueue(0);
-								} while (queue_scheduler.isComplete());
-								
 								continue;
 							}
 						}
@@ -750,6 +654,7 @@ void RootRoutines() {
 						}
 
 						FBTermination(ptcl);
+						ptcl->isActive = false;
 					}
 				}
 
@@ -773,19 +678,15 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "FB search starts" << std::endl;
 #endif
-				// std::cerr << "FB search starts" << std::endl;
-				// Few-body group search
-				queue_scheduler.initialize(SearchGroup);
-				queue_scheduler.takeQueue(ThisLevelNode->ParticleList);
-				do
-				{
-					queue_scheduler.assignQueueAuto();
-					queue_scheduler.runQueueAuto();
-					// queue_scheduler.printStatus();
-					queue_scheduler.waitQueue(0); // blocking wait
-				} while (queue_scheduler.isComplete());
-
-				// std::cerr << "FB search ended" << std::endl;
+#ifdef PerformanceTrace
+				//performance.start(IrrUpdate1);
+#endif
+				qmanager.initialize(ThisLevelNode->ParticleList, SearchGroup);
+				qmanager.signalWorkers();
+				qmanager.reportProgress();
+#ifdef PerformanceTrace
+				//performance.end(IrrUpdate1);
+#endif
 #ifdef DEBUG
 				std::cout << "FB search ended" << std::endl;
 #endif
@@ -814,7 +715,7 @@ void RootRoutines() {
 					for (int i=OriginalParticleListSize; i<ThisLevelNode->ParticleList.size(); i++) {
 						ptcl = &particles[ThisLevelNode->ParticleList[i]];
 						fprintf(stdout, "New CM Particle PID: %d\n", ptcl->PID);
-						// fflush(stdout);
+						fflush(stdout);
 					}
 
 					// new code by EW 2025.1.26
@@ -827,29 +728,38 @@ void RootRoutines() {
 							mem_ptclCM = &particles[ptclCM->NewNeighbors[j]];
 							if (mem_ptclCM->isCMptcl) {
 								fprintf(stdout, "manybody group detected; PID %d should be deleted first\n", mem_ptclCM->PID);
-								queue_scheduler.initialize(DeleteGroup);
 								rank_delete = CMPtclWorker[mem_ptclCM->ParticleIndex];
 								fprintf(stdout, "Rank of CM ptcl %d: %d\n", mem_ptclCM->PID, rank_delete);
+
 								queue.task = DeleteGroup;
 								queue.pid = mem_ptclCM->ParticleIndex;
 								workers[rank_delete].addQueue(queue);
 								workers[rank_delete].runQueue();
 								workers[rank_delete].callback();
 
+								// (Query to myself) this can be parallelized
+								qmanager.completed_queues = 0;
+								tasks[0] = DeleteGroup;
+								global_variable->QueueSize = 1;
+								queues[rank_delete-1] = mem_ptclCM->ParticleIndex;
+								qmanager.signalWorker(rank_delete);
+								qmanager.reportProgress();
+
 								PrevCMPtclWorker.insert({mem_ptclCM->ParticleIndex, CMPtclWorker[mem_ptclCM->ParticleIndex]});
 								CMPtclWorker.erase(mem_ptclCM->ParticleIndex);
 							}
 						}
 
-						queue_scheduler.initialize(MakeGroup);
 						rank_new = CMPtclWorker[ptclCM->ParticleIndex];
 						// fprintf(stdout, "New CM ptcl is %d\n", newCMptcls[0]);
 						fprintf(stdout, "Rank of CM ptcl %d: %d\n", ptclCM->PID, rank_new);
-						queue.task = MakeGroup;
-						queue.pid = ptclCM->ParticleIndex;
-						workers[rank_new].addQueue(queue);
-						workers[rank_new].runQueue();
-						workers[rank_new].callback();
+						// (Query to myself) this can be parallelized
+						qmanager.completed_queues = 0;
+						tasks[0] = MakeGroup;
+						global_variable->QueueSize = 1;
+						queues[rank_new-1] = ptclCM->ParticleIndex;
+						qmanager.signalWorker(rank_new);
+						qmanager.reportProgress();
 					}
 					std::cout << "All new fewbody objects are initialized." << std::endl;
 
@@ -868,8 +778,8 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
-
 #endif
+
 #ifdef DEBUG
 				std::cout << "updateSkipList starts" << std::endl;
 #endif
@@ -1010,7 +920,7 @@ void RootRoutines() {
 			skiplist = nullptr;
 			//exit(SUCCESS);
 
-#ifdef FEWBODY
+#ifdef _FEWBODY
 			if (bin_termination || new_binaries) {
 #ifdef DEBUG
 			std::cout << "(FB) updateNextRegTime starts" << std::endl;
@@ -1038,7 +948,7 @@ void RootRoutines() {
 				std::cout << "RegularList size: " << RegularList.size() << std::endl;
 #endif
 
-				calculateRegAccelerationOnGPU(RegularList, queue_scheduler);
+				calculateRegAccelerationOnGPU(RegularList, qmanager);
 
 #ifdef DEBUG
 				std::cout << "calculateRegAccelerationOnGPU ended" << std::endl;
@@ -1057,14 +967,9 @@ void RootRoutines() {
 #endif
 
 				// Update Regular
-				queue_scheduler.initialize(RegCudaUpdate);
-				queue_scheduler.takeQueueRegularList(RegularList);
-				do
-				{
-					queue_scheduler.assignQueueRegularList();
-					queue_scheduler.runQueueAuto();
-					queue_scheduler.waitQueue(0); // blocking wait
-				} while (queue_scheduler.isComplete());
+				qmanager.initialize(RegularList, RegCudaUpdate);
+				qmanager.signalWorkers();
+				qmanager.reportProgress();
 #ifdef DEBUG
 				std::cout << "update regular ended" << std::endl;
 #endif

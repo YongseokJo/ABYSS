@@ -53,6 +53,7 @@ void FBdeleteGroup(Group* group) {
 	}
 
 	delete group;
+	group = nullptr;
 }
 
 void FBTermination(Particle* ptclCM) {

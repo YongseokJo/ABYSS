@@ -1,5 +1,8 @@
 #define FEWBODY
 #define PerformanceTrace
+#define IRR_CM_SEPARATE
+
+#define NSIGHT
 
 #define FAIL    -1
 #define SUCCESS  1
@@ -11,7 +14,7 @@
 
 
 #define MAX_QUEUE 100
-#define MAX_COMMUNICATION 10
+#define MAX_COMMUNICATION 100000
 
 
 //#define FixNumNeighbor 20
@@ -82,3 +85,8 @@ typedef unsigned long long ULL;
 //#define BatchSize 32 // each thread calculates BatchSize particles
 //#define GridDimY 16 // each block calcuates NNB/GridDimY particles
 //#define NNB_per_block 128
+
+
+
+// Signal
+#define ALREADY_COMPUTED -10

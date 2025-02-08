@@ -1,11 +1,11 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
+#include <mpi.h>
 #include "def.h"
 #include "particle.h"
 #include "GlobalVariable.h"
 #include "./FewBody/Group.h"
 #include "performance.h"
-#include <mpi.h>
 
 
 
@@ -34,7 +34,7 @@ extern int NumberOfCommunication;
 extern GlobalVariable *global_variable;
 extern GlobalVariable *global_variable_original;
 
-extern int *ActiveIndexToOriginalIndex_orginal;
+extern int *ActiveIndexToOriginalIndex_original;
 extern int *ActiveIndexToOriginalIndex;
 
 extern int LastParticleIndex;
@@ -45,9 +45,11 @@ extern int NewPID;
 const int TASK_TAG = 1;
 const int PTCL_TAG = 2;
 const int TIME_TAG = 3;
+const int FINISH_TAG = 3;
 const int ANY_TAG = 100;
 const int TERMINATE_TAG = 666;
 extern int Task[NumberOfTask];
+
 
 // Time
 extern double global_time;

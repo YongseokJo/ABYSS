@@ -11,6 +11,8 @@
 #define InitAcc1_Running 2
 #define IrrForce_Root 10
 #define IrrForce_Worker 11
+#define IrrUpdate1 20
+#define IrrUpdate2 21
 
 struct Performance {
 	//std::chrono::milliseconds IrregularForce{0};

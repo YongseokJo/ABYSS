@@ -22,6 +22,7 @@ struct Group
 	Particle* groupCM;
 	bool isTerminate; // For later use: I will use this when Binary Interrupt State is being used
 	bool isMerger; // True if merger happened
+	int MyRank;
 
 	double CurrentTime;  // this show how much the binary system has evolved
 
