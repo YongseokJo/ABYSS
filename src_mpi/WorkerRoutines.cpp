@@ -193,10 +193,9 @@ void WorkerRoutines() {
 				MPI_Recv(&ptcl_id  , 1, MPI_INT   , ROOT, PTCL_TAG, MPI_COMM_WORLD, &status);
 				ptcl = &particles[ptcl_id];
 				// std::cerr << "FB search of particle  " << ptcl_id << " is initiated on rank " << MyRank << "." <<std::endl;
-
 				ptcl->NewNumberOfNeighbor = 0;
 
-				if (ptcl->getBinaryInterruptState()== BinaryInterruptState::manybody) {
+				if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody) {
 					ptcl->checkNewGroup2();
 					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
 				}
@@ -204,6 +203,17 @@ void WorkerRoutines() {
 					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < TSEARCH)
 						ptcl->checkNewGroup();
 				}
+				/*
+				if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody) {
+					ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+					std::cout << "ptcl PID: " << ptcl->PID << ", ptcl NewNumberOfNeighbor: " << ptcl->NewNumberOfNeighbor << std::endl;
+				}
+				else {
+					ptcl->NewNumberOfNeighbor = 0;
+					if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < TSEARCH)
+						ptcl->checkNewGroup();
+				}
+				*/
 				// std::cerr << "FB search of particle  " << ptcl_id << " is successfully finished on rank " << MyRank << "." <<std::endl;
 
 				break;

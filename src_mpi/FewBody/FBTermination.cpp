@@ -53,11 +53,11 @@ void FBTermination(Particle* ptclCM) {
 
 		NumberOfParticle++; // by EW 2025.1.20
 
-		// For 3-body & 4-body termination case by EW 2025.1.19
-		if (ptclCM->NumberOfMember > 2)
-			members->setBinaryInterruptState(BinaryInterruptState::manybody);
-		else
+		if (ptclCM->NumberOfMember == 2)
 			members->setBinaryInterruptState(BinaryInterruptState::none);
+
+		// if (members->getBinaryInterruptState() != BinaryInterruptState::manybody)
+		// 	members->setBinaryInterruptState(BinaryInterruptState::none);
 
 		members->CurrentBlockIrr	= ptclCM->CurrentBlockIrr;
 		members->CurrentBlockReg	= ptclCM->CurrentBlockReg;
@@ -88,10 +88,11 @@ void FBTermination(Particle* ptclCM) {
 			members->CurrentTimeIrr = ptclCM->CurrentTimeIrr;
 		}
 
+// /* // test12
 		members->calculateTimeStepReg();
 
 		if (members->TimeLevelReg <= ptclCM->TimeLevelReg-1 
-				&& members->TimeBlockReg/2+members->CurrentBlockReg > ptclCM->CurrentBlockIrr+ptclCM->TimeBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
+				&& members->TimeBlockReg/2+members->CurrentBlockReg > ptclCM->CurrentBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
 			members->TimeLevelReg = ptclCM->TimeLevelReg-1;
 		}
 		else if  (members->TimeLevelReg >= ptclCM->TimeLevelReg+1) {
@@ -102,18 +103,56 @@ void FBTermination(Particle* ptclCM) {
 		members->TimeStepReg  = static_cast<double>(pow(2, members->TimeLevelReg));
 		members->TimeBlockReg = static_cast<ULL>(pow(2, members->TimeLevelReg-time_block));
 
-		// members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
-		members->calculateTimeStepIrr();
+		members->calculateTimeStepIrr2();
 		if (ptclCM->NumberOfMember > 2) {
-			// members->calculateTimeStepIrr2(members->a_tot, members->a_irr);
 			members->TimeLevelIrr--;
-			// members->TimeLevelIrr = members->TimeLevelIrr - 2;
-			// members->TimeStepIrr = static_cast<double>(pow(2, members->TimeLevelIrr));
-			// members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+			members->TimeStepIrr = static_cast<double>(pow(2, members->TimeLevelIrr));
+			members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
 		}
+// */
+/* // test11
+		if (ptclCM->NumberOfMember == 2) {
+			members->calculateTimeStepReg();
+
+			if (members->TimeLevelReg <= ptclCM->TimeLevelReg-1 
+					&& members->TimeBlockReg/2+members->CurrentBlockReg > ptclCM->CurrentBlockIrr)  { // this ensures that irr time of any particles is smaller than adjusted new reg time.
+				members->TimeLevelReg = ptclCM->TimeLevelReg-1;
+			}
+			else if  (members->TimeLevelReg >= ptclCM->TimeLevelReg+1) {
+				members->TimeLevelReg = ptclCM->TimeLevelReg+1;
+			}
+			else 
+				members->TimeLevelReg = ptclCM->TimeLevelReg;
+			members->TimeStepReg  = static_cast<double>(pow(2, members->TimeLevelReg));
+			members->TimeBlockReg = static_cast<ULL>(pow(2, members->TimeLevelReg-time_block));
+
+			// members->calculateTimeStepIrr();
+			members->calculateTimeStepIrr2();
+		}
+		else {
+			members->calculateTimeStepReg();
+
+			while (members->TimeStepReg*EnzoTimeStep*1e4 > 2e-7) {
+				members->TimeLevelReg--;
+				members->TimeStepReg  = static_cast<double>(pow(2, members->TimeLevelReg));
+				members->TimeBlockReg = static_cast<ULL>(pow(2, members->TimeLevelReg-time_block));
+			}
+			if (members->TimeBlockReg + members->CurrentBlockReg <= ptclCM->CurrentBlockIrr) {
+				members->CurrentBlockReg = NextRegTimeBlock - members->TimeBlockReg;
+				members->CurrentTimeReg = members->CurrentBlockReg * time_step;
+			}
+
+			// members->calculateTimeStepIrr();
+			members->calculateTimeStepIrr2();
+			while (members->TimeStepIrr*EnzoTimeStep*1e4 > 1e-10) {
+				members->TimeLevelIrr--;
+				members->TimeStepIrr = static_cast<double>(pow(2, members->TimeLevelIrr));
+				members->TimeBlockIrr = static_cast<ULL>(pow(2, members->TimeLevelIrr-time_block));
+			}
+		}
+*/
 		members->NewCurrentBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
 		members->NextBlockIrr = members->CurrentBlockIrr + members->TimeBlockIrr;
-
 
 		fprintf(binout,"PID: %d\n", members->PID);
 		fprintf(binout, "Position (pc) - x:%e, y:%e, z:%e, \n", members->Position[0]*position_unit, members->Position[1]*position_unit, members->Position[2]*position_unit);
@@ -144,5 +183,4 @@ void FBTermination(Particle* ptclCM) {
 	fflush(binout);
 
 }
-
 #endif

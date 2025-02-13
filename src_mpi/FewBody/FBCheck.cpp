@@ -244,7 +244,7 @@ bool Group::CheckBreak() {
     // check whether periapsis distance >  2e-3 pc
     // Periapsis is too far and binary is not close enough to use regularized technique.
     // if (bin_root.semi*(1-bin_root.ecc) > 2e-3/position_unit){ // test7
-    if (bin_root.semi*(1-bin_root.ecc) > RSEARCH/position_unit && bin_root.r > 2 * RSEARCH/position_unit){ // test8 // fiducial
+    if (bin_root.semi*(1-bin_root.ecc) > RSEARCH/position_unit && bin_root.r > 2 * RSEARCH/position_unit) { // test8 // fiducial
     // if (bin_root.semi*(1-bin_root.ecc) > 1.2e-3/position_unit){ // test12
         fprintf(workerout, "Break group: too far periapsis! (CM PID: %d)\n\t", groupCM->PID);
         fprintf(workerout, "time: %e Myr\n\t", CurrentTime*EnzoTimeStep*1e4);
@@ -256,6 +256,41 @@ bool Group::CheckBreak() {
         fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
         fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
         fprintf(workerout, "r_crit: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
+        if (n_member > 2) {
+            for (int i=0; i<n_member; i++) {
+                Particle* ptcl1 = &particles[groupCM->Members[i]];
+                if (ptcl1->PID == bin_root.getLeftMember()->PID || ptcl1->PID == bin_root.getRightMember()->PID)
+                    ptcl1->setBinaryInterruptState(BinaryInterruptState::none);
+                else
+                    ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
+            }
+        }
+        /*
+        if (n_member > 2) {
+            fprintf(workerout, "Left PID: %d, Right PID: %d\n", bin_root.getLeftMember()->PID, bin_root.getRightMember()->PID);
+            int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
+            for (int i=0; i<n_member; i++) {
+                Particle* ptcl1 = &particles[groupCM->Members[i]];
+                if (ptcl1->PID == outgoingPID)
+                    continue;
+                else {
+                    fprintf(workerout, "ptcl1 PID: %d\n", ptcl1->PID);
+                    ptcl1->NewNumberOfNeighbor = 0;
+                    ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
+                    for (int j=0; j<n_member; j++) {
+                        Particle* ptcl2 = &particles[groupCM->Members[j]];
+                        if (ptcl2->PID != ptcl1->PID && ptcl2->PID != outgoingPID) {
+                            ptcl2->setBinaryInterruptState(BinaryInterruptState::manybody);
+                            ptcl2->NewNumberOfNeighbor = 0;
+                            ptcl1->NewNeighbors[ptcl1->NewNumberOfNeighbor++] = ptcl2->ParticleIndex;
+                            fprintf(workerout, "ptcl2 PID: %d, ptcl1 NewNumberOfNeighbor: %d\n", ptcl2->PID, ptcl1->NewNumberOfNeighbor);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        */
         fflush(workerout);
         return true;
     }
@@ -278,6 +313,41 @@ bool Group::CheckBreak() {
             fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
             fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
             fprintf(workerout, "r_crit: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
+            if (n_member > 2) {
+                for (int i=0; i<n_member; i++) {
+                    Particle* ptcl1 = &particles[groupCM->Members[i]];
+                    if (ptcl1->PID == bin_root.getLeftMember()->PID || ptcl1->PID == bin_root.getRightMember()->PID)
+                        ptcl1->setBinaryInterruptState(BinaryInterruptState::none);
+                    else
+                        ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
+                }
+            }
+            /*
+            if (n_member > 2) {
+                fprintf(workerout, "Left PID: %d, Right PID: %d\n", bin_root.getLeftMember()->PID, bin_root.getRightMember()->PID);
+                int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
+                for (int i=0; i<n_member; i++) {
+                    Particle* ptcl1 = &particles[groupCM->Members[i]];
+                    if (ptcl1->PID == outgoingPID)
+                        continue;
+                    else {
+                        fprintf(workerout, "ptcl1 PID: %d\n", ptcl1->PID);
+                        ptcl1->NewNumberOfNeighbor = 0;
+                        ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
+                        for (int j=0; j<n_member; j++) {
+                            Particle* ptcl2 = &particles[groupCM->Members[j]];
+                            if (ptcl2->PID != ptcl1->PID && ptcl2->PID != outgoingPID) {
+                                ptcl2->setBinaryInterruptState(BinaryInterruptState::manybody);
+                                ptcl2->NewNumberOfNeighbor = 0;
+                                ptcl1->NewNeighbors[ptcl1->NewNumberOfNeighbor++] = ptcl2->ParticleIndex;
+                                fprintf(workerout, "ptcl2 PID: %d, ptcl1 NewNumberOfNeighbor: %d\n", ptcl2->PID, ptcl1->NewNumberOfNeighbor);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            */
             fflush(workerout);
             return true;
         }
@@ -336,6 +406,41 @@ bool Group::CheckBreak() {
                 fprintf(workerout, "ecca: %e\n\t", bin_root.ecca);
                 fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
                 fprintf(workerout, "r_crit: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
+                if (n_member > 2) {
+                    for (int i=0; i<n_member; i++) {
+                        Particle* ptcl1 = &particles[groupCM->Members[i]];
+                        if (ptcl1->PID == bin_root.getLeftMember()->PID || ptcl1->PID == bin_root.getRightMember()->PID)
+                            ptcl1->setBinaryInterruptState(BinaryInterruptState::none);
+                        else
+                            ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
+                    }
+                }
+                /*
+                if (n_member > 2) {
+                    fprintf(workerout, "Left PID: %d, Right PID: %d\n", bin_root.getLeftMember()->PID, bin_root.getRightMember()->PID);
+                    int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
+                    for (int i=0; i<n_member; i++) {
+                        Particle* ptcl1 = &particles[groupCM->Members[i]];
+                        if (ptcl1->PID == outgoingPID)
+                            continue;
+                        else {
+                            fprintf(workerout, "ptcl1 PID: %d\n", ptcl1->PID);
+                            ptcl1->NewNumberOfNeighbor = 0;
+                            ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
+                            for (int j=0; j<n_member; j++) {
+                                Particle* ptcl2 = &particles[groupCM->Members[j]];
+                                if (ptcl2->PID != ptcl1->PID && ptcl2->PID != outgoingPID) {
+                                    ptcl2->setBinaryInterruptState(BinaryInterruptState::manybody);
+                                    ptcl2->NewNumberOfNeighbor = 0;
+                                    ptcl1->NewNeighbors[ptcl1->NewNumberOfNeighbor++] = ptcl2->ParticleIndex;
+                                    fprintf(workerout, "ptcl2 PID: %d, ptcl1 NewNumberOfNeighbor: %d\n", ptcl2->PID, ptcl1->NewNumberOfNeighbor);
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+                */
                 fflush(workerout);
                 return true;
             }
@@ -419,6 +524,41 @@ bool Group::CheckBreak() {
                 fprintf(workerout, "peri: %e pc\n\t", bin_root.semi*(1-bin_root.ecc)*position_unit);
                 fprintf(workerout, "apo: %e pc\n\t", bin_root.semi*(1+bin_root.ecc)*position_unit);
                 fprintf(workerout, "r_break: %e pc\n\n", sym_int.info.r_break_crit*position_unit);
+                if (n_member > 2) {
+                    for (int i=0; i<n_member; i++) {
+                        Particle* ptcl1 = &particles[groupCM->Members[i]];
+                        if (ptcl1->PID == bin_root.getLeftMember()->PID || ptcl1->PID == bin_root.getRightMember()->PID)
+                            ptcl1->setBinaryInterruptState(BinaryInterruptState::none);
+                        else
+                            ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
+                    }
+                }
+                /*
+                if (n_member > 2) {
+                    fprintf(workerout, "Left PID: %d, Right PID: %d\n", bin_root.getLeftMember()->PID, bin_root.getRightMember()->PID);
+                    int outgoingPID = bin_root.getLeftMember()->PID != -1 ? bin_root.getLeftMember()->PID : bin_root.getRightMember()->PID;
+                    for (int i=0; i<n_member; i++) {
+                        Particle* ptcl1 = &particles[groupCM->Members[i]];
+                        if (ptcl1->PID == outgoingPID)
+                            continue;
+                        else {
+                            fprintf(workerout, "ptcl1 PID: %d\n", ptcl1->PID);
+                            ptcl1->NewNumberOfNeighbor = 0;
+                            ptcl1->setBinaryInterruptState(BinaryInterruptState::manybody);
+                            for (int j=0; j<n_member; j++) {
+                                Particle* ptcl2 = &particles[groupCM->Members[j]];
+                                if (ptcl2->PID != ptcl1->PID && ptcl2->PID != outgoingPID) {
+                                    ptcl2->setBinaryInterruptState(BinaryInterruptState::manybody);
+                                    ptcl2->NewNumberOfNeighbor = 0;
+                                    ptcl1->NewNeighbors[ptcl1->NewNumberOfNeighbor++] = ptcl2->ParticleIndex;
+                                    fprintf(workerout, "ptcl2 PID: %d, ptcl1 NewNumberOfNeighbor: %d\n", ptcl2->PID, ptcl1->NewNumberOfNeighbor);
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+                */
                 fflush(workerout);
                 return true;
             }
