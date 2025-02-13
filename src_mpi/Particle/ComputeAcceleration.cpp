@@ -33,6 +33,10 @@ void Particle::computeAccelerationIrr() {
 	new_time = this->CurrentTimeIrr + this->TimeStepIrr; // the time to be advanced to
 	dt       = this->TimeStepIrr*EnzoTimeStep; // interval of time step
 
+	// FewBody group search
+	this->NewNumberOfNeighbor = 0;
+	const Float kappa_org_crit = 1e-2; // kappa_org criterion for new group kappa_org>kappa_org_crit
+    const double r_crit = RSEARCH/position_unit; // distance criterion
 
 	// initialize irregular force terms for ith particle just in case
 	for (int dim=0; dim<Dim; dim++){
@@ -106,6 +110,32 @@ void Particle::computeAccelerationIrr() {
 			a_tmp[dim]    += m_r3*x[dim];
 			adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 		}
+
+		if (r2 < r_crit*r_crit) {
+			if (new_time-ptcl->CurrentTimeIrr >= 0.0 && vx < 0.0) {
+				Float fcm[3] = {this->Mass*this->a_irr[0][0] + ptcl->Mass*ptcl->a_irr[0][0], 
+								this->Mass*this->a_irr[1][0] + ptcl->Mass*ptcl->a_irr[1][0], 
+								this->Mass*this->a_irr[2][0] + ptcl->Mass*ptcl->a_irr[2][0]};
+
+				AR::SlowDown sd;
+				Interaction interaction;
+				Float mcm = this->Mass + ptcl->Mass;
+
+				sd.initialSlowDownReference(1e-6, NUMERIC_FLOAT_MAX);
+
+				sd.pert_in = interaction.calcPertFromMR(sqrt(r2), this->Mass, ptcl->Mass);
+				sd.pert_out = interaction.calcPertFromForce(fcm, mcm, mcm);
+
+				sd.calcSlowDownFactor();
+				Float kappa_org = sd.getSlowDownFactorOrigin();
+
+				// avoid strong perturbed case, estimate perturbation
+				// if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
+				if(kappa_org >= kappa_org_crit)
+					this->NewNeighbors[this->NewNumberOfNeighbor++] = ptcl->ParticleIndex;
+			}
+		}
+
 	} // endfor ptcl
 
 	if (!CMPtclsSet.empty()) {
@@ -148,6 +178,32 @@ void Particle::computeAccelerationIrr() {
 				a_tmp[dim]    += m_r3*x[dim];
 				adot_tmp[dim] += m_r3*(v[dim] - 3*x[dim]*vx/r2);
 			}
+
+			if (r2 < r_crit*r_crit) {
+				if (new_time-ptcl->CurrentTimeIrr >= 0.0 && vx < 0.0) {
+					Float fcm[3] = {this->Mass*this->a_irr[0][0] + ptcl->Mass*ptcl->a_irr[0][0], 
+									this->Mass*this->a_irr[1][0] + ptcl->Mass*ptcl->a_irr[1][0], 
+									this->Mass*this->a_irr[2][0] + ptcl->Mass*ptcl->a_irr[2][0]};
+	
+					AR::SlowDown sd;
+					Interaction interaction;
+					Float mcm = this->Mass + ptcl->Mass;
+	
+					sd.initialSlowDownReference(1e-6, NUMERIC_FLOAT_MAX);
+	
+					sd.pert_in = interaction.calcPertFromMR(sqrt(r2), this->Mass, ptcl->Mass);
+					sd.pert_out = interaction.calcPertFromForce(fcm, mcm, mcm);
+	
+					sd.calcSlowDownFactor();
+					Float kappa_org = sd.getSlowDownFactorOrigin();
+	
+					// avoid strong perturbed case, estimate perturbation
+					// if kappa_org < criterion, avoid to form new group, should be consistent as checkbreak
+					if(kappa_org >= kappa_org_crit)
+						this->NewNeighbors[this->NewNumberOfNeighbor++] = ptcl->ParticleIndex;
+				}
+			}
+
 		}
 	}
 

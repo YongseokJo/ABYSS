@@ -623,8 +623,8 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePushA("FewBodyTermination");
 #endif
-				int OriginalSize = ThisLevelNode->ParticleList.size();
-				for (int i=0; i<OriginalSize; i++ ){
+				int OriginalParticleListSize = ThisLevelNode->ParticleList.size();
+				for (int i=0; i<OriginalParticleListSize; i++ ){
 					ptcl = &particles[ThisLevelNode->ParticleList[i]];
 					if (ptcl->getBinaryInterruptState() == BinaryInterruptState::merger ||
 						ptcl->getBinaryInterruptState() == BinaryInterruptState::terminated) {
@@ -701,16 +701,6 @@ void RootRoutines() {
 						FBTermination(ptcl);
 					}
 				}
-
-				// Erase terminated CM particles by EW 2025.1.6
-				ThisLevelNode->ParticleList.erase(
-					std::remove_if(ThisLevelNode->ParticleList.begin(), ThisLevelNode->ParticleList.end(),
-						[](int i) {
-						return !particles[i].isActive;
-						}
-					),
-					ThisLevelNode->ParticleList.end()
-				);
 #ifdef NSIGHT
 				nvtxRangePop();
 #endif
@@ -722,6 +712,7 @@ void RootRoutines() {
 #ifdef DEBUG
 				std::cout << "FB search starts" << std::endl;
 #endif
+/*
 				// std::cerr << "FB search starts" << std::endl;
 				// Few-body group search
 				queue_scheduler.initialize(SearchGroup);
@@ -735,6 +726,22 @@ void RootRoutines() {
 				} while (queue_scheduler.isComplete());
 
 				// std::cerr << "FB search ended" << std::endl;
+*/
+				if (OriginalParticleListSize != ThisLevelNode->ParticleList.size()) {
+					for (int i = OriginalParticleListSize; i < ThisLevelNode->ParticleList.size(); i++) {
+						ptcl = &particles[ThisLevelNode->ParticleList[i]];
+						ptcl->NewNumberOfNeighbor = 0;
+						if (ptcl->getBinaryInterruptState()==BinaryInterruptState::manybody) 
+						{
+							ptcl->checkNewGroup2();
+							ptcl->setBinaryInterruptState(BinaryInterruptState::none);
+						}
+						else if (ptcl->TimeStepIrr*EnzoTimeStep*1e4 < TSEARCH)
+						{
+							ptcl->checkNewGroup();
+						}
+					}
+				}
 #ifdef DEBUG
 				std::cout << "FB search ended" << std::endl;
 #endif
@@ -746,7 +753,7 @@ void RootRoutines() {
 #ifdef NSIGHT
 				nvtxRangePushA("FormBinaries");
 #endif
-				int OriginalParticleListSize = ThisLevelNode->ParticleList.size();
+				// int OriginalParticleListSize = ThisLevelNode->ParticleList.size();
 				int rank_delete, rank_new;
 #ifdef DEBUG
 				std::cout << "formBinaries starts" << std::endl;
@@ -796,7 +803,10 @@ void RootRoutines() {
 						workers[rank_new].callback();
 					}
 					std::cout << "All new fewbody objects are initialized." << std::endl;
+				}
+				newCMptcls.clear();
 
+				if (bin_termination || new_binaries) {
 					ThisLevelNode->ParticleList.erase(
 						std::remove_if(
 								ThisLevelNode->ParticleList.begin(), 
@@ -806,7 +816,6 @@ void RootRoutines() {
 						ThisLevelNode->ParticleList.end()
 					);
 				}
-				newCMptcls.clear();
 
 				// std::cout << "erase success" << std::endl;
 #ifdef NSIGHT
